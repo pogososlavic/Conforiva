@@ -68,7 +68,8 @@ final class ProductionGuard
     private function unavailable(Request $request, int $status, string $reference, string $reason, array $checks = []): Response
     {
         try {
-            Log::warning('HOMYA_REQUEST_BLOCKED', [
+            // Production may filter warning-level logs (for example LOG_LEVEL=error).
+            Log::error('HOMYA_REQUEST_BLOCKED', [
                 'reference' => $reference,
                 'status' => $status,
                 'reason' => $reason,
