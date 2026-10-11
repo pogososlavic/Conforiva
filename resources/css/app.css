@@ -1102,6 +1102,9 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
 .admin-product-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 230px; }
 .admin-product-actions form { margin: 0; }
 .admin-product-actions .admin-primary, .admin-product-actions .admin-secondary, .admin-product-actions .admin-danger { min-height: 40px; padding: 8px 12px; font-size: 13px; }
+.admin-product-actions .admin-icon-button { width: 40px; height: 40px; min-height: 40px; padding: 8px; }
+.admin-product-actions .admin-icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.admin-product-actions .admin-icon-button:focus-visible { outline: 3px solid #805d00; outline-offset: 2px; }
 .admin-delete-details { position: relative; }
 .admin-delete-details summary { list-style: none; }
 .admin-delete-details summary::-webkit-details-marker { display: none; }

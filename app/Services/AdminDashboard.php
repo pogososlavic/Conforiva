@@ -52,7 +52,7 @@ final class AdminDashboard
                 // Bound input and a parameterised, literal LIKE pattern.
                 $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $query).'%';
                 $q->where(fn ($q) => $q->whereRaw("reference LIKE ? ESCAPE '!'", [$pattern])->orWhereRaw("slug LIKE ? ESCAPE '!'", [$pattern]));
-            })->orderBy('reference')->orderBy('slug')->paginate(30)->withQueryString();
+            })->orderBy('reference')->orderBy('slug')->paginate(10)->withQueryString();
 
         $catalogue = app(Catalogue::class);
         $inventory->setCollection($inventory->getCollection()->map(function ($item) use ($catalogue) {
