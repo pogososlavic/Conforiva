@@ -24,7 +24,8 @@ final class AdminBoundary
             && $request->getPort() === 443;
 
         if (! $localAllowed && ! $remoteAllowed) {
-            $response = response('Administration locale indisponible.', 404);
+            $reference = $request->attributes->get('homya.error_reference');
+            $response = response()->view('errors.page', ['status' => 404, 'reference' => $reference], 404);
         } elseif (! $request->routeIs('admin.login', 'admin.authenticate') && ! app(AdminAccess::class)->valid($request)) {
             $response = redirect()->route('admin.login');
         } else {
