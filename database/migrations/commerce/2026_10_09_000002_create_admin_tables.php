@@ -52,7 +52,7 @@ return new class extends Migration
             $t->index(['read_at', 'created_at']);
         });
         $schema->create('commerce_admin_shipments', function (Blueprint $t) {
-            $t->char('order_id', 36)->primary();
+            $t->uuid('order_id')->primary();
             $t->foreign('order_id')->references('id')->on('commerce_orders')->restrictOnDelete();
             $t->string('status', 24);
             $t->string('carrier', 120)->default('');
