@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\AdminAccess;
+use App\Services\ProductionSecurity;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,9 +15,15 @@ final class AdminBoundary
     public function handle(Request $request, Closure $next): Response
     {
         // Check the actual peer, not a forwarded header supplied by a client.
-        if (! app()->environment('local', 'testing')
-            || ! in_array($request->server('REMOTE_ADDR'), ['127.0.0.1', '::1'], true)
-            || ! in_array($request->getHost(), ['localhost', '127.0.0.1', '[::1]', '::1'], true)) {
+        $security = app(ProductionSecurity::class);
+        $localAllowed = $security->localRequest($request);
+        $remoteAllowed = app()->environment('production')
+            && config('admin.remote_enabled') === true
+            && $request->getHost() === ProductionSecurity::HOST
+            && $request->isSecure()
+            && $request->getPort() === 443;
+
+        if (! $localAllowed && ! $remoteAllowed) {
             $response = response('Administration locale indisponible.', 404);
         } elseif (! $request->routeIs('admin.login', 'admin.authenticate') && ! app(AdminAccess::class)->valid($request)) {
             $response = redirect()->route('admin.login');

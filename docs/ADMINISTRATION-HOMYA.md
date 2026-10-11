@@ -15,11 +15,17 @@ Lorsque `HOMYA_ADMIN_MANAGEMENT_ENABLED` est activé après installation autoris
 
 ## Compte et protections
 
-Cette première administration est réservée à l’environnement local et à une connexion loopback réelle avec un hôte local. Elle est refusée en production, y compris lorsque des en-têtes transférés prétendent provenir de localhost. La rendre accessible sur un serveur distant nécessite un cadrage spécifique d’authentification, de rôles et d’exploitation.
+Par défaut, cette administration est réservée à l’environnement local et à une connexion loopback réelle avec un hôte local. L’accès distant en production est désactivé par défaut. Une activation explicite est possible avec `HOMYA_ADMIN_REMOTE_ENABLED=true` après déploiement du changement correspondant. En production, Laravel ne laisse alors passer `/admin` que si le site est en `production`, utilise l’hôte HTTPS `homya.eu`, passe tous les contrôles `ProductionSecurity`, et possède un identifiant et un hash de mot de passe configurés. L’écran de connexion conserve les limites de tentatives déjà appliquées.
+
+**Limite de sécurité validée pour cette première ouverture :** l’authentification distante repose sur un identifiant et un mot de passe, sans MFA ni rôles multiples. Utiliser un mot de passe unique, long et conservé dans un gestionnaire de mots de passe ; ne pas réutiliser un mot de passe personnel. Le formulaire limite déjà les échecs à 5 tentatives par minute et 30 par heure selon l’adresse IP reçue par Laravel. Ne pas activer l’option avant d’avoir confirmé que les identifiants de production sont configurés et que l’accès commerce de production est prêt.
+
+Le tableau de bord de base lit les tables `commerce_orders` et `commerce_inventory` via la connexion MariaDB `commerce`. Il faut donc une base de production configurée avec les tables attendues pour utiliser les pages Commandes et Inventaire. Cette modification d’accès n’installe ni ne migre de base. Si `HOMYA_ADMIN_MANAGEMENT_ENABLED` est activé, les six tables supplémentaires de gestion doivent également avoir été installées selon le plan dédié ; cette option n’est pas nécessaire pour le socle admin.
+
+Pour Hostinger, définir les variables dans la configuration privée de production, pas dans Git : `HOMYA_ADMIN_REMOTE_ENABLED=true`, `HOMYA_ADMIN_USERNAME` et `HOMYA_ADMIN_PASSWORD_HASH`. Les valeurs d’administration locale ne sont pas automatiquement copiées depuis ce Mac vers le serveur. Après modification de l’environnement, reconstruire le cache de configuration avec la procédure habituelle du déploiement, puis vérifier le résultat sans afficher les valeurs secrètes. Le verrou reste fermé en cas de contrôle de production en échec. Vérifier ensuite `/admin/connexion`, puis les pages qui lisent la base commerce ; un succès de connexion ne prouve pas que la base, ses tables ou les données de stock sont configurées.
 
 Le compte unique se configure dans `.env` : `HOMYA_ADMIN_USERNAME` et `HOMYA_ADMIN_PASSWORD_HASH`. Aucun compte public ni migration de table `users` n’est nécessaire.
 
-Création interactive (PHP 8.3+ ; PHP 8.5 local) :
+Création interactive locale (PHP 8.3+ ; PHP 8.5 local) :
 
 ```sh
 cd /Applications/XAMPP/xamppfiles/htdocs/HOMYA

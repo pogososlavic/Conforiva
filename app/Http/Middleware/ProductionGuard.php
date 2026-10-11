@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\ProductionSecurity;
+use App\Services\AdminAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,9 +26,19 @@ final class ProductionGuard
         $failures = $security->failures();
         // Fail closed and suppress detailed error pages even with a misplaced local .env.
         config(['app.debug' => false]);
-        // Local administration remains undiscoverable in production, regardless of configuration.
         if ($request->is('admin', 'admin/*')) {
-            return $this->unavailable(404);
+            // Remote access is opt-in, only for the configured public HTTPS host, and
+            // requires valid credentials plus every production security check.
+            if (config('admin.remote_enabled') !== true
+                || $failures !== []
+                || ! app(AdminAccess::class)->configured()
+                || $request->getHost() !== ProductionSecurity::HOST
+                || ! $request->isSecure()
+                || $request->getPort() !== 443) {
+                return $this->unavailable(404);
+            }
+
+            return $next($request);
         }
         if ($failures !== []) {
             return $this->unavailable(503);
