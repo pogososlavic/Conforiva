@@ -1,3 +1,5 @@
+@import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
+@import '@fortawesome/fontawesome-free/css/solid.min.css';
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -1099,11 +1101,18 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
 .admin-product-preview { max-width: 240px; max-height: 240px; object-fit: contain; }
 .admin-inventory-thumb { display: block; width: 64px; height: 64px; object-fit: contain; border: 1px solid #e8ece4; border-radius: 8px; background: #fff; }
 .admin-inventory-thumb--empty { display: grid; place-items: center; color: #697064; font-size: 20px; }
-.admin-product-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 230px; }
+.admin-actions-cell { vertical-align: middle !important; }
+.admin-product-actions { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 10px; min-width: 0; white-space: nowrap; }
 .admin-product-actions form { margin: 0; }
 .admin-product-actions .admin-primary, .admin-product-actions .admin-secondary, .admin-product-actions .admin-danger { min-height: 40px; padding: 8px 12px; font-size: 13px; }
-.admin-product-actions .admin-icon-button { width: 40px; height: 40px; min-height: 40px; padding: 8px; }
-.admin-product-actions .admin-icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.admin-product-actions .admin-icon-button { display: inline-flex; flex: 0 0 42px; align-items: center; justify-content: center; width: 42px; height: 42px; min-height: 42px; padding: 0; border-radius: 50%; line-height: 1; box-shadow: 0 2px 5px #29261512; transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease; }
+.admin-product-actions .admin-icon-button i { font-size: 16px; line-height: 1; }
+.admin-product-actions .admin-icon-button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px #29261520; }
+.admin-product-actions .admin-icon-button--edit { color: #725500; background: #fff9e4; border-color: #e9d17e; }
+.admin-product-actions .admin-icon-button--visibility { color: #315d42; background: #f0f8f1; border-color: #c3ddc8; }
+.admin-product-actions .admin-icon-button--visibility:hover { background: #e4f2e6; }
+.admin-product-actions .admin-icon-button--delete { color: #923522; background: #fff4f1; border-color: #e8bcb1; }
+.admin-product-actions .admin-icon-button--delete:hover { background: #ffe9e4; }
 .admin-product-actions .admin-icon-button:focus-visible { outline: 3px solid #805d00; outline-offset: 2px; }
 .admin-delete-details { position: relative; }
 .admin-delete-details summary { list-style: none; }
