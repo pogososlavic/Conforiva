@@ -47,12 +47,24 @@ final class AdminDashboard
 
     public function inventory(string $query)
     {
-        return app(OrderStore::class)->connection()->table('commerce_inventory')
+        $inventory = app(OrderStore::class)->connection()->table('commerce_inventory')
             ->when($query !== '', function ($q) use ($query) {
                 // Bound input and a parameterised, literal LIKE pattern.
                 $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $query).'%';
                 $q->where(fn ($q) => $q->whereRaw("reference LIKE ? ESCAPE '!'", [$pattern])->orWhereRaw("slug LIKE ? ESCAPE '!'", [$pattern]));
             })->orderBy('reference')->orderBy('slug')->paginate(30)->withQueryString();
+
+        $catalogue = app(Catalogue::class);
+        $inventory->setCollection($inventory->getCollection()->map(function ($item) use ($catalogue) {
+            $product = $catalogue->productForAdmin($item->slug);
+            $item->product_name = $product['name'] ?? $item->slug;
+            $item->product_image = $product['image']['local_url'] ?? null;
+            $item->product_published = (bool) ($product['admin_published'] ?? true);
+
+            return $item;
+        }));
+
+        return $inventory;
     }
 
     public function returns(): array

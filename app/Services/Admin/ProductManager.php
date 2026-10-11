@@ -29,6 +29,11 @@ final class ProductManager
             return $product;
         }
         $content = json_decode($row->content, true, 32, JSON_THROW_ON_ERROR);
+        if (($content['admin_tombstone'] ?? false) || ($content['admin_removed'] ?? false)) {
+            $product['admin_published'] = false;
+
+            return $product;
+        }
         $locale = app()->getLocale();
         $text = $content['languages'][$locale] ?? null;
         if ($text !== null) {
@@ -76,6 +81,34 @@ final class ProductManager
         return $items;
     }
 
+    public function customForAdmin(string $slug): ?array
+    {
+        $row = $this->rows()[$slug] ?? null;
+        if (! $row) {
+            return null;
+        }
+        $content = json_decode($row->content, true, 32, JSON_THROW_ON_ERROR);
+        if (! ($content['custom'] ?? false)) {
+            return null;
+        }
+        $text = $content['languages'][app()->getLocale()] ?? $content['languages']['fr'] ?? null;
+        $image = $content['image'] ?? ($content['images'][0] ?? null);
+        $url = is_array($image) ? ($image['local_url'] ?? '') : '';
+        $path = is_string($url) ? public_path(ltrim($url, '/')) : '';
+        if (! is_string($url) || ! preg_match('~\A/media/admin-products/[A-Za-z0-9]{40}\.webp\z~D', $url)
+            || ! is_file($path) || is_link($path)) {
+            $image = null;
+        }
+
+        return ['slug' => $row->slug, 'reference' => $row->reference,
+            'name' => $text['name'] ?? $row->slug, 'description' => $text['description'] ?? '',
+            'price_cents' => $row->price_cents, 'currency' => 'EUR', 'universe' => $content['universe'] ?? 'other',
+            'has_variants' => false, 'variants' => [], 'issues' => [], 'condition' => $content['condition'] ?? null,
+            'category' => ['slug' => $content['category']['slug'] ?? 'autre', 'name' => $text['category'] ?? ($content['category']['name'] ?? 'Autre')],
+            'brand' => $content['brand'] ?? '', 'description_hidden' => false,
+            'image' => $image, 'images' => $image ? [$image] : [], 'admin_published' => (bool) $row->published];
+    }
+
     public function form(?string $slug): array
     {
         $db = app(OrderStore::class)->connection();
@@ -91,7 +124,7 @@ final class ProductManager
         try {
             foreach (['fr', 'en', 'de'] as $locale) {
                 app()->setLocale($locale);
-                $p = app(Catalogue::class)->product($slug);
+                $p = app(Catalogue::class)->productForAdmin($slug);
                 if ($locale === 'fr') {
                     $base = $p;
                 }
@@ -104,7 +137,7 @@ final class ProductManager
         }
         $content = $row ? json_decode($row->content, true, 32, JSON_THROW_ON_ERROR) : [];
 
-        return ['slug' => $slug, 'reference' => $inventory->reference, 'revision' => $row->revision ?? 0, 'price' => number_format($inventory->approved_price_cents / 100, 2, '.', ''), 'quantity' => $inventory->quantity, 'reserved' => $inventory->reserved, 'published' => $row ? (bool) $row->published : (bool) $inventory->sale_enabled, 'brand' => $content['brand'] ?? ($base['brand'] ?? ''), 'category' => $content['category']['name'] ?? ($base['category']['name'] ?? ''), 'languages' => $content['languages'] ?? $languages, 'image' => $content['image'] ?? ($base['image'] ?? null), 'universe' => $content['universe'] ?? ($base['universe'] ?? 'other'), 'images' => $content['images'] ?? ($base['images'] ?? []), 'condition' => $content['condition'] ?? ($base['condition'] ?? null)];
+        return ['slug' => $slug, 'reference' => $inventory->reference, 'revision' => $row->revision ?? 0, 'price' => number_format(($inventory->approved_price_cents ?? 0) / 100, 2, '.', ''), 'quantity' => $inventory->quantity, 'reserved' => $inventory->reserved, 'published' => $row ? (bool) $row->published : (bool) ($base['admin_published'] ?? true), 'brand' => $content['brand'] ?? ($base['brand'] ?? ''), 'category' => $content['category']['name'] ?? ($base['category']['name'] ?? ''), 'languages' => $content['languages'] ?? $languages, 'image' => $content['image'] ?? ($base['image'] ?? null), 'universe' => $content['universe'] ?? ($base['universe'] ?? 'other'), 'images' => $content['images'] ?? ($base['images'] ?? []), 'condition' => $content['condition'] ?? ($base['condition'] ?? null)];
     }
 
     public function save(?string $slug, array $data, $image = null, array $extraImages = []): string
@@ -196,6 +229,93 @@ final class ProductManager
 
             return $slug;
         });
+    }
+
+    public function togglePublication(string $slug): bool
+    {
+        $catalogue = app(Catalogue::class);
+        $product = $catalogue->productForAdmin($slug);
+        abort_unless($product, 404);
+        $db = app(OrderStore::class)->connection();
+
+        return Cache::lock('admin-product-write', 30)->block(5, function () use ($db, $slug, $product) {
+            return $db->transaction(function () use ($db, $slug, $product) {
+                $inventory = $db->table('commerce_inventory')->where('slug', $slug)->lockForUpdate()->first();
+                abort_unless($inventory, 404);
+                $row = $db->table('commerce_admin_products')->where('slug', $slug)->lockForUpdate()->first();
+                $currentlyPublished = (bool) ($row->published ?? ($product['admin_published'] ?? true));
+                $published = ! $currentlyPublished;
+                $content = $row ? json_decode($row->content, true, 32, JSON_THROW_ON_ERROR) : $this->baseContent($product);
+                if ($published && ($content['admin_tombstone'] ?? false)) {
+                    // A visibility-only marker must not turn a catalogue promotion into a permanent price override.
+                    $db->table('commerce_admin_products')->where('slug', $slug)->delete();
+                    app(Activity::class)->record('product_restored', $slug, $db, $slug.'|visibility|'.Str::uuid());
+
+                    return true;
+                }
+                if (! $published && ! $row && ! ($content['custom'] ?? false)) {
+                    $content['admin_tombstone'] = true;
+                }
+                unset($content['admin_removed']);
+                $values = ['reference' => $inventory->reference, 'content' => json_encode($content, JSON_THROW_ON_ERROR),
+                    'price_cents' => $row->price_cents ?? max(0, (int) ($product['price_cents'] ?? $inventory->approved_price_cents ?? 0)),
+                    'published' => $published, 'revision' => ($row->revision ?? 0) + 1, 'updated_at' => now()];
+                if (! $row) {
+                    $values['created_at'] = now();
+                }
+                $db->table('commerce_admin_products')->updateOrInsert(['slug' => $slug], $values);
+                if (! $published) {
+                    $db->table('commerce_inventory')->where('slug', $slug)->update(['sale_enabled' => false, 'updated_at' => now()]);
+                }
+                app(Activity::class)->record($published ? 'product_restored' : 'product_suspended', $slug, $db, $slug.'|visibility|'.$values['revision']);
+
+                return $published;
+            });
+        });
+    }
+
+    public function deleteFromInventory(string $slug): void
+    {
+        $catalogue = app(Catalogue::class);
+        $product = $catalogue->productForAdmin($slug);
+        abort_unless($product, 404);
+        $db = app(OrderStore::class)->connection();
+
+        Cache::lock('admin-product-write', 30)->block(5, function () use ($db, $slug, $product) {
+            $db->transaction(function () use ($db, $slug, $product) {
+                $inventory = $db->table('commerce_inventory')->where('slug', $slug)->lockForUpdate()->first();
+                abort_unless($inventory, 404);
+                $row = $db->table('commerce_admin_products')->where('slug', $slug)->lockForUpdate()->first();
+                $hasOrders = $db->table('commerce_order_items')->where('slug', $slug)->exists();
+                if ((int) $inventory->reserved > 0 || $hasOrders) {
+                    throw ValidationException::withMessages(['product' => 'Suppression impossible : ce produit a une réservation ou un historique de commande. Suspendez-le à la place.']);
+                }
+                $content = $row ? json_decode($row->content, true, 32, JSON_THROW_ON_ERROR) : $this->baseContent($product);
+                $content['admin_removed'] = true;
+                unset($content['admin_tombstone']);
+                $values = ['reference' => $inventory->reference, 'content' => json_encode($content, JSON_THROW_ON_ERROR),
+                    'price_cents' => $row->price_cents ?? 0,
+                    'published' => false, 'revision' => ($row->revision ?? 0) + 1, 'updated_at' => now()];
+                if (! $row) {
+                    $values['created_at'] = now();
+                }
+                // Keep an unpublished tombstone so the file-backed catalogue cannot expose the removed product again.
+                $db->table('commerce_admin_products')->updateOrInsert(['slug' => $slug], $values);
+                $db->table('commerce_inventory')->where('slug', $slug)->delete();
+                app(Activity::class)->record('product_deleted', $slug, $db, $slug.'|deleted|'.$values['revision']);
+            });
+        });
+    }
+
+    private function baseContent(array $product): array
+    {
+        $category = $product['category'] ?? [];
+        $image = $product['image'] ?? null;
+
+        return ['custom' => false, 'universe' => $product['universe'] ?? 'other', 'languages' => [],
+            'condition' => $product['condition'] ?? null, 'brand' => $product['brand'] ?? '',
+            'category' => ['slug' => $category['slug'] ?? 'autre', 'name' => $category['name'] ?? 'Autre'],
+            'images' => $product['images'] ?? ($image ? [$image] : []), 'image' => $image];
     }
 
     private function image($upload): array

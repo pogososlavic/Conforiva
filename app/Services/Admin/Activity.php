@@ -7,7 +7,7 @@ use Illuminate\Database\Connection;
 
 final class Activity
 {
-    public const LABELS = ['page_view' => 'Page consultée', 'product_view' => 'Produit consulté', 'cart_add' => 'Ajout au panier', 'checkout_view' => 'Commande ouverte', 'order_created' => 'Commande enregistrée', 'payment_confirmed' => 'Paiement confirmé', 'message_client' => 'Message client', 'message_admin' => 'Réponse publiée', 'return_received' => 'Déclaration de retour', 'product_saved' => 'Produit enregistré', 'settings_saved' => 'Paramètres enregistrés', 'shipment_updated' => 'Livraison mise à jour', 'order_cancelled' => 'Commande annulée', 'document_issued' => 'Document commercial émis'];
+    public const LABELS = ['page_view' => 'Page consultée', 'product_view' => 'Produit consulté', 'cart_add' => 'Ajout au panier', 'checkout_view' => 'Commande ouverte', 'order_created' => 'Commande enregistrée', 'payment_confirmed' => 'Paiement confirmé', 'message_client' => 'Message client', 'message_admin' => 'Réponse publiée', 'return_received' => 'Déclaration de retour', 'product_saved' => 'Produit enregistré', 'product_suspended' => 'Produit suspendu', 'product_restored' => 'Produit réaffiché', 'product_deleted' => 'Produit retiré', 'settings_saved' => 'Paramètres enregistrés', 'shipment_updated' => 'Livraison mise à jour', 'order_cancelled' => 'Commande annulée', 'document_issued' => 'Document commercial émis'];
 
     public const TRAFFIC = ['page_view', 'product_view', 'cart_add', 'checkout_view'];
 

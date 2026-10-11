@@ -62,6 +62,23 @@ final class AdminManagementController extends Controller
         return to_route('admin.product.edit', ['slug' => $id])->with('admin_message', 'Produit enregistré. Prix et stock synchronisés.');
     }
 
+    public function toggleProductPublication(ProductManager $products, string $slug)
+    {
+        $published = $products->togglePublication($slug);
+
+        return to_route('admin.inventory')->with('admin_message', $published
+            ? 'Produit réaffiché dans le catalogue. La vente reste suspendue jusqu’à sa validation dans la fiche produit.'
+            : 'Produit suspendu et masqué du catalogue public.');
+    }
+
+    public function deleteProduct(Request $request, ProductManager $products, string $slug)
+    {
+        $request->validate(['confirm' => ['required', 'accepted']]);
+        $products->deleteFromInventory($slug);
+
+        return to_route('admin.inventory')->with('admin_message', 'Produit retiré de l’inventaire et du catalogue public. Son historique éventuel est conservé.');
+    }
+
     public function inbox(Messages $messages)
     {
         return view('admin.inbox', ['threads' => $messages->inbox()]);

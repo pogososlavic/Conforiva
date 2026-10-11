@@ -51,6 +51,8 @@ Route::prefix('admin')->middleware(AdminBoundary::class)->group(function () {
         Route::post('/documents/{id}/dupliquer', [AdminDocumentController::class, 'duplicate'])->whereUuid('id')->block()->name('admin.documents.duplicate');
         Route::post('/produits/nouveau', [AdminManagementController::class, 'saveProduct'])->block()->name('admin.product.create');
         Route::post('/produits/{slug}', [AdminManagementController::class, 'saveProduct'])->where('slug', '[a-z0-9][a-z0-9-]{0,220}')->block()->name('admin.product.save');
+        Route::post('/produits/{slug}/publication', [AdminManagementController::class, 'toggleProductPublication'])->where('slug', '[a-z0-9][a-z0-9-]{0,220}')->block()->name('admin.product.publication');
+        Route::delete('/produits/{slug}', [AdminManagementController::class, 'deleteProduct'])->where('slug', '[a-z0-9][a-z0-9-]{0,220}')->block()->name('admin.product.delete');
         Route::post('/messages/{id}', [AdminManagementController::class, 'reply'])->whereUuid('id')->block()->name('admin.reply');
         Route::post('/messages/{id}/lire', [AdminManagementController::class, 'readThread'])->whereUuid('id')->block()->name('admin.thread.read');
         Route::post('/notifications/lire', [AdminManagementController::class, 'readNotifications'])->block()->name('admin.notifications.read');

@@ -267,6 +267,23 @@ class Catalogue
         return $this->sourceFailure || ($presented['admin_published'] ?? true) === false ? null : $presented;
     }
 
+    /** Product projection for authenticated admin screens, including suspended catalogue items. */
+    public function productForAdmin(string $slug): ?array
+    {
+        if (! preg_match('/\A[a-z0-9][a-z0-9-]{0,220}\z/', $slug)) {
+            return null;
+        }
+        if (! collect($this->archive()['products'])->contains('slug', $slug)) {
+            return app(ProductManager::class)->customForAdmin($slug);
+        }
+        $source = $this->sourceProduct($slug);
+        if ($source === null) {
+            return null;
+        }
+
+        return $this->read(fn () => $this->present($source), null);
+    }
+
     public function filtered(array $filters): Collection
     {
         $query = Str::ascii(mb_strtolower($filters['q'] ?? ''));

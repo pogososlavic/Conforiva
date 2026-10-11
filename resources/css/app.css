@@ -1097,6 +1097,19 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
 .admin-check input { width: 22px; height: 22px; flex-shrink: 0; accent-color: #805d00; }
 .admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
 .admin-product-preview { max-width: 240px; max-height: 240px; object-fit: contain; }
+.admin-inventory-thumb { display: block; width: 64px; height: 64px; object-fit: contain; border: 1px solid #e8ece4; border-radius: 8px; background: #fff; }
+.admin-inventory-thumb--empty { display: grid; place-items: center; color: #697064; font-size: 20px; }
+.admin-product-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 230px; }
+.admin-product-actions form { margin: 0; }
+.admin-product-actions .admin-primary, .admin-product-actions .admin-secondary, .admin-product-actions .admin-danger { min-height: 40px; padding: 8px 12px; font-size: 13px; }
+.admin-delete-details { position: relative; }
+.admin-delete-details summary { list-style: none; }
+.admin-delete-details summary::-webkit-details-marker { display: none; }
+.admin-delete-details form { display: grid; gap: 8px; min-width: 190px; padding: 10px; border: 1px solid #e2c2ba; border-radius: 8px; background: white; }
+.admin-delete-details label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.admin-delete-details input { width: 18px; height: 18px; min-height: 0; padding: 0; accent-color: #8c2f20; }
+.admin-danger { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 18px; border: 1px solid #a43d2a; border-radius: 8px; background: #fff; color: #8c2f20; font: inherit; font-weight: 700; cursor: pointer; }
+.admin-danger:hover { background: #fff0ed; }
 .admin-message { border: 1px solid #ddd6c2; border-radius: 12px; padding: 1rem; margin-block: 1rem; overflow-wrap: anywhere; }
 .admin-message p { white-space: pre-wrap; }
 .admin-message small { display: block; margin-top: .4rem; }
