@@ -1,13 +1,30 @@
-# A complete Laravel project lives here; only public/ may be served by a
-# deliberately configured document root. The bare local folder URL redirects
-# to the compatible PHP runtime; every other path remains inaccessible.
-<IfModule mod_authz_core.c>
-    <RequireAll>
-        Require local
-        Require expr "%{REQUEST_URI} =~ m#^/(?i:homya)/?$#"
-    </RequireAll>
-</IfModule>
+# The repository may be deployed at Hostinger's public_html document root.
+# Route public requests into Laravel's public/ directory; never serve the
+# application source tree directly.
+Options -Indexes
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Keep the existing local XAMPP entry point for the /HOMYA folder only.
+    RewriteCond %{REMOTE_ADDR} =127.0.0.1 [OR]
+    RewriteCond %{REMOTE_ADDR} =::1
+    RewriteCond %{REQUEST_URI} ^/HOMYA/?$ [NC]
     RewriteRule ^$ http://127.0.0.1:8080/fr [R=302,L]
+
+    # Hostinger and Laravel need access to ACME challenge files at the root.
+    RewriteRule ^\.well-known/acme-challenge/ - [L]
+
+    # Deny private source/configuration paths even if routing is unavailable.
+    RewriteRule "(^|/)\.(?!well-known/acme-challenge/)" - [F,L]
+    RewriteRule ^(?:app|bootstrap|config|database|vendor|node_modules|scripts|tests|output|docs)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|vite\.config\.[^/]+)$ - [F,L,NC]
+    RewriteRule "\.(?:sql|log|env|ini|bak|backup|orig|sh|py|pl|cgi|phar|phtml)(?:/|$)" - [F,L,NC]
+
+    # An internal rewrite sets REDIRECT_STATUS. Skip the root rewrite on that
+    # pass so public/.htaccess can serve assets and route Laravel requests.
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteRule ^$ public/ [L]
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteRule ^(.+)$ public/$1 [L]
 </IfModule>
