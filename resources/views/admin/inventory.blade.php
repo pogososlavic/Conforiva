@@ -5,7 +5,13 @@
 @forelse($inventory as $item)
 <tr>
 <td>@if($item->product_image)<img class="admin-inventory-thumb" src="{{ $item->product_image }}" width="64" height="64" alt="" loading="lazy">@else<span class="admin-inventory-thumb admin-inventory-thumb--empty" aria-label="Aucune photo">—</span>@endif</td>
-<th scope="row"><strong>{{ $item->product_name }}</strong><small>Réf. {{ $item->reference }}</small><small>@if($item->product_published)<a href="{{ route('product', ['locale' => 'fr', 'slug' => $item->slug]) }}">Voir le produit ↗</a>@else Produit masqué du catalogue@endif</small></th>
+<th scope="row"><strong>{{ $item->product_name }}</strong><small>Réf. {{ $item->reference }}</small><small>
+@if($item->product_published)
+<a href="{{ route('product', ['locale' => 'fr', 'slug' => $item->slug]) }}">Voir le produit ↗</a>
+@else
+Produit masqué du catalogue
+@endif
+</small></th>
 <td>{{ $item->approved_price_cents === null ? 'Non validé' : number_format($item->approved_price_cents / 100, 2, ',', ' ').' €' }}</td><td>{{ $item->quantity }}</td><td>{{ $item->reserved }}</td><td>{{ max(0, $item->quantity - $item->reserved) }}</td><td>{{ $item->sale_enabled ? 'Autorisée' : 'Suspendue' }}</td>
 @if(config('dashboard.enabled'))<td><div class="admin-product-actions"><a class="admin-secondary" href="{{ route('admin.product.edit', ['slug' => $item->slug]) }}">Modifier</a><form method="post" action="{{ route('admin.product.publication', ['slug' => $item->slug]) }}">@csrf<button class="admin-secondary" type="submit">{{ $item->product_published ? 'Suspendre' : 'Réafficher' }}</button></form><details class="admin-delete-details"><summary class="admin-danger">Supprimer</summary><form method="post" action="{{ route('admin.product.delete', ['slug' => $item->slug]) }}">@csrf @method('DELETE')<label><input type="checkbox" name="confirm" value="1" required> Confirmer</label><button class="admin-danger" type="submit">Confirmer la suppression</button></form></details></div></td>@endif
 </tr>
