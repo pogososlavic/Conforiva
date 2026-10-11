@@ -9,6 +9,16 @@ final class InitialInventory
 {
     public function prepare(Catalogue $catalogue): array
     {
+        return $this->prepareManifest($catalogue, false);
+    }
+
+    public function prepareDisplayOnly(Catalogue $catalogue): array
+    {
+        return $this->prepareManifest($catalogue, true);
+    }
+
+    private function prepareManifest(Catalogue $catalogue, bool $displayOnly): array
+    {
         app()->setLocale('fr');
         $products = $catalogue->products();
         if ($products->isEmpty() || $catalogue->sourceUnavailable() || $catalogue->translationUnavailable()) {
@@ -41,21 +51,24 @@ final class InitialInventory
                 $counts[$block] = ($counts[$block] ?? 0) + 1;
             }
             $rows[] = ['slug' => $product['slug'], 'reference' => $product['reference'],
-                'quantity' => 1000, 'approved_price_cents' => $product['price_cents'],
-                'sale_enabled' => $blocks === [], 'blocks' => $blocks,
+                'quantity' => $displayOnly ? 0 : 1000, 'approved_price_cents' => $product['price_cents'],
+                'sale_enabled' => ! $displayOnly && $blocks === [], 'blocks' => $blocks,
                 'catalogue_review_flags' => $product['issues']];
         }
 
-        return ['version' => 1, 'source' => 'user_declared_initial_quantity_1000',
+        return ['version' => $displayOnly ? 2 : 1,
+            'source' => $displayOnly ? 'catalogue_display_only_zero_stock' : 'user_declared_initial_quantity_1000',
             'currency' => 'EUR', 'prices_include_tax' => true, 'prepared_at' => now()->toIso8601String(),
             'summary' => ['products' => count($rows), 'sale_eligible' => count(array_filter($rows, fn ($row) => $row['sale_enabled'])),
-                'initial_units' => count($rows) * 1000, 'blocking_reasons' => $counts], 'products' => $rows];
+                'initial_units' => array_sum(array_column($rows, 'quantity')), 'blocking_reasons' => $counts], 'products' => $rows];
     }
 
     public function install(array $manifest, Catalogue $catalogue, OrderStore $orders): array
     {
-        $expected = $this->prepare($catalogue);
-        if (($manifest['version'] ?? null) !== 1 || ($manifest['source'] ?? null) !== $expected['source']
+        $displayOnly = ($manifest['version'] ?? null) === 2
+            && ($manifest['source'] ?? null) === 'catalogue_display_only_zero_stock';
+        $expected = $displayOnly ? $this->prepareDisplayOnly($catalogue) : $this->prepare($catalogue);
+        if (($manifest['version'] ?? null) !== $expected['version'] || ($manifest['source'] ?? null) !== $expected['source']
             || ($manifest['currency'] ?? null) !== 'EUR' || ($manifest['prices_include_tax'] ?? null) !== true
             || ($manifest['products'] ?? null) !== $expected['products']) {
             throw new RuntimeException('Inventory manifest and current catalogue differ.');

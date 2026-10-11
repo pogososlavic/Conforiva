@@ -10,23 +10,27 @@ use Throwable;
 
 final class PrepareCommerceInventory extends Command
 {
-    protected $signature = 'homya:commerce-inventory {--apply : Install the already reviewed initial manifest; requires separately authorized SQL} {--sha256= : Exact reviewed manifest digest} {--refresh : Preserve the previous manifest by digest before refreshing preparation}';
+    protected $signature = 'homya:commerce-inventory {--display-only : Prepare zero-stock rows with sales suspended} {--apply : Install the already reviewed initial manifest; requires separately authorized SQL} {--sha256= : Exact reviewed manifest digest} {--refresh : Preserve the previous manifest by digest before refreshing preparation}';
 
-    protected $description = 'Prepare a private 1000-unit-per-product inventory manifest without SQL; explicit installation is separate.';
+    protected $description = 'Prepare a private inventory manifest without SQL; explicit installation is separate.';
 
     public function handle(Catalogue $catalogue, InitialInventory $inventory, OrderStore $orders): int
     {
         $directory = storage_path('app/private/commerce');
-        $path = $directory.'/initial-inventory-v2.json';
+        $displayOnly = (bool) $this->option('display-only');
+        $path = $directory.($displayOnly ? '/initial-inventory-display-only.json' : '/initial-inventory-v2.json');
         try {
             if ($this->option('apply')) {
                 if (! is_file($path) || is_link($path) || ! hash_equals(hash_file('sha256', $path), (string) $this->option('sha256'))) {
                     throw new \RuntimeException;
                 }
                 $manifest = json_decode(file_get_contents($path), true, 64, JSON_THROW_ON_ERROR);
+                if (($manifest['source'] ?? null) !== ($displayOnly ? 'catalogue_display_only_zero_stock' : 'user_declared_initial_quantity_1000')) {
+                    throw new \RuntimeException;
+                }
                 $summary = $inventory->install($manifest, $catalogue, $orders);
             } else {
-                $manifest = $inventory->prepare($catalogue);
+                $manifest = $displayOnly ? $inventory->prepareDisplayOnly($catalogue) : $inventory->prepare($catalogue);
                 if (! is_dir($directory) && ! mkdir($directory, 0700, true)) {
                     throw new \RuntimeException;
                 }
