@@ -1,6 +1,16 @@
 <x-admin-layout title="Produits et stocks"><p class="admin-intro">Inventaire interne. Les variantes partagent le stock de leur produit.</p>
 @if(config('dashboard.enabled'))<p><a class="admin-primary" href="{{ route('admin.product.new') }}">Ajouter un produit</a></p>@endif
-<section class="admin-card"><form class="admin-filter" method="get" action="{{ route('admin.inventory') }}"><label for="q">Référence ou produit</label><input id="q" name="q" type="search" maxlength="120" value="{{ request('q') }}" placeholder="Rechercher une référence"><button class="admin-primary" type="submit">Rechercher</button></form>
+<section class="admin-card">
+<form class="admin-catalogue-filters" method="get" action="{{ route('admin.inventory') }}">
+<label class="admin-catalogue-filters__search">Référence ou identifiant produit<input id="q" name="q" type="search" maxlength="120" value="{{ request('q') }}" placeholder="Référence, slug ou identifiant"></label>
+<label>Vente<select name="sale"><option value="">Tous les états</option><option value="enabled" @selected(request('sale') === 'enabled')>Autorisée</option><option value="disabled" @selected(request('sale') === 'disabled')>Suspendue</option></select></label>
+<label>Stock<select name="stock"><option value="">Tous les niveaux</option><option value="available" @selected(request('stock') === 'available')>Disponible</option><option value="exhausted" @selected(request('stock') === 'exhausted')>Épuisé / réservé</option><option value="reserved" @selected(request('stock') === 'reserved')>Avec réservation</option></select></label>
+@if($publication_filter_available)<label>Affichage boutique<select name="publication"><option value="">Tous</option><option value="visible" @selected(request('publication') === 'visible')>Visible</option><option value="suspended" @selected(request('publication') === 'suspended')>Suspendu / masqué</option></select></label>@endif
+<label>Prix TTC minimum (€)<input name="min_price" type="number" min="0" max="999999.99" step="0.01" value="{{ request('min_price') }}" inputmode="decimal"></label>
+<label>Prix TTC maximum (€)<input name="max_price" type="number" min="0" max="999999.99" step="0.01" value="{{ request('max_price') }}" inputmode="decimal"></label>
+<div class="admin-catalogue-filters__actions"><button class="admin-primary" type="submit">Filtrer les produits</button><a class="admin-secondary" href="{{ route('admin.inventory') }}">Effacer les filtres</a></div>
+</form>
+<p class="admin-muted">{{ number_format($inventory->total(), 0, ',', ' ') }} produit(s) correspondant aux critères. 10 produits sont affichés par page.</p>
 <div class="admin-table-scroll" tabindex="0" role="region" aria-label="Inventaire interne"><table class="admin-table"><thead><tr><th scope="col">Photo</th><th scope="col">Produit / Référence</th><th scope="col">Prix TTC</th><th scope="col">Total</th><th scope="col">Réservé</th><th scope="col">Disponible</th><th scope="col">Vente</th>@if(config('dashboard.enabled'))<th scope="col">Actions</th>@endif</tr></thead><tbody>
 @forelse($inventory as $item)
 <tr>

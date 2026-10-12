@@ -1,19 +1,76 @@
 const panel = document.querySelector('[data-admin-notifications]');
+const soundToggle = document.querySelector('[data-admin-sound-toggle]');
 let busy = false;
+let soundEnabled = false;
+let audioContext = null;
+let orderBaselineReady = false;
+let latestOrderId = null;
+
+const playOrderSound = () => {
+    if (!soundEnabled || !audioContext || audioContext.state !== 'running') return;
+    const now = audioContext.currentTime;
+    const oscillator = audioContext.createOscillator();
+    const volume = audioContext.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, now);
+    oscillator.frequency.setValueAtTime(1174, now + 0.14);
+    volume.gain.setValueAtTime(0.001, now);
+    volume.gain.exponentialRampToValueAtTime(0.12, now + 0.025);
+    volume.gain.setValueAtTime(0.12, now + 0.14);
+    volume.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+    oscillator.connect(volume);
+    volume.connect(audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.33);
+};
+
+soundToggle?.addEventListener('click', async () => {
+    if (soundEnabled) {
+        soundEnabled = false;
+        soundToggle.setAttribute('aria-pressed', 'false');
+        soundToggle.textContent = 'Activer le son des commandes';
+        return;
+    }
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error('audio unavailable');
+        audioContext ??= new AudioContextClass();
+        await audioContext.resume();
+        soundEnabled = true;
+        soundToggle.setAttribute('aria-pressed', 'true');
+        soundToggle.textContent = 'Désactiver le son des commandes';
+        playOrderSound();
+        if (panel) panel.textContent = 'Son des nouvelles commandes activé.';
+    } catch {
+        if (panel) panel.textContent = 'Le son est indisponible dans ce navigateur.';
+    }
+});
+
 const refresh = async () => {
-    if (!panel || busy || document.hidden) return;
+    if (!panel || busy) return;
     busy = true;
     try {
         const response = await fetch(panel.dataset.adminNotifications, {headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}, cache: 'no-store', credentials: 'same-origin', redirect: 'error'});
         if (!response.ok) throw new Error('unavailable');
         const counts = await response.json();
-        for (const key of ['messages', 'notifications']) {
+        for (const key of ['messages', 'notifications', 'orders']) {
             const count = counts[key];
             if (!Number.isInteger(count) || count < 0) throw new Error('invalid');
             const badge = document.querySelector(`[data-admin-count="${key}"]`);
-            if (badge) badge.textContent = count > 0 ? String(count) : '';
+            if (badge) {
+                badge.textContent = count > 0 ? String(count) : '';
+                if (key === 'orders') {
+                    badge.setAttribute('aria-label', `${count} commande(s) non consultée(s)`);
+                    badge.title = `${count} commande(s) non consultée(s)`;
+                }
+            }
         }
-        panel.textContent = 'Notifications actualisées';
+        const currentLatestOrderId = typeof counts.latest_order_id === 'string' ? counts.latest_order_id : null;
+        const newOrderArrived = orderBaselineReady && currentLatestOrderId && currentLatestOrderId !== latestOrderId && counts.orders > 0;
+        latestOrderId = currentLatestOrderId;
+        orderBaselineReady = true;
+        panel.textContent = newOrderArrived ? 'Nouvelle commande reçue.' : 'Notifications actualisées';
+        if (newOrderArrived) playOrderSound();
     } catch { panel.textContent = 'Actualisation indisponible. Rechargez la page.'; }
     finally { busy = false; }
 };

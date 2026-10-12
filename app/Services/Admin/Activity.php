@@ -42,8 +42,15 @@ final class Activity
     public function counts(): array
     {
         $db = app(OrderStore::class)->connection();
+        $orders = $db->table('commerce_orders');
+        $hasViewedAt = $db->getSchemaBuilder()->hasColumn('commerce_orders', 'admin_viewed_at');
 
-        return ['messages' => $db->table('commerce_admin_threads')->where('unread', true)->count(), 'notifications' => $db->table('commerce_admin_events')->whereNotIn('type', self::TRAFFIC)->whereNull('read_at')->count()];
+        return [
+            'messages' => $db->table('commerce_admin_threads')->where('unread', true)->count(),
+            'notifications' => $db->table('commerce_admin_events')->whereNotIn('type', self::TRAFFIC)->whereNull('read_at')->count(),
+            'orders' => $hasViewedAt ? (clone $orders)->whereNull('admin_viewed_at')->count() : 0,
+            'latest_order_id' => (clone $orders)->orderByDesc('created_at')->orderByDesc('id')->value('id'),
+        ];
     }
 
     public function traffic(int $days = 14): array

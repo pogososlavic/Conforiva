@@ -16,7 +16,12 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
+# Hostinger production has no npm runtime: commit the locally built Vite bundle.
+!/public/build/
+/public/build/*
+!/public/build/manifest.json
+!/public/build/assets/
+!/public/build/assets/*
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage

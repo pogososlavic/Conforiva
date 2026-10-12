@@ -65,9 +65,21 @@ final class AdminController extends Controller
 
     public function orders(Request $request, AdminDashboard $dashboard)
     {
-        $data = $request->validate(['status' => ['nullable', Rule::in(array_keys(AdminDashboard::STATUSES))]]);
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:150'],
+            'status' => ['nullable', Rule::in(array_keys(AdminDashboard::STATUSES))],
+            'country' => ['nullable', Rule::in(config('commerce.countries', []))],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'read' => ['nullable', Rule::in(['read', 'unread'])],
+        ]);
 
-        return view('admin.orders', ['orders' => $dashboard->orders($data['status'] ?? null)]);
+        $db = app(OrderStore::class)->connection();
+
+        return view('admin.orders', [
+            'orders' => $dashboard->orders($data),
+            'read_filter_available' => $db->getSchemaBuilder()->hasColumn('commerce_orders', 'admin_viewed_at'),
+        ]);
     }
 
     public function order(string $id, AdminDashboard $dashboard)
@@ -90,9 +102,20 @@ final class AdminController extends Controller
 
     public function inventory(Request $request, AdminDashboard $dashboard)
     {
-        $data = $request->validate(['q' => ['nullable', 'string', 'max:120']]);
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'sale' => ['nullable', Rule::in(['enabled', 'disabled'])],
+            'stock' => ['nullable', Rule::in(['available', 'exhausted', 'reserved'])],
+            'publication' => ['nullable', Rule::in(['visible', 'suspended'])],
+            'min_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99', 'regex:/^\\d{1,6}(?:\\.\\d{1,2})?$/'],
+            'max_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99', 'regex:/^\\d{1,6}(?:\\.\\d{1,2})?$/', 'gte:min_price'],
+        ]);
+        $db = app(OrderStore::class)->connection();
 
-        return view('admin.inventory', ['inventory' => $dashboard->inventory($data['q'] ?? '')]);
+        return view('admin.inventory', [
+            'inventory' => $dashboard->inventory($data),
+            'publication_filter_available' => $db->getSchemaBuilder()->hasTable('commerce_admin_products'),
+        ]);
     }
 
     public function returns(AdminDashboard $dashboard)
