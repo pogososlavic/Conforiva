@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\AdminAccess;
 use App\Services\AdminDashboard;
 use App\Services\Commerce\CheckoutReadiness;
+use App\Services\Commerce\AutomaticOrderQuote;
+use App\Services\Commerce\OrderStore;
 use App\Services\ReturnRequests;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -71,6 +73,19 @@ final class AdminController extends Controller
     public function order(string $id, AdminDashboard $dashboard)
     {
         return view('admin.order', $dashboard->order($id));
+    }
+
+    public function retryOrderQuote(string $id, OrderStore $orders, AutomaticOrderQuote $quotes)
+    {
+        $db = $orders->connection();
+        abort_unless($db->getSchemaBuilder()->hasTable('commerce_order_quotes'), 503);
+        $status = $db->table('commerce_order_quotes')->where('order_id', $id)->value('status');
+        abort_unless($status === 'blocked', 409);
+        $order = $db->table('commerce_orders')->where('id', $id)->first();
+        abort_unless($order, 404);
+        $quotes->sendFor($order);
+
+        return to_route('admin.order', ['id' => $id])->with('admin_message', 'Le devis a été repris si les contrôles et la configuration sont prêts. Vérifiez son état sur cette page.');
     }
 
     public function inventory(Request $request, AdminDashboard $dashboard)

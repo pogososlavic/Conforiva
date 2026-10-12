@@ -2,6 +2,7 @@
 
 namespace App\Services\Commerce;
 
+use App\Services\Admin\BankDetailsSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use RuntimeException;
@@ -12,10 +13,25 @@ final class BankTransfer
 
     public function details(): ?array
     {
-        $details = config('commerce.bank');
+        $details = app(BankDetailsSettings::class)->current();
+        if ($details['enabled'] !== true) {
+            return null;
+        }
+
+        return $this->validatedDetails($details);
+    }
+
+    /** Return validated account details for commercial documents, even if checkout transfers are disabled. */
+    public function documentDetails(): ?array
+    {
+        return $this->validatedDetails(app(BankDetailsSettings::class)->current());
+    }
+
+    public function validatedDetails(array $details): ?array
+    {
         $iban = preg_replace('/\s+/', '', strtoupper((string) ($details['iban'] ?? '')));
         $bic = preg_replace('/\s+/', '', strtoupper((string) ($details['bic'] ?? '')));
-        if (config('commerce.bank.enabled') !== true || ! preg_match('/\A[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}\z/', $iban)
+        if (! preg_match('/\A[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}\z/', $iban)
             || ! preg_match('/\A[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?\z/', $bic)) {
             return null;
         }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Admin\Activity;
+use App\Services\Admin\BankDetailsSettings;
 use App\Services\Admin\Deliveries;
 use App\Services\Admin\Integrations;
 use App\Services\Admin\Messages;
@@ -172,22 +173,63 @@ final class AdminManagementController extends Controller
     public function saveSettings(Request $request, PrivateSettings $settings)
     {
         $this->reauthenticate($request);
-        $data = $request->validate(['version' => 'required|string|size:64', 'email' => 'nullable|email:rfc|max:254', 'phone' => ['nullable', 'regex:/\A\+[1-9][0-9]{7,14}\z/'], 'beneficiary' => 'nullable|string|max:200', 'iban' => 'nullable|string|max:42', 'bic' => 'nullable|string|max:19', 'bank_name' => 'nullable|string|max:200', 'bank_enabled' => 'nullable|boolean']);
-        $bank = ['enabled' => (bool) ($data['bank_enabled'] ?? false), 'beneficiary' => $data['beneficiary'] ?? '', 'iban' => strtoupper(preg_replace('/\s+/', '', $data['iban'] ?? '')), 'bic' => strtoupper($data['bic'] ?? ''), 'bank_name' => $data['bank_name'] ?? ''];
-        $before = config('commerce.bank');
-        try {
-            config(['commerce.bank' => $bank]);
-            if ($bank['enabled'] && app(BankTransfer::class)->details() === null) {
-                throw ValidationException::withMessages(['iban' => 'Le RIB est incomplet ou l’IBAN/BIC est invalide.']);
-            }
-        } finally {
-            config(['commerce.bank' => $before]);
-        }
-        $values = ['HOMYA_CONTACT_EMAIL' => $data['email'] ?? '', 'HOMYA_CONTACT_PHONE' => $data['phone'] ?? '', 'HOMYA_BANK_TRANSFER_ENABLED' => $bank['enabled'] ? 'true' : 'false', 'HOMYA_BANK_BENEFICIARY' => $bank['beneficiary'], 'HOMYA_BANK_IBAN' => $bank['iban'], 'HOMYA_BANK_BIC' => $bank['bic'], 'HOMYA_BANK_NAME' => $bank['bank_name']];
+        $data = $request->validate(['version' => 'required|string|size:64', 'email' => 'nullable|email:rfc|max:254', 'phone' => ['nullable', 'regex:/\A\+[1-9][0-9]{7,14}\z/']]);
+        $values = ['HOMYA_CONTACT_EMAIL' => $data['email'] ?? '', 'HOMYA_CONTACT_PHONE' => $data['phone'] ?? ''];
         $settings->save($values, $data['version']);
         app(Activity::class)->record('settings_saved', 'Paiements et contact', null, (string) Str::uuid());
 
         return back()->with('admin_message', 'Paramètres enregistrés. Vérifiez les états de disponibilité ci-dessous.');
+    }
+
+    public function bankSettings(BankDetailsSettings $settings, BankTransfer $transfers)
+    {
+        return view('admin.bank-settings', [
+            'bank' => $settings->current(),
+            'version' => $settings->version(),
+            'documentReady' => $transfers->documentDetails() !== null,
+            'hasBankValues' => collect($settings->current())->except('enabled')->contains(fn ($value) => $value !== ''),
+        ]);
+    }
+
+    public function saveBankSettings(Request $request, BankDetailsSettings $settings)
+    {
+        $this->reauthenticate($request);
+        $data = $request->validate([
+            'version' => 'required|string|size:64',
+            'beneficiary' => 'required|string|max:200',
+            'iban' => 'required|string|max:42',
+            'bic' => 'required|string|max:19',
+            'bank_name' => 'required|string|max:200',
+            'bank_enabled' => 'nullable|boolean',
+        ]);
+        $settings->save([
+            'enabled' => (bool) ($data['bank_enabled'] ?? false),
+            'beneficiary' => $data['beneficiary'],
+            'iban' => $data['iban'],
+            'bic' => $data['bic'],
+            'bank_name' => $data['bank_name'],
+        ], $data['version']);
+        try {
+            app(Activity::class)->record('settings_saved', 'RIB HOMYA', null, (string) Str::uuid());
+        } catch (\Throwable) {
+            // The encrypted settings file is authoritative; activity history is supplementary.
+        }
+
+        return to_route('admin.bank.settings')->with('admin_message', 'RIB HOMYA enregistré et chiffré. Il sera repris dans les prochains devis et bons de commande.');
+    }
+
+    public function deleteBankSettings(Request $request, BankDetailsSettings $settings)
+    {
+        $this->reauthenticate($request);
+        $data = $request->validate(['version' => 'required|string|size:64', 'confirmed' => 'required|accepted']);
+        $settings->delete($data['version']);
+        try {
+            app(Activity::class)->record('settings_saved', 'RIB HOMYA supprimé', null, (string) Str::uuid());
+        } catch (\Throwable) {
+            // The encrypted settings file is authoritative; activity history is supplementary.
+        }
+
+        return to_route('admin.bank.settings')->with('admin_message', 'RIB supprimé. Les commandes déjà enregistrées conservent leurs instructions bancaires.');
     }
 
     public function integrations(PrivateSettings $settings, Integrations $integrations)

@@ -81,6 +81,7 @@ final class CheckoutController extends CommerceController
         $request->session()->put('commerce.terms_accepted_at', $customer['terms_accepted_at']);
         $order = $orders->reserve($quote, $customer, $this->ownerHash($request, true), $data['checkout_key'], $locale);
         $request->session()->put('commerce.last_order', $order->id);
+        app(\App\Services\Commerce\AutomaticOrderQuote::class)->sendFor($order);
 
         return $this->paymentRedirect($order, $orders, $readiness, $locale);
     }
@@ -122,7 +123,9 @@ final class CheckoutController extends CommerceController
         $record = $store->find($document);
         abort_unless($record['status'] === 'issued' && $record['data']['order_id'] === $id, 404);
 
-        return response($store->pdf($record), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="'.$record['number'].'.pdf"']);
+        $filename = preg_replace('/[^A-Za-z0-9._-]/', '-', $record['number']).'.pdf';
+
+        return response($store->pdf($record), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="'.$filename.'"']);
     }
 
     public function retry(Request $request, OrderStore $orders, CheckoutReadiness $readiness, string $locale, string $id)

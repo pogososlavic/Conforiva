@@ -3,7 +3,9 @@
 namespace App\Services\Documents;
 
 use App\Services\AdminDashboard;
+use App\Services\Commerce\BankTransfer;
 use App\Services\ContactChannels;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -12,9 +14,17 @@ final class DocumentData
 {
     public const TYPES = ['quote' => 'Devis', 'purchase_order' => 'Bon de commande', 'invoice' => 'Facture'];
 
-    public static function money(int $cents): string
+    public const LANGUAGES = ['fr' => 'Français', 'en' => 'English', 'de' => 'Deutsch'];
+
+    public static function money(int $cents, string $locale = 'fr'): string
     {
-        return number_format($cents / 100, 2, ',', ' ').' €';
+        [$decimal, $thousands] = match ($locale) {
+            'en' => ['.', ','],
+            'de' => [',', '.'],
+            default => [',', ' '],
+        };
+
+        return number_format($cents / 100, 2, $decimal, $thousands).' €';
     }
 
     public static function decimal(int $cents): string
@@ -32,7 +42,7 @@ final class DocumentData
     public function blank(string $type, ?string $orderId = null): array
     {
         abort_unless(isset(self::TYPES[$type]), 404);
-        $data = ['type' => $type, 'order_id' => $orderId, 'customer' => ['name' => '', 'company' => '', 'email' => '', 'address' => '', 'postal_code' => '', 'city' => '', 'country' => '', 'siren' => '', 'vat' => ''], 'professional' => false, 'delivery_address' => '', 'buyer_reference' => '', 'tax_mode' => '', 'tax_note' => '', 'valid_until' => '', 'operation_date' => '', 'due_date' => '', 'payment_terms' => '', 'delivery_terms' => '', 'discount_terms' => '', 'late_terms' => '', 'legal_notes' => '', 'eco_reviewed' => false, 'guarantee_reviewed' => false, 'lines' => [['reference' => '', 'name' => '', 'quantity' => 1, 'price' => '', 'vat_rate' => '', 'eco' => '']]];
+        $data = ['type' => $type, 'order_id' => $orderId, 'document_language' => 'fr', 'customer' => ['name' => '', 'company' => '', 'email' => '', 'address' => '', 'postal_code' => '', 'city' => '', 'country' => '', 'siren' => '', 'vat' => ''], 'professional' => false, 'delivery_address' => '', 'buyer_reference' => '', 'tax_mode' => '', 'tax_note' => '', 'valid_until' => '', 'valid_until_at' => '', 'operation_date' => '', 'due_date' => '', 'payment_terms' => '', 'delivery_terms' => '', 'discount_terms' => '', 'late_terms' => '', 'legal_notes' => '', 'eco_reviewed' => false, 'guarantee_reviewed' => false, 'lines' => [['reference' => '', 'name' => '', 'quantity' => 1, 'price' => '', 'vat_rate' => '', 'eco' => '']]];
         if ($orderId) {
             $source = app(AdminDashboard::class)->order($orderId);
             $customer = $source['customer'];
@@ -51,7 +61,7 @@ final class DocumentData
     {
         $lines = [];
         foreach ($source['items'] as $item) {
-            $lines[] = ['reference' => $item->variant_reference ?: $item->reference, 'name' => $item->name.($item->variant_name ? ' · '.$item->variant_name : ''), 'quantity' => $item->quantity, 'price' => self::decimal($item->unit_price_cents), 'vat_rate' => '', 'eco' => ''];
+            $lines[] = ['reference' => $item->variant_reference ?: $item->reference, 'name' => $item->name.($item->variant_name ? ' · '.$item->variant_name : ''), 'quantity' => $item->quantity, 'price' => self::decimal($item->unit_price_cents), 'vat_rate' => isset($item->vat_rate_basis) ? self::decimal((int) $item->vat_rate_basis) : '', 'eco' => ''];
         }
         if ($source['order']->shipping_cents > 0) {
             $lines[] = ['reference' => 'LIVRAISON', 'name' => 'Frais de livraison', 'quantity' => 1, 'price' => self::decimal($source['order']->shipping_cents), 'vat_rate' => '', 'eco' => ''];
@@ -63,18 +73,23 @@ final class DocumentData
     public function normalize(array $input, array $existing): array
     {
         $text = 'nullable|string|max:2000';
+        $input['document_language'] ??= $existing['document_language'] ?? 'fr';
+        $input['valid_until_at'] ??= $existing['valid_until_at'] ?? '';
         if (is_array($input['customer'] ?? null) && is_string($input['customer']['country'] ?? null)) {
             $input['customer']['country'] = strtoupper(trim($input['customer']['country']));
         }
         $money = ['nullable', 'regex:/\A[0-9]{1,6}(?:[.,][0-9]{1,2})?\z/'];
-        $rules = ['customer' => 'required|array', 'customer.name' => 'nullable|string|max:150', 'customer.company' => 'nullable|string|max:200', 'customer.email' => 'nullable|email:rfc|max:254', 'customer.address' => 'nullable|string|max:300', 'customer.postal_code' => 'nullable|string|max:15', 'customer.city' => 'nullable|string|max:100', 'customer.country' => ['nullable', 'regex:/\A[A-Z]{2}\z/'], 'customer.siren' => 'nullable|regex:/\A[0-9]{9}\z/', 'customer.vat' => 'nullable|regex:/\A[A-Z]{2}[A-Z0-9]{2,15}\z/', 'professional' => 'nullable|boolean', 'delivery_address' => 'nullable|string|max:500', 'buyer_reference' => 'nullable|string|max:100', 'tax_mode' => ['nullable', Rule::in(['taxed', 'exempt', 'reverse'])], 'tax_note' => $text, 'valid_until' => 'nullable|date_format:Y-m-d', 'operation_date' => 'nullable|date_format:Y-m-d', 'due_date' => 'nullable|date_format:Y-m-d', 'payment_terms' => $text, 'delivery_terms' => $text, 'discount_terms' => $text, 'late_terms' => $text, 'legal_notes' => $text, 'eco_reviewed' => 'nullable|boolean', 'guarantee_reviewed' => 'nullable|boolean', 'lines' => 'required|array|min:1|max:50', 'lines.*' => 'required|array', 'lines.*.reference' => 'nullable|string|max:255', 'lines.*.name' => 'nullable|string|max:600', 'lines.*.quantity' => 'required|integer|min:1|max:10000', 'lines.*.price' => $money, 'lines.*.vat_rate' => ['nullable', 'regex:/\A[0-9]{1,2}(?:[.,][0-9]{1,2})?\z/'], 'lines.*.eco' => $money];
+        $rules = ['document_language' => ['required', Rule::in(array_keys(self::LANGUAGES))], 'customer' => 'required|array', 'customer.name' => 'nullable|string|max:150', 'customer.company' => 'nullable|string|max:200', 'customer.email' => 'nullable|email:rfc|max:254', 'customer.address' => 'nullable|string|max:300', 'customer.postal_code' => 'nullable|string|max:15', 'customer.city' => 'nullable|string|max:100', 'customer.country' => ['nullable', 'regex:/\A[A-Z]{2}\z/'], 'customer.siren' => 'nullable|regex:/\A[0-9]{9}\z/', 'customer.vat' => 'nullable|regex:/\A[A-Z]{2}[A-Z0-9]{2,15}\z/', 'professional' => 'nullable|boolean', 'delivery_address' => 'nullable|string|max:500', 'buyer_reference' => 'nullable|string|max:100', 'tax_mode' => ['nullable', Rule::in(['taxed', 'exempt', 'reverse'])], 'tax_note' => $text, 'valid_until' => 'nullable|date_format:Y-m-d', 'valid_until_at' => 'nullable|date', 'operation_date' => 'nullable|date_format:Y-m-d', 'due_date' => 'nullable|date_format:Y-m-d', 'payment_terms' => $text, 'delivery_terms' => $text, 'discount_terms' => $text, 'late_terms' => $text, 'legal_notes' => $text, 'eco_reviewed' => 'nullable|boolean', 'guarantee_reviewed' => 'nullable|boolean', 'lines' => 'required|array|min:1|max:50', 'lines.*' => 'required|array', 'lines.*.reference' => 'nullable|string|max:255', 'lines.*.name' => 'nullable|string|max:600', 'lines.*.quantity' => 'required|integer|min:1|max:10000', 'lines.*.price' => $money, 'lines.*.vat_rate' => ['nullable', 'regex:/\A[0-9]{1,2}(?:[.,][0-9]{1,2})?\z/'], 'lines.*.eco' => $money];
         $data = Validator::make($input, $rules)->validate();
         $data['type'] = $existing['type'];
         $data['order_id'] = $existing['order_id'];
+        $data['bank_details'] = in_array($data['type'], ['quote', 'purchase_order'], true)
+            ? app(BankTransfer::class)->documentDetails()
+            : null;
         foreach (['professional', 'eco_reviewed', 'guarantee_reviewed'] as $key) {
             $data[$key] = (bool) ($data[$key] ?? false);
         }
-        foreach (['delivery_address', 'buyer_reference', 'tax_mode', 'tax_note', 'valid_until', 'operation_date', 'due_date', 'payment_terms', 'delivery_terms', 'discount_terms', 'late_terms', 'legal_notes'] as $key) {
+        foreach (['delivery_address', 'buyer_reference', 'tax_mode', 'tax_note', 'valid_until', 'valid_until_at', 'operation_date', 'due_date', 'payment_terms', 'delivery_terms', 'discount_terms', 'late_terms', 'legal_notes'] as $key) {
             $data[$key] ??= '';
         }
         $data['customer'] = array_intersect_key($data['customer'], $this->blank($data['type'])['customer']);
@@ -140,6 +155,9 @@ final class DocumentData
                 $errors[] = $label.' à renseigner.';
             }
         }
+        if (in_array($data['type'], ['quote', 'purchase_order'], true) && empty($data['bank_details'])) {
+            $errors[] = 'Renseignez un RIB HOMYA valide dans le dashboard avant d’émettre ce document.';
+        }
         if (in_array($data['tax_mode'], ['exempt', 'reverse'], true) && empty($data['tax_note'])) {
             $errors[] = 'Renseignez le fondement légal de l’exonération ou de l’autoliquidation.';
         }
@@ -159,8 +177,19 @@ final class DocumentData
             $errors[] = 'Vérifiez les éco-contributions incluses et les mentions de garantie applicables.';
         }
         $today = now('Europe/Paris')->toDateString();
-        if ($data['type'] === 'quote' && (empty($data['valid_until']) || $data['valid_until'] < $today)) {
-            $errors[] = 'Renseignez une date de validité du devis non passée.';
+        if ($data['type'] === 'quote') {
+            $valid = false;
+            try {
+                $validUntilAt = $data['valid_until_at'] ?? '';
+                $valid = ! empty($validUntilAt)
+                    ? Carbon::parse($validUntilAt)->isFuture()
+                    : (! empty($data['valid_until']) && $data['valid_until'] >= $today);
+            } catch (\Throwable) {
+                $valid = false;
+            }
+            if (! $valid) {
+                $errors[] = 'Renseignez une échéance de validité du devis future.';
+            }
         }
         if ($data['type'] === 'invoice') {
             if (empty($data['operation_date']) || $data['operation_date'] > $today) {

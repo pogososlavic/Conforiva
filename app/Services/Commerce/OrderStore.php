@@ -37,12 +37,17 @@ final class OrderStore
         if (! ($quote['valid'] ?? false) || ! in_array($customer['country'], config('commerce.countries'), true)) {
             $this->reject();
         }
+        $db = $this->connection();
         $snapshot = [];
+        $vatSnapshotReady = $db->getSchemaBuilder()->hasColumn('commerce_order_items', 'vat_class')
+            && $db->getSchemaBuilder()->hasColumn('commerce_order_items', 'vat_rate_basis');
         foreach ($quote['lines'] as $line) {
             $product = $line['product'];
+            $vat = $vatSnapshotReady ? app(VatRateResolver::class)->forProduct($product, $customer['country']) : null;
             $snapshot[] = ['line_key' => $line['key'], 'slug' => $line['slug'], 'reference' => $product['reference'], 'name' => $product['name'],
                 'variant_id' => $line['variant_id'], 'variant_name' => $line['variant_name'], 'variant_reference' => $line['variant_reference'],
-                'quantity' => $line['quantity'], 'unit_price_cents' => $product['price_cents'], 'line_cents' => $line['line_cents']];
+                'quantity' => $line['quantity'], 'unit_price_cents' => $product['price_cents'], 'line_cents' => $line['line_cents']]
+                + ($vat ?? []);
         }
         usort($snapshot, fn ($a, $b) => strcmp($a['line_key'], $b['line_key']));
         $quantities = [];
@@ -50,7 +55,6 @@ final class OrderStore
             $quantities[$line['slug']] = ($quantities[$line['slug']] ?? 0) + $line['quantity'];
         }
         $hash = hash('sha256', json_encode([$snapshot, $customer, $locale], JSON_THROW_ON_ERROR));
-        $db = $this->connection();
 
         $this->expireBankTransfers();
 

@@ -18,7 +18,7 @@
 <a href="{{ route('admin.'.$key) }}" @if($active) aria-current="page" @endif>{{ $label }}</a>
 @endforeach
 @if(config('dashboard.enabled'))
-@foreach(['documents.index' => 'Documents commerciaux', 'deliveries' => 'Livraisons','inbox' => 'Messages clients','activity' => 'Activité et notifications','settings' => 'Vendeur et paiements','integrations' => 'Google et Meta'] as $key => $label)<a href="{{ route('admin.'.$key) }}" @if(request()->routeIs('admin.'.$key) || ($key === 'documents.index' && request()->routeIs('admin.documents.*')) || ($key === 'inbox' && request()->routeIs('admin.thread'))) aria-current="page" @endif>{{ $label }} @if(in_array($key, ['inbox','activity']))<span data-admin-count="{{ $key === 'inbox' ? 'messages' : 'notifications' }}" aria-label="À lire"></span>@endif</a>@endforeach
+@foreach(['documents.index' => 'Documents commerciaux', 'deliveries' => 'Livraisons','inbox' => 'Messages clients','activity' => 'Activité et notifications','bank.settings' => 'RIB HOMYA','settings' => 'Vendeur et paiements','integrations' => 'Google et Meta'] as $key => $label)<a href="{{ route('admin.'.$key) }}" @if(request()->routeIs('admin.'.$key) || ($key === 'documents.index' && request()->routeIs('admin.documents.*')) || ($key === 'inbox' && request()->routeIs('admin.thread'))) aria-current="page" @endif>{{ $label }} @if(in_array($key, ['inbox','activity']))<span data-admin-count="{{ $key === 'inbox' ? 'messages' : 'notifications' }}" aria-label="À lire"></span>@endif</a>@endforeach
 <p data-admin-notifications="{{ route('admin.notifications') }}" role="status" aria-live="polite"></p>
 @endif
 </nav><p>Les quantités de stock sont visibles uniquement dans cet espace privé.</p>

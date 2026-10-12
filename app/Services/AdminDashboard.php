@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Services\Commerce\OrderStore;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 final class AdminDashboard
 {
@@ -42,7 +43,10 @@ final class AdminDashboard
         $customer = json_decode(Crypt::decryptString($order->customer_encrypted), true, 32, JSON_THROW_ON_ERROR);
 
         return ['order' => $order, 'customer' => $customer,
-            'items' => $db->table('commerce_order_items')->where('order_id', $id)->orderBy('id')->get()];
+            'items' => $db->table('commerce_order_items')->where('order_id', $id)->orderBy('id')->get(),
+            'automatic_quote' => Schema::connection('commerce')->hasTable('commerce_order_quotes')
+                ? $db->table('commerce_order_quotes')->where('order_id', $id)->first()
+                : null];
     }
 
     public function inventory(string $query)

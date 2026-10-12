@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Admin\Activity;
+use App\Services\Commerce\BankTransfer;
 use App\Services\Documents\DocumentData;
 use App\Services\Documents\DocumentStore;
 use Illuminate\Http\Request;
@@ -47,9 +48,12 @@ final class AdminDocumentController extends Controller
         return to_route('admin.documents.edit', ['id' => $record['id']])->with('admin_message', 'Brouillon créé. Aucun numéro ni paiement attribué.');
     }
 
-    public function edit(DocumentStore $store, DocumentData $data, string $id)
+    public function edit(DocumentStore $store, DocumentData $data, BankTransfer $bank, string $id)
     {
         $record = $store->find($id);
+        if ($record['status'] === 'draft' && in_array($record['data']['type'], ['quote', 'purchase_order'], true)) {
+            $record['data']['bank_details'] = $bank->documentDetails();
+        }
 
         return view('admin.documents.edit', ['record' => $record, 'data' => $record['data'], 'missing' => $record['status'] === 'draft' ? $data->missing($record['data']) : [], 'series' => $record['status'] === 'draft' ? $store->currentSeries($record['data']['type']) : null]);
     }
@@ -64,11 +68,14 @@ final class AdminDocumentController extends Controller
 
     public function issue(Request $request, DocumentStore $store, Activity $activity, string $id)
     {
-        $data = $request->validate(['revision' => 'required|integer|min:1', 'confirmed' => 'required|accepted', 'password' => 'required|string|max:200', 'prefix' => 'nullable|string|max:26', 'first_sequence' => 'nullable|integer|min:1|max:99999999', 'series_confirmed' => 'sometimes|accepted']);
+        $data = $request->validate(['revision' => 'required|integer|min:1', 'confirmed' => 'required|accepted', 'password' => 'required|string|max:200', 'document_language' => ['sometimes', Rule::in(array_keys(DocumentData::LANGUAGES))]]);
         if (! Hash::check($data['password'], config('admin.password_hash'))) {
             throw ValidationException::withMessages(['password' => 'Mot de passe administrateur incorrect.']);
         }
-        $record = $store->issue($id, (int) $data['revision'], $data);
+        $record = $store->issue($id, (int) $data['revision'], $data + [
+            'series_confirmed' => true,
+            'first_sequence' => (int) config('documents.numbering.first_sequence'),
+        ]);
         // Issuance is already committed. A notification failure must never invalidate it or allocate again.
         try {
             $activity->record('document_issued', $record['number'], key: $id);
@@ -88,11 +95,15 @@ final class AdminDocumentController extends Controller
         return to_route('admin.documents.edit', ['id' => $record['id']])->with('admin_message', 'Nouveau brouillon créé. Le document d’origine est conservé.');
     }
 
-    public function download(DocumentStore $store, string $id)
+    public function download(Request $request, DocumentStore $store, string $id)
     {
         $record = $store->find($id);
-        $name = ($record['number'] ?? 'BROUILLON-'.$record['id']).'.pdf';
+        $language = null;
+        if ($record['status'] === 'draft') {
+            $language = $request->validate(['language' => ['nullable', Rule::in(array_keys(DocumentData::LANGUAGES))]])['language'] ?? null;
+        }
+        $name = preg_replace('/[^A-Za-z0-9._-]/', '-', $record['number'] ?? 'BROUILLON-'.$record['id']).'.pdf';
 
-        return response($store->pdf($record), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="'.$name.'"']);
+        return response($store->pdf($record, $language), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="'.$name.'"']);
     }
 }

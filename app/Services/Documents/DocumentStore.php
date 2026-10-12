@@ -149,15 +149,16 @@ final class DocumentStore
         return array_values(array_filter($this->all(), fn ($record) => $record['data']['order_id'] === $orderId && (! $issuedOnly || $record['status'] === 'issued')));
     }
 
-    public function create(string $type, ?string $orderId = null, ?array $copy = null, ?array $source = null): array
+    public function create(string $type, ?string $orderId = null, ?array $copy = null, ?array $source = null, string $origin = 'admin'): array
     {
+        abort_unless(in_array($origin, ['admin', 'automatic_order_quote'], true), 422);
         $data = $copy ?? app(DocumentData::class)->blank($type, $orderId);
         abort_unless(isset(DocumentData::TYPES[$type]), 404);
         $data['type'] = $type;
         $data = app(DocumentData::class)->normalize($data, $data);
 
-        return $this->locked(function () use ($data, $source) {
-            $record = ['id' => (string) Str::uuid(), 'revision' => 1, 'status' => 'draft', 'number' => null, 'source_document' => $source, 'created_at' => now()->toIso8601String(), 'updated_at' => now()->toIso8601String(), 'data' => $data, 'history' => [['action' => 'created', 'at' => now()->toIso8601String()]]];
+        return $this->locked(function () use ($data, $source, $origin) {
+            $record = ['id' => (string) Str::uuid(), 'revision' => 1, 'status' => 'draft', 'number' => null, 'origin' => $origin, 'source_document' => $source, 'created_at' => now()->toIso8601String(), 'updated_at' => now()->toIso8601String(), 'data' => $data, 'history' => [['action' => 'created', 'at' => now()->toIso8601String()]]];
             $this->commit($this->root().'/'.$record['id'].'-draft-00000001.encrypted', $record);
 
             return $record;
@@ -186,14 +187,26 @@ final class DocumentStore
         }
     }
 
-    private function series(array $records, string $type, int $year): ?array
+    private function series(array $records): ?array
     {
         $series = null;
         foreach ($records as $record) {
-            if ($record['status'] === 'issued' && $record['data']['type'] === $type && $record['series']['year'] === $year) {
-                if (! $series || $record['series']['sequence'] > $series['sequence']) {
-                    $series = $record['series'];
-                }
+            if ($record['status'] !== 'issued') {
+                continue;
+            }
+            $sequence = ($record['series']['scope'] ?? null) === config('documents.numbering.scope')
+                ? ($record['series']['sequence'] ?? null) : null;
+            if ($sequence === null && preg_match('/\AHOMYA\/(?:FR|EN|DE)-([0-9]{3,})\z/', (string) ($record['number'] ?? ''), $match) === 1) {
+                $sequence = (int) $match[1];
+            }
+            if (is_numeric($sequence) && (! $series || (int) $sequence > (int) $series['sequence'])) {
+                $series = [
+                    'scope' => config('documents.numbering.scope'),
+                    'prefix' => config('documents.numbering.prefix'),
+                    'sequence' => (int) $sequence,
+                    'language' => $record['data']['document_language'] ?? 'fr',
+                    'type' => $record['data']['type'],
+                ];
             }
         }
 
@@ -202,7 +215,9 @@ final class DocumentStore
 
     public function currentSeries(string $type): ?array
     {
-        return $this->locked(fn () => $this->series($this->records(), $type, (int) now('Europe/Paris')->format('Y')));
+        abort_unless(isset(DocumentData::TYPES[$type]), 404);
+
+        return $this->locked(fn () => $this->series($this->records()));
     }
 
     public function issue(string $id, int $revision, array $numbering, ?callable $renderer = null): array
@@ -214,6 +229,11 @@ final class DocumentStore
             }
             $this->editable($record, $revision);
             $data = app(DocumentData::class)->normalize($record['data'], $record['data']);
+            $language = $numbering['document_language'] ?? $data['document_language'] ?? 'fr';
+            if (! isset(DocumentData::LANGUAGES[$language])) {
+                throw ValidationException::withMessages(['document_language' => 'Choisissez une langue disponible pour le document.']);
+            }
+            $data['document_language'] = $language;
             $missing = app(DocumentData::class)->missing($data);
             if ($missing) {
                 throw ValidationException::withMessages(['document' => $missing]);
@@ -226,20 +246,27 @@ final class DocumentStore
                     }
                 }
             }
-            $year = (int) now('Europe/Paris')->format('Y');
-            $series = $this->series($records, $data['type'], $year);
+            $series = $this->series($records);
             if ($series) {
                 $series['sequence']++;
             } else {
-                if (empty($numbering['series_confirmed']) || empty($numbering['prefix']) || ! preg_match('/\A[A-Z0-9][A-Z0-9-]{1,25}\z/', $numbering['prefix']) || (int) ($numbering['first_sequence'] ?? 0) < 1 || (int) $numbering['first_sequence'] > 99999999) {
-                    throw ValidationException::withMessages(['numbering' => 'Confirmez le périmètre HOMYA / type / année et renseignez le préfixe et le premier numéro après vérification de l’historique.']);
+                $prefix = (string) config('documents.numbering.prefix');
+                $first = (int) config('documents.numbering.first_sequence');
+                if ($prefix !== 'HOMYA' || empty($numbering['series_confirmed']) || (int) ($numbering['first_sequence'] ?? 0) !== $first) {
+                    throw ValidationException::withMessages(['numbering' => 'La série globale HOMYA doit commencer au numéro confirmé et ne peut être modifiée dans un brouillon.']);
                 }
-                $series = ['scope' => 'HOMYA/type/year', 'year' => $year, 'prefix' => $numbering['prefix'], 'sequence' => (int) $numbering['first_sequence'], 'confirmed_at' => now()->toIso8601String()];
+                $series = ['scope' => config('documents.numbering.scope'), 'prefix' => $prefix, 'sequence' => $first, 'confirmed_at' => now()->toIso8601String()];
             }
             if ($series['sequence'] > 99999999) {
                 throw ValidationException::withMessages(['numbering' => 'La série est épuisée ; une nouvelle règle doit être définie.']);
             }
-            $number = $series['prefix'].'-'.str_pad((string) $series['sequence'], 4, '0', STR_PAD_LEFT);
+            $language = (string) $data['document_language'];
+            $languageCode = config('documents.numbering.language_codes.'.$language);
+            if (! is_string($languageCode) || ! preg_match('/\A[A-Z]{2}\z/', $languageCode)) {
+                throw ValidationException::withMessages(['document_language' => 'La langue sélectionnée ne possède pas de code de numérotation.']);
+            }
+            $digits = max(3, (int) config('documents.numbering.minimum_digits', 3));
+            $number = $series['prefix'].'/'.$languageCode.'-'.str_pad((string) $series['sequence'], $digits, '0', STR_PAD_LEFT);
             foreach ($records as $other) {
                 if (($other['number'] ?? null) === $number) {
                     throw ValidationException::withMessages(['numbering' => 'Ce numéro existe déjà dans les archives HOMYA.']);
@@ -249,6 +276,8 @@ final class DocumentStore
             $record['issuer'] = app(DocumentData::class)->issuer();
             $record['status'] = 'issued';
             $record['number'] = $number;
+            $series['language'] = $language;
+            $series['type'] = $data['type'];
             $record['series'] = $series;
             $record['issued_at'] = now('Europe/Paris')->toIso8601String();
             $record['updated_at'] = $record['issued_at'];
@@ -265,9 +294,18 @@ final class DocumentStore
         }, true);
     }
 
-    public function pdf(array $record): string
+    public function pdf(array $record, ?string $previewLanguage = null): string
     {
         if ($record['status'] === 'draft') {
+            if (in_array($record['data']['type'], ['quote', 'purchase_order'], true)) {
+                $record['data']['bank_details'] = app(BankTransfer::class)->documentDetails();
+            }
+            if ($previewLanguage !== null) {
+                if (! isset(DocumentData::LANGUAGES[$previewLanguage])) {
+                    throw ValidationException::withMessages(['language' => 'Choisissez une langue disponible pour le document.']);
+                }
+                $record['data']['document_language'] = $previewLanguage;
+            }
             $record['issuer'] = app(DocumentData::class)->issuer();
 
             return app(DocumentPdf::class)->render($record);

@@ -41,10 +41,12 @@ Route::prefix('admin')->middleware(AdminBoundary::class)->group(function () {
     Route::get('/activite', [AdminManagementController::class, 'activity'])->name('admin.activity');
     Route::get('/notifications', [AdminManagementController::class, 'notifications'])->middleware('throttle:60,1')->name('admin.notifications');
     Route::get('/parametres', [AdminManagementController::class, 'settings'])->name('admin.settings');
+    Route::get('/parametres/rib', [AdminManagementController::class, 'bankSettings'])->name('admin.bank.settings');
     Route::get('/integrations/google/autoriser', [AdminManagementController::class, 'googleConnect'])->middleware('throttle:admin-oauth')->block()->name('admin.google.connect');
     Route::get('/integrations/google/retour', [AdminManagementController::class, 'googleCallback'])->middleware('throttle:admin-oauth')->block()->name('admin.google.callback');
     Route::get('/integrations', [AdminManagementController::class, 'integrations'])->name('admin.integrations');
     Route::middleware('throttle:admin-write')->group(function () {
+        Route::post('/commandes/{id}/devis/renvoyer', [AdminController::class, 'retryOrderQuote'])->whereUuid('id')->block()->name('admin.order.quote.retry');
         Route::post('/documents', [AdminDocumentController::class, 'create'])->block()->name('admin.documents.create');
         Route::post('/documents/{id}', [AdminDocumentController::class, 'save'])->whereUuid('id')->block()->name('admin.documents.save');
         Route::post('/documents/{id}/emettre', [AdminDocumentController::class, 'issue'])->whereUuid('id')->block()->middleware('throttle:admin-document-issue')->name('admin.documents.issue');
@@ -60,6 +62,8 @@ Route::prefix('admin')->middleware(AdminBoundary::class)->group(function () {
         Route::post('/commandes/{id}/annuler', [AdminManagementController::class, 'cancel'])->whereUuid('id')->block()->name('admin.cancel');
         Route::post('/commandes/{id}/reception', [AdminManagementController::class, 'bankReceipt'])->whereUuid('id')->block()->name('admin.receipt');
         Route::post('/parametres', [AdminManagementController::class, 'saveSettings'])->block()->name('admin.settings.save');
+        Route::post('/parametres/rib', [AdminManagementController::class, 'saveBankSettings'])->block()->name('admin.bank.settings.save');
+        Route::delete('/parametres/rib', [AdminManagementController::class, 'deleteBankSettings'])->block()->name('admin.bank.settings.delete');
         Route::post('/integrations', [AdminManagementController::class, 'saveIntegrations'])->block()->name('admin.integrations.save');
         Route::post('/integrations/{service}/synchroniser', [AdminManagementController::class, 'synchronize'])->whereIn('service', ['ga4', 'gsc', 'ads', 'merchant', 'meta'])->block()->name('admin.integrations.sync');
     });
