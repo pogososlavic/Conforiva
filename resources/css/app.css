@@ -1036,11 +1036,14 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
 .admin-sidebar nav a:hover { background: #f9e59a; }
 .admin-count-badge:not(:empty) { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-left: 8px; padding: 0 6px; border-radius: 999px; background: #a52d1f; color: #fff; font-size: 11px; font-weight: 800; line-height: 1; vertical-align: middle; }
 .admin-count-badge:empty { display: none; }
+.admin-sidebar nav a .admin-count-badge:not(:empty) { box-shadow: 0 0 0 2px #fffaf0; }
 .admin-notification-status { min-height: 18px; margin: 12px 0 6px !important; font-size: 12px !important; }
 .admin-sound-toggle { width: 100%; margin-top: 4px; font-size: 12px; }
 .admin-sound-toggle[aria-pressed="true"] { border-color: #87701d; background: #fff9df; }
 .admin-sound-toggle:focus-visible { outline: 3px solid #805d00; outline-offset: 2px; }
 .admin-sound-help { margin: 8px 0 20px !important; font-size: 11px !important; line-height: 1.5; }
+.admin-new-order-alert:not([hidden]) { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin: 0 0 22px; padding: 16px 18px; border: 1px solid #b77e00; border-left: 6px solid #a52d1f; border-radius: 10px; background: #fff2c2; color: #352800; font-weight: 700; box-shadow: 0 5px 18px #59440e16; }
+.admin-new-order-alert a { color: #5c4100; font-weight: 800; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 .admin-sidebar p { font-size: 13px; color: #5e655b; margin-block: 28px; }
 .admin-main { min-width: 0; padding: 32px; }
 .admin-main h1 { font-family: var(--font-sans); font-size: clamp(28px, 3vw, 38px); font-weight: 750; letter-spacing: -.035em; margin: 0 0 12px; line-height: 1.2; }

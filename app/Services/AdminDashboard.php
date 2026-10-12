@@ -79,6 +79,10 @@ final class AdminDashboard
         if ($db->getSchemaBuilder()->hasColumn('commerce_orders', 'admin_viewed_at')) {
             $db->table('commerce_orders')->where('id', $id)->whereNull('admin_viewed_at')->update(['admin_viewed_at' => now()]);
         }
+        if ($db->getSchemaBuilder()->hasTable('commerce_admin_events')) {
+            $db->table('commerce_admin_events')->where('type', 'order_created')->where('subject', $id)
+                ->whereNull('read_at')->update(['read_at' => now(), 'updated_at' => now()]);
+        }
 
         $quoteTrackingAvailable = Schema::connection('commerce')->hasTable('commerce_order_quotes');
 

@@ -44,11 +44,15 @@ final class Activity
         $db = app(OrderStore::class)->connection();
         $orders = $db->table('commerce_orders');
         $hasViewedAt = $db->getSchemaBuilder()->hasColumn('commerce_orders', 'admin_viewed_at');
+        $hasEvents = $db->getSchemaBuilder()->hasTable('commerce_admin_events');
+        $unreadOrders = $hasViewedAt
+            ? (clone $orders)->whereNull('admin_viewed_at')->count()
+            : ($hasEvents ? $db->table('commerce_admin_events')->where('type', 'order_created')->whereNull('read_at')->count() : 0);
 
         return [
             'messages' => $db->table('commerce_admin_threads')->where('unread', true)->count(),
             'notifications' => $db->table('commerce_admin_events')->whereNotIn('type', self::TRAFFIC)->whereNull('read_at')->count(),
-            'orders' => $hasViewedAt ? (clone $orders)->whereNull('admin_viewed_at')->count() : 0,
+            'orders' => $unreadOrders,
             'latest_order_id' => (clone $orders)->orderByDesc('created_at')->orderByDesc('id')->value('id'),
         ];
     }

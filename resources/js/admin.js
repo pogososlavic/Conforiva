@@ -1,5 +1,6 @@
 const panel = document.querySelector('[data-admin-notifications]');
 const soundToggle = document.querySelector('[data-admin-sound-toggle]');
+const newOrderAlert = document.querySelector('[data-admin-new-order-alert]');
 let busy = false;
 let soundEnabled = false;
 let audioContext = null;
@@ -40,6 +41,9 @@ soundToggle?.addEventListener('click', async () => {
         soundToggle.setAttribute('aria-pressed', 'true');
         soundToggle.textContent = 'Désactiver le son des commandes';
         playOrderSound();
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { await Notification.requestPermission(); } catch { /* Browser notifications are optional; the sound remains enabled. */ }
+        }
         if (panel) panel.textContent = 'Son des nouvelles commandes activé.';
     } catch {
         if (panel) panel.textContent = 'Le son est indisponible dans ce navigateur.';
@@ -66,15 +70,25 @@ const refresh = async () => {
             }
         }
         const currentLatestOrderId = typeof counts.latest_order_id === 'string' ? counts.latest_order_id : null;
-        const newOrderArrived = orderBaselineReady && currentLatestOrderId && currentLatestOrderId !== latestOrderId && counts.orders > 0;
+        const newOrderArrived = orderBaselineReady && currentLatestOrderId && currentLatestOrderId !== latestOrderId;
         latestOrderId = currentLatestOrderId;
         orderBaselineReady = true;
         panel.textContent = newOrderArrived ? 'Nouvelle commande reçue.' : 'Notifications actualisées';
-        if (newOrderArrived) playOrderSound();
+        if (newOrderArrived) {
+            playOrderSound();
+            if (newOrderAlert) newOrderAlert.hidden = false;
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    const notification = new Notification('Nouvelle commande HOMYA', {body: 'Une commande vient d’être enregistrée. Consultez le menu Commandes.'});
+                    notification.onclick = () => { window.focus(); window.location.href = panel.dataset.adminOrdersUrl; };
+                } catch { /* Keep the in-page alert and sound if the browser blocks system notifications. */ }
+            }
+        }
     } catch { panel.textContent = 'Actualisation indisponible. Rechargez la page.'; }
     finally { busy = false; }
 };
-if (panel) { refresh(); setInterval(refresh, 30000); document.addEventListener('visibilitychange', refresh); }
+if (panel) { refresh(); setInterval(refresh, 10000); document.addEventListener('visibilitychange', refresh); }
+newOrderAlert?.querySelector('a')?.addEventListener('click', () => { newOrderAlert.hidden = true; });
 document.querySelectorAll('.admin-form').forEach(form => form.addEventListener('submit', () => {
     if (!form.checkValidity()) return;
     const button = form.querySelector('button[type="submit"], button:not([type])');
