@@ -82,6 +82,9 @@ final class CheckoutController extends CommerceController
         $request->session()->put('commerce.terms_accepted_at', $customer['terms_accepted_at']);
         $order = $orders->reserve($quote, $customer, $this->ownerHash($request, true), $data['checkout_key'], $locale);
         $request->session()->put('commerce.last_order', $order->id);
+        // The order now owns an immutable item snapshot; the customer can start a new basket
+        // even while this order is awaiting payment or its quote email is being prepared.
+        $request->session()->forget(['commerce.cart', 'commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_accepted_at']);
         app(\App\Services\Commerce\AutomaticOrderQuote::class)->sendFor($order);
 
         return $this->paymentRedirect($order, $orders, $readiness, $locale);
@@ -94,6 +97,10 @@ final class CheckoutController extends CommerceController
         $orders->expireBankTransfers();
         $order = $orders->owned($id, $owner);
         $items = $orders->items($id);
+        $db = $orders->connection();
+        $quoteEmailStatus = $db->getSchemaBuilder()->hasTable('commerce_order_quotes')
+            ? $db->table('commerce_order_quotes')->where('order_id', $id)->value('status')
+            : 'tracking_unavailable';
         if ($order->status === 'paid') {
             $ordered = [];
             foreach ($items as $item) {
@@ -110,6 +117,7 @@ final class CheckoutController extends CommerceController
         }
 
         return view('commerce.order', compact('order', 'items', 'locale') + ['bankReady' => app(CheckoutReadiness::class)->bankReady(),
+            'quoteEmailStatus' => $quoteEmailStatus,
             'documents' => config('dashboard.enabled') ? app(DocumentStore::class)->forOrder($id) : [],
             'cardReady' => app(CheckoutReadiness::class)->cardReady(), 'deadline' => app(BankTransfer::class)->deadline($order)->setTimezone('Europe/Paris')]);
     }

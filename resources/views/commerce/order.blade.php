@@ -35,6 +35,13 @@
                 <div>
                     <h2>{{ __('commerce.deferred_confirmation') }}</h2>
                     <p>{{ __('commerce.deferred_confirmation_notice') }}</p>
+                    @php($emailNotice = match($quoteEmailStatus) {
+                        'submitted' => 'deferred_email_sent',
+                        'blocked' => 'deferred_email_failed',
+                        'preparing', 'sending', 'unknown' => 'deferred_email_checking',
+                        default => 'deferred_email_unavailable',
+                    })
+                    <p class="order-email-notice order-email-notice--{{ $quoteEmailStatus === 'submitted' ? 'sent' : 'attention' }}" role="status">{{ __('commerce.'.$emailNotice) }}</p>
                     <p class="order-deadline">{{ __('commerce.deferred_deadline', ['deadline' => $deadline->format('d/m/Y H:i')]) }}</p>
                     <p>{{ __('commerce.deferred_contact') }}</p>
                 </div>
