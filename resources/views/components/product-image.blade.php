@@ -4,5 +4,12 @@
     @if ($src)
         <img src="{{ $src }}" @if($srcset) srcset="{{ $srcset }}" sizes="{{ $sizes }}" @endif alt="{{ $alt }}" @if($width && $height) width="{{ $width }}" height="{{ $height }}" @endif loading="{{ $eager ? 'eager' : 'lazy' }}" decoding="async" data-product-image>
     @endif
-    <span class="image-fallback" data-image-fallback @if($src) hidden @endif>{{ __('catalogue.image_missing') }}</span>
+    <span class="image-fallback" data-image-fallback @if($src) hidden @endif>
+        <svg class="image-fallback-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+            <rect x="5" y="7" width="38" height="34" rx="5" />
+            <circle cx="17" cy="18" r="3" />
+            <path d="m8 35 11-11 7 7 5-5 9 9" />
+        </svg>
+        <span>{{ __('catalogue.image_missing') }}</span>
+    </span>
 </div>

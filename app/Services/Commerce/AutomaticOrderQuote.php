@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\HtmlString;
 use Throwable;
 
 /** Creates one immutable official quote and submits its PDF to the configured HOMYA support mailer. */
@@ -57,6 +58,7 @@ final class AutomaticOrderQuote
             return;
         }
 
+        $stage = 'smtp_readiness';
         try {
             if (! app(Messages::class)->emailReady() || ! filter_var(config('contact.email'), FILTER_VALIDATE_EMAIL)) {
                 $this->block($db, $order->id, 'support_smtp_unavailable');
@@ -69,6 +71,7 @@ final class AutomaticOrderQuote
                 return;
             }
 
+            $stage = 'order_snapshot';
             $source = app(AdminDashboard::class)->order($order->id);
             foreach ($source['items'] as $item) {
                 if (! is_numeric($item->vat_rate_basis ?? null) || ! in_array($item->vat_class ?? null, ['standard', 'wood_heating'], true)) {
@@ -84,6 +87,7 @@ final class AutomaticOrderQuote
                 return;
             }
 
+            $stage = 'quote_generation';
             $language = isset(DocumentData::LANGUAGES[$order->locale]) ? $order->locale : 'fr';
             $data = app(DocumentData::class)->blank('quote', $order->id);
             $deadline = app(BankTransfer::class)->deadline($order)->setTimezone('Europe/Paris');
@@ -112,6 +116,7 @@ final class AutomaticOrderQuote
                 'document_id' => $documentId, 'updated_at' => now(),
             ]);
 
+            $stage = 'quote_issue';
             if ($record['status'] !== 'issued') {
                 $record = $documentStore->issue($documentId, $record['revision'], [
                     'series_confirmed' => true,
@@ -128,10 +133,7 @@ final class AutomaticOrderQuote
                 return;
             }
 
-            // Claim before handing the email to SMTP. An ambiguous result is never auto-sent twice.
-            $db->table('commerce_order_quotes')->where('order_id', $order->id)->update([
-                'status' => 'sending', 'blocked_reason' => null, 'updated_at' => now(),
-            ]);
+            $stage = 'pdf_render';
             $pdf = $documentStore->pdf($record);
             $safeNumber = preg_replace('/[^A-Za-z0-9._-]/', '-', $record['number']);
             $name = trim((string) ($source['customer']['name'] ?? ''));
@@ -140,7 +142,27 @@ final class AutomaticOrderQuote
                 'number' => $record['number'],
                 'deadline' => $this->localizedDeadline($deadline, $language),
             ], $language);
-            Mail::raw($mailText, function ($message) use ($email, $record, $pdf, $safeNumber, $language) {
+            $mailData = [
+                'name' => $name,
+                'number' => $record['number'],
+                'deadline' => $this->localizedDeadline($deadline, $language),
+                'mailText' => $mailText,
+                'language' => $language,
+            ];
+            $stage = 'email_render';
+            $htmlBody = view('emails.order-quote', $mailData)->render();
+            $textBody = view('emails.order-quote-text', $mailData)->render();
+
+            // Only mark an attempt ambiguous once the PDF and both email bodies
+            // are ready and control is about to pass to the SMTP transport.
+            $db->table('commerce_order_quotes')->where('order_id', $order->id)->update([
+                'status' => 'sending', 'blocked_reason' => null, 'updated_at' => now(),
+            ]);
+            $stage = 'smtp_dispatch';
+            Mail::send([
+                'html' => new HtmlString($htmlBody),
+                'text' => new HtmlString($textBody),
+            ], [], function ($message) use ($email, $record, $pdf, $safeNumber, $language) {
                 $message->to($email)
                     ->from(config('contact.email'), 'HOMYA')
                     ->subject(__('documents.order_quote_email_subject', ['number' => $record['number']], $language))
@@ -153,9 +175,14 @@ final class AutomaticOrderQuote
             $row = $db->table('commerce_order_quotes')->where('order_id', $order->id)->first();
             $sending = $row && $row->status === 'sending';
             $this->block($db, $order->id, $sending ? 'email_result_unknown' : 'quote_generation_failed', $sending ? 'unknown' : 'blocked');
+            $safeMessage = preg_replace('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', '[email]', $error->getMessage()) ?? '';
+            $safeMessage = preg_replace('/\b(password|pass|username|user|token)\s*[:=]\s*\S+/i', '$1=[redacted]', $safeMessage) ?? '';
             Log::error('HOMYA_ORDER_QUOTE_FAILED', [
                 'order_reference' => substr(hash('sha256', (string) $order->id), 0, 16),
+                'stage' => $stage,
                 'error_type' => get_class($error),
+                'error_code' => $error->getCode(),
+                'error_summary' => mb_substr($safeMessage, 0, 240),
             ]);
         }
     }
