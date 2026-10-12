@@ -142,7 +142,7 @@ final class DocumentData
         return $data;
     }
 
-    public function missing(array $data): array
+    public function missing(array $data, bool $allowMissingBankDetails = false): array
     {
         $errors = [];
         foreach (['name' => 'Nom du client', 'address' => 'Adresse de facturation', 'postal_code' => 'Code postal', 'city' => 'Ville', 'country' => 'Pays'] as $key => $label) {
@@ -155,7 +155,7 @@ final class DocumentData
                 $errors[] = $label.' à renseigner.';
             }
         }
-        if (in_array($data['type'], ['quote', 'purchase_order'], true) && empty($data['bank_details'])) {
+        if (! $allowMissingBankDetails && in_array($data['type'], ['quote', 'purchase_order'], true) && empty($data['bank_details'])) {
             $errors[] = 'Renseignez un RIB HOMYA valide dans le dashboard avant d’émettre ce document.';
         }
         if (in_array($data['tax_mode'], ['exempt', 'reverse'], true) && empty($data['tax_note'])) {

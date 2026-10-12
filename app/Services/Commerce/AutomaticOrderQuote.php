@@ -119,7 +119,9 @@ final class AutomaticOrderQuote
                     'document_language' => $language,
                 ]);
             }
-            $issues = app(DocumentData::class)->missing($record['data']);
+            // The RIB is optional for an order quote. When no valid account is
+            // configured, the PDF omits the bank-details section but is still issued and emailed.
+            $issues = app(DocumentData::class)->missing($record['data'], allowMissingBankDetails: true);
             if ($issues !== []) {
                 $this->block($db, $order->id, 'quote_validation_failed');
 

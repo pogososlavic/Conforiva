@@ -234,7 +234,8 @@ final class DocumentStore
                 throw ValidationException::withMessages(['document_language' => 'Choisissez une langue disponible pour le document.']);
             }
             $data['document_language'] = $language;
-            $missing = app(DocumentData::class)->missing($data);
+            $allowMissingBankDetails = ($record['origin'] ?? null) === 'automatic_order_quote';
+            $missing = app(DocumentData::class)->missing($data, $allowMissingBankDetails);
             if ($missing) {
                 throw ValidationException::withMessages(['document' => $missing]);
             }
