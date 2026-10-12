@@ -55,6 +55,7 @@ final class CheckoutController extends CommerceController
         $data = $request->validate([
             'checkout_key' => ['required', 'uuid'], 'quote_hash' => ['required', 'string', 'size:64'],
             'email' => ['required', 'email:rfc', 'max:254'], 'name' => ['required', 'string', 'max:150'],
+            'phone' => ['nullable', 'string', 'max:30', 'regex:/\\A\\+?[0-9][0-9\\s().-]{5,28}[0-9]\\z/'],
             'address' => ['required', 'string', 'max:200'], 'postal_code' => ['required', 'string', 'max:12'],
             'city' => ['required', 'string', 'max:100'], 'country' => ['required', Rule::in(config('commerce.countries'))],
             'terms' => ['accepted'], 'payment_method' => ['nullable', Rule::in(['bank_transfer', 'deferred'])],
@@ -71,7 +72,7 @@ final class CheckoutController extends CommerceController
         if (! preg_match($postal, $data['postal_code'])) {
             throw ValidationException::withMessages(['postal_code' => __('commerce.invalid_postal')]);
         }
-        $customer = array_intersect_key($data, array_flip(['email', 'name', 'address', 'postal_code', 'city', 'country']));
+        $customer = array_intersect_key($data, array_flip(['email', 'name', 'phone', 'address', 'postal_code', 'city', 'country']));
         $method = $data['payment_method'] ?? ($readiness->bankReady() ? 'bank_transfer' : 'deferred');
         abort_if($method === 'bank_transfer' && ! $readiness->bankReady(), 503);
         abort_if($method === 'deferred' && ! $readiness->deferredReady(), 503);

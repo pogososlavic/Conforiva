@@ -26,6 +26,7 @@ return [
         'intent' => 'the action',
         'email' => 'the email address',
         'name' => 'the full name',
+        'phone' => 'the phone number',
         'address' => 'the address',
         'postal_code' => 'the postcode',
         'city' => 'the city',

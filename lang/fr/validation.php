@@ -26,6 +26,7 @@ return [
         'intent' => 'l’action',
         'email' => 'l’adresse e-mail',
         'name' => 'le nom complet',
+        'phone' => 'le numéro de téléphone',
         'address' => 'l’adresse',
         'postal_code' => 'le code postal',
         'city' => 'la ville',

@@ -14,6 +14,7 @@
                     <div class="checkout-fields">
                         <x-checkout-field name="name" autocomplete="name" :max="150" />
                         <x-checkout-field name="email" type="email" autocomplete="email" :max="254" />
+                        <x-checkout-field name="phone" type="tel" autocomplete="tel" :max="30" :required="false" />
                     </div>
                 </fieldset>
                 <fieldset class="checkout-panel"><legend><span class="checkout-section-number" aria-hidden="true">2</span> {{ __('commerce.shipping_address') }}</legend>

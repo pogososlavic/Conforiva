@@ -71,6 +71,7 @@ return [
     'delivery_address' => 'Vos coordonnées et votre adresse de livraison',
     'email' => 'Adresse e-mail',
     'name' => 'Nom complet',
+    'phone' => 'Téléphone (facultatif)',
     'address' => 'Adresse',
     'postal_code' => 'Code postal',
     'city' => 'Ville',
