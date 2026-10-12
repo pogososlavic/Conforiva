@@ -26,6 +26,37 @@ final class ProductionSecurity
         }
     }
 
+    /**
+     * Git deployment can recreate tracked placeholder directories with permissive
+     * defaults. Tighten only these two directory modes; never recurse into contents.
+     */
+    public function repairPrivateDirectoryPermissions(): bool
+    {
+        foreach ([storage_path('app/private'), storage_path('logs')] as $path) {
+            if (! is_dir($path) || is_link($path)) {
+                return false;
+            }
+
+            clearstatcache(true, $path);
+            $permissions = fileperms($path);
+            if ($permissions === false) {
+                return false;
+            }
+
+            if (($permissions & 0777) !== 0700 && (! @chmod($path, 0700))) {
+                return false;
+            }
+
+            clearstatcache(true, $path);
+            $permissions = fileperms($path);
+            if ($permissions === false || ($permissions & 0777) !== 0700) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /** Named checks only: never include configuration values or credentials in reports. */
     public function checks(): array
     {

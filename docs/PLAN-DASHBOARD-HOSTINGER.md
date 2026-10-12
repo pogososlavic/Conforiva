@@ -62,3 +62,7 @@ Les migrations de schéma sont additives. Une migration MariaDB peut laisser un 
 ## 5. État de livraison
 
 Le schéma de production est installé par l’utilisateur. L’activation locale est préparée et syntaxiquement vérifiée. Déployer le code, faire une sauvegarde, préparer et examiner le manifeste, puis appliquer son empreinte exacte sur Hostinger et vérifier les résultats.
+
+### Permissions privées après un déploiement Git
+
+Git suit les fichiers `.gitignore` de `storage/app/private` et `storage/logs`, mais pas les modes des répertoires eux-mêmes ; un déploiement peut donc les recréer avec des permissions plus larges. Le middleware production resserre maintenant uniquement ces deux répertoires à `0700` avant ses contrôles, sans parcourir ni modifier leurs fichiers. Si PHP n’en est pas propriétaire ou ne peut pas appliquer `chmod`, le site reste bloqué par le contrôle existant et les permissions doivent être corrigées côté hébergement. Hostinger documente que la redéfinition Git applique les fichiers du dépôt au répertoire cible : [déploiement Git Hostinger](https://www.hostinger.com/support/1583302-how-to-deploy-a-git-repository-in-hostinger/).

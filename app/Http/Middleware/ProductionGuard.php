@@ -27,6 +27,9 @@ final class ProductionGuard
             return $this->unavailable($request, $request->is('admin', 'admin/*') ? 404 : 503, $reference, 'nonproduction_environment');
         }
 
+        // Repair only the two protected directory modes after deployments. If PHP
+        // cannot safely tighten them, the normal fail-closed checks still block traffic.
+        $security->repairPrivateDirectoryPermissions();
         $failures = $security->failures();
         // Fail closed and suppress detailed error pages even with a misplaced local .env.
         config(['app.debug' => false]);
