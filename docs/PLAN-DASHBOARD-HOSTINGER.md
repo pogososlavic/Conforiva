@@ -1,8 +1,8 @@
 # Plan proposé — Dashboard commerce en production Hostinger
 
-**État au 11 octobre 2026 :** l’utilisateur a créé et migré la base commerce Hostinger. Les tables existent ; une lecture utilisateur confirme 3 709 produits catalogue, 0 ligne dans `commerce_inventory` et 0 commande. L’utilisateur a choisi l’initialisation d’affichage seule ci-dessous. Le code est préparé localement ; aucune ligne de production n’a encore été écrite par Codex.
+**État au 12 octobre 2026 :** la base commerce Hostinger et ses tables existent. Les dernières lectures fournies par l’utilisateur confirmaient 3 709 lignes d’inventaire, toutes à 0, aucune vente activée et aucune commande. L’utilisateur a maintenant confirmé 500 unités par produit. Le code de synchronisation est préparé localement ; il n’a pas encore été déployé ni exécuté en production.
 **Projet :** HOMYA, Laravel 13, domaine `homya.eu`.
-**Objectif :** rendre disponibles en production les mêmes fonctions de gestion que dans le dashboard local, sans remplacer les bases existantes ni inventer un stock réel.
+**Objectif :** activer en production l’inventaire confirmé à 500 unités par produit et reprendre les prix TTC courants du catalogue, sans remplacer les bases existantes.
 
 ## 1. Constats et preuves
 
@@ -14,9 +14,9 @@
 - Les installateurs actuels ciblent explicitement XAMPP / `homya_local`. `homya:commerce-schema` et `scripts/install_admin_management.py` ne sont pas des installateurs Hostinger ; ne pas les lancer sur le serveur.
 - Hostinger indique MariaDB pour ses hébergements Web/Cloud et documente `localhost` pour une connexion locale au site et le port standard 3306. L’offre exacte, ses quotas et permissions restent à confirmer dans le hPanel du projet ([source Hostinger](https://www.hostinger.com/support/1583226-which-database-management-system-is-used-at-hostinger/), consultée le 11 octobre 2026).
 
-### Décision utilisateur — affichage sans mise en vente
+### Décision utilisateur — activation confirmée à 500 unités
 
-L’utilisateur a choisi l’option 2 : initialiser une ligne par produit du catalogue avec quantité nulle et vente suspendue, afin que les produits apparaissent dans l’administration sans inventer de stock. Le code ajoute `php artisan homya:commerce-inventory --display-only` pour préparer un manifeste privé, puis `--display-only --apply --sha256=<empreinte>` pour l’installer explicitement. Le manifeste doit correspondre exactement au catalogue courant ; l’installation refuse si une ligne d’inventaire ou une commande existe déjà. Ce choix n’autorise pas à activer la vente ni à déclarer un stock physique.
+La décision antérieure d’affichage seul est remplacée par l’autorisation explicite : « 500 unités à chaque produit ». `homya:commerce-activate-inventory` prépare un manifeste privé avec 500 unités, le prix TTC courant du catalogue et les motifs de blocage. Son mode `--apply --sha256=<empreinte>` ne fonctionne que si l’inventaire correspond encore exactement au catalogue, toutes les lignes sont à quantité/réservation zéro et aucune commande n’existe. Il met à jour les lignes existantes sans réinitialiser une commande ou réservation. Les produits refusés par les règles métier du panier restent identifiés dans les motifs de blocage.
 
 ## 2. Proposition technique à valider
 
@@ -39,7 +39,7 @@ Installer de façon additive, après sauvegarde et contrôle de cible :
 
 1. Les quatre tables commerce définies par `database/migrations/commerce/2026_10_09_000001_create_commerce_tables.php`.
 2. Les six tables de gestion définies par `database/migrations/commerce/2026_10_09_000002_create_admin_tables.php`.
-3. Pour la décision actuelle, créer uniquement les lignes d’affichage à quantité 0 et vente suspendue avec le mode `--display-only`. Toute quantité positive ou activation de vente nécessitera une validation métier ultérieure. Aucune commande, réservation, conversation ou donnée analytique locale n’est copiée dans la base de production.
+3. Les tables commerce et lignes catalogue existent déjà. Ne pas les recréer. Après une sauvegarde de la base commerce, utiliser la commande dédiée d’activation à 500 unités ; elle s’arrête si l’état réel diffère des zéros examinés ou si une commande existe.
 
 Les migrations de schéma sont additives. Une migration MariaDB peut laisser un état partiel ; aucun `DROP`, rollback automatique ou migration générale Laravel n’est prévu. L’installation nécessitera un plan/script dédié au serveur, avec cible vérifiée, empreinte des fichiers SQL, sauvegarde privée, contrôles des collisions, droits DDL temporaires puis retirés, et arrêt sur la première différence.
 
@@ -51,14 +51,14 @@ Les migrations de schéma sont additives. Une migration MariaDB peut laisser un 
 4. Exécuter le schéma et comparer les dix tables, clés, index et contraintes à leurs migrations ; retirer les droits DDL temporaires.
 5. Configurer la connexion commerce en privé et exécuter `php artisan config:clear` puis `php artisan config:cache`.
 6. Vérifier la connexion et les tables par des lectures sans secret ni modification de données.
-7. Après déploiement du code et sauvegarde récente de la base commerce, préparer le manifeste avec `php artisan homya:commerce-inventory --display-only`. Vérifier qu’il annonce 3 709 produits, 0 unité et 0 vente éligible, puis installer l’empreinte affichée avec `php artisan homya:commerce-inventory --display-only --apply --sha256=<empreinte>`. Vérifier ensuite les lignes, le stock nul, les ventes suspendues, les réservations nulles et l’absence de commande.
-8. Activer `HOMYA_ADMIN_MANAGEMENT_ENABLED=true` après réussite des contrôles précédents. Maintenir les fonctions panier/commande/stock fermées jusqu’à validation du stock et des prérequis de production.
+7. Après déploiement du code et sauvegarde récente de la base commerce, exécuter `php artisan homya:commerce-activate-inventory`. Contrôler le nombre de produits, unités (produits × 500), ventes éligibles et motifs de blocage. Puis exécuter `php artisan homya:commerce-activate-inventory --apply --sha256=<empreinte exacte affichée>`. La commande applique l’activation une seule fois ; si les stocks ou commandes ont changé depuis l’inspection, elle refuse sans écraser cet état.
+8. Vérifier `HOMYA_INVENTORY_ENABLED=true`, vider/reconstruire le cache de configuration, puis contrôler les totaux commerce : lignes attendues, quantités 500, réservations inchangées, ventes actives pour les seuls produits éligibles, prix approuvés égaux aux prix TTC du catalogue. Charger une fiche produit et vérifier que son bouton d’achat est actif.
 9. Vérifier les écrans d’administration sans créer de commande ni modifier de stock ; toute recette avec écriture réelle aura son propre jeu de données et son autorisation.
 
 ## 4. Décisions encore requises
 
-- Les quantités positives et l’activation de vente correspondent-elles au stock physique actuel ? **Non confirmé ; les ventes restent suspendues.**
+- Aucun arbitrage de quantité supplémentaire : 500 par produit a été confirmé par l’utilisateur. L’exécution en production reste à faire par l’utilisateur après sauvegarde et déploiement, car Codex n’a pas de session SSH active sur Hostinger.
 
 ## 5. État de livraison
 
-Le schéma de production est installé par l’utilisateur. Le choix d’initialiser l’inventaire à zéro et de suspendre les ventes est validé ; sa commande d’installation reste à exécuter par l’utilisateur après déploiement et sauvegarde. Ne pas activer les ventes avant validation des quantités réelles.
+Le schéma de production est installé par l’utilisateur. L’activation locale est préparée et syntaxiquement vérifiée. Déployer le code, faire une sauvegarde, préparer et examiner le manifeste, puis appliquer son empreinte exacte sur Hostinger et vérifier les résultats.

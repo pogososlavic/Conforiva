@@ -1,4 +1,5 @@
 @php($available = app(\App\Services\Commerce\InventoryAvailability::class)->available($product))
+@php($inventoryOrderable = config('commerce.inventory_enabled') !== true || ($available !== null && $available > 0))
 <x-layout :title="$product['name'].' — HOMYA'" :description="$product['description'] ?: $product['name']" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :search-query="$context['q'] ?? ''" :seo-context="['product' => $seoProduct ?? $product, 'name' => $product['name'], 'available_stock' => $available, 'variant' => $selectedVariant ?? null]">
     <main id="main" class="shell catalogue-page product-page" tabindex="-1">
         <nav class="breadcrumbs" aria-label="{{ __('catalogue.breadcrumbs') }}"><a href="{{ route('home', ['locale' => $locale]) }}">{{ __('home.home') }}</a><span aria-hidden="true">/</span><a href="{{ $catalogueLink }}">{{ __('catalogue.title') }}</a><span aria-hidden="true">/</span><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ $product['category']['name'] }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ $product['name'] }}</span></nav>
@@ -27,7 +28,7 @@
                 @if($product['reference'])<p class="product-reference">{{ __('catalogue.reference') }} {{ $product['reference'] }}</p>@endif
                 <x-product-price :product="$product" :locale="$locale" />
                 <p class="product-tax-label">{{ __('commerce.tax_included') }}</p>
-                @if($available !== null)<p class="stock-indicator @if($available === 0) stock-empty @endif"><span aria-hidden="true">●</span> {{ __($available > 0 ? 'commerce.in_stock' : 'commerce.out_of_stock') }}</p>@endif
+                @if(config('commerce.inventory_enabled'))@if($available !== null)<p class="stock-indicator @if($available === 0) stock-empty @endif"><span aria-hidden="true">●</span> {{ __($available > 0 ? 'commerce.in_stock' : 'commerce.out_of_stock') }}</p>@else<p class="stock-indicator stock-empty" role="status">{{ __('commerce.unavailable_product') }}</p>@endif @endif
                 @if($product['specifications'])<dl class="product-highlights">@foreach(array_slice($product['specifications'], 0, 4) as $spec)<div><dt>{{ $spec['label'] }}</dt><dd>{{ $spec['value'] }}</dd></div>@endforeach</dl>@endif
                 <dl class="product-overview"><div><dt>{{ __('catalogue.category') }}</dt><dd><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ $product['category']['name'] }}</a></dd></div>@if($product['condition'])<div><dt>{{ __('catalogue.condition') }}</dt><dd>{{ __('catalogue.conditions')[$product['condition']] ?? $product['condition'] }}</dd></div>@endif</dl>
                 <x-purchase-information :locale="$locale" id="product-purchase-information" open />
@@ -36,8 +37,8 @@
                     <form id="product-purchase" class="product-cart-form" method="post" action="{{ route('cart.add', ['locale' => $locale]) }}">@csrf
                         <input type="hidden" name="slug" value="{{ $product['slug'] }}">
                         @if($product['has_variants'])<div class="variant-field"><label for="product-variant">{{ __('commerce.variant') }}</label><select id="product-variant" name="variant" required><option value="">{{ __('commerce.choose_variant') }}</option>@foreach(app(\App\Services\Commerce\Cart::class)->options($product) as $optionId => $option)<option value="{{ $optionId }}" @selected(old('variant', $selectedVariant ?? null) === $optionId)>{{ $option['name'] }}</option>@endforeach</select></div>@endif
-                        <div class="product-buy-row"><x-quantity-selector id="product-quantity" :value="old('quantity', 1)" :max="config('commerce.max_quantity')" /><x-add-to-cart-button name="intent" value="cart" :disabled="$available === 0" /></div>
-                        <button class="button-primary product-buy-now" type="submit" name="intent" value="checkout" @disabled($available === 0)>{{ __(app(\App\Services\Commerce\CheckoutReadiness::class)->ready() ? 'commerce.buy_now' : 'commerce.prepare_order') }}</button>
+                        <div class="product-buy-row"><x-quantity-selector id="product-quantity" :value="old('quantity', 1)" :max="config('commerce.max_quantity')" /><x-add-to-cart-button name="intent" value="cart" :disabled="! $inventoryOrderable" /></div>
+                        <button class="button-primary product-buy-now" type="submit" name="intent" value="checkout" @disabled(! $inventoryOrderable)>{{ __(app(\App\Services\Commerce\CheckoutReadiness::class)->ready() ? 'commerce.buy_now' : 'commerce.prepare_order') }}</button>
                     </form>
                 @else<p>{{ __('commerce.unavailable_product') }}</p>@endif
                 <a class="button-primary" href="{{ $catalogueLink }}">{{ __('catalogue.back_catalogue') }}</a>
