@@ -23,7 +23,8 @@
 </nav>
 <p class="admin-notification-status" data-admin-notifications="{{ route('admin.notifications') }}" data-admin-orders-url="{{ route('admin.orders') }}" role="status" aria-live="polite"></p>
 <button class="admin-secondary admin-sound-toggle" type="button" data-admin-sound-toggle aria-pressed="false">Activer le son des commandes</button>
-<p class="admin-sound-help">Activez le son depuis ce bouton et laissez le tableau de bord ouvert. Le navigateur peut aussi afficher une notification système si vous l’autorisez.</p>
+<button class="admin-secondary admin-sound-test" type="button" data-admin-sound-test hidden>Tester le son</button>
+<p class="admin-sound-help">Activez le son et testez-le avec le bouton dédié. Le réglage est mémorisé dans ce navigateur ; laissez le tableau de bord ouvert. Une notification système peut aussi être autorisée.</p>
 <p>Les quantités de stock sont visibles uniquement dans cet espace privé.</p>
 <form method="post" action="{{ route('admin.logout') }}">@csrf<button class="admin-secondary" type="submit">Se déconnecter</button></form></aside>
 @endunless

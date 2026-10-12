@@ -1039,6 +1039,7 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
 .admin-sidebar nav a .admin-count-badge:not(:empty) { box-shadow: 0 0 0 2px #fffaf0; }
 .admin-notification-status { min-height: 18px; margin: 12px 0 6px !important; font-size: 12px !important; }
 .admin-sound-toggle { width: 100%; margin-top: 4px; font-size: 12px; }
+.admin-sound-test:not([hidden]) { width: 100%; margin-top: 8px; font-size: 12px; }
 .admin-sound-toggle[aria-pressed="true"] { border-color: #87701d; background: #fff9df; }
 .admin-sound-toggle:focus-visible { outline: 3px solid #805d00; outline-offset: 2px; }
 .admin-sound-help { margin: 8px 0 20px !important; font-size: 11px !important; line-height: 1.5; }
