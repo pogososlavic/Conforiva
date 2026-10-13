@@ -44,6 +44,7 @@ final class AdminManagementController extends Controller
     public function saveProduct(Request $request, ProductManager $products, ?string $slug = null)
     {
         $rules = ['reference' => 'required|string|max:255', 'revision' => 'required|integer|min:0', 'price' => ['required', 'regex:/\A[0-9]{1,6}(?:[.,][0-9]{1,2})?\z/'], 'quantity' => 'required|integer|min:0|max:10000000', 'condition' => ['nullable', Rule::requiredIf($request->boolean('published')), Rule::in(['new', 'neuf', 'used', 'occasion', 'refurbished', 'reconditionne'])], 'published' => 'nullable|boolean', 'brand' => 'required|string|max:200', 'category' => 'required|string|max:200', 'universe' => ['required', Rule::in(['firewood', 'heating', 'appliances', 'furniture', 'televisions', 'other'])], 'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120', 'images' => 'nullable|array|max:5', 'images.*' => 'file|mimes:jpg,jpeg,png,webp|max:5120', 'remove_images' => 'nullable|array|max:20', 'remove_images.*' => 'integer|min:0|max:19'];
+        $rules += ProductManager::manufacturerRules();
         foreach (['fr', 'en', 'de'] as $locale) {
             $rules['languages.'.$locale.'.name'] = ($locale === 'fr' ? 'required' : 'nullable').'|string|max:255';
             $rules['languages.'.$locale.'.description'] = 'nullable|string|max:20000';

@@ -94,7 +94,7 @@ final class Cart
         }
         $items[$key] = $quantity;
         $session->put('commerce.cart', $items);
-        $session->forget(['commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_accepted_at']);
+        $session->forget(['commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_hash', 'commerce.terms_accepted_at']);
     }
 
     public function remove(Session $session, string $slug): void
@@ -102,7 +102,7 @@ final class Cart
         $items = $this->quantities($session);
         unset($items[$slug]);
         $session->put('commerce.cart', $items);
-        $session->forget(['commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_accepted_at']);
+        $session->forget(['commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_hash', 'commerce.terms_accepted_at']);
     }
 
     public function quote(Session $session): array

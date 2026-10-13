@@ -57,9 +57,11 @@ final class SeoController extends Controller
         foreach ($products->pluck('category.slug')->filter()->unique() as $category) {
             $urls[] = $seo->url('catalogue', compact('locale', 'category'));
         }
-        // These editorial pages have confirmed content. Draft/service pages stay out.
-        foreach (['a-propos', 'provenance', 'conseiller'] as $page) {
-            $urls[] = $seo->url('information', compact('locale', 'page'));
+        // Use the same eligibility as each page's canonical and robots metadata.
+        foreach (InformationController::PAGES as $page) {
+            if ($seo->informationIndexable($page)) {
+                $urls[] = $seo->url('information', compact('locale', 'page'));
+            }
         }
 
         return $this->urls($urls);

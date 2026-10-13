@@ -1,5 +1,7 @@
 # HOMYA — SEO et préparation Google
 
+**Actualisation du 13 octobre 2026 :** domaine confirmé `https://homya.eu`, messagerie Hostinger, même compte Google prévu pour Search Console/Merchant, livraison gratuite FR/BE/DE maintenue. Les audits SQL actuels et les corrections supplémentaires sont décrits dans [la procédure de connexion Google](CONNEXION-GOOGLE-HOMYA.md). Le site public reste fermé à l'indexation au contrôle : robots `Disallow: /`, sitemap/flux 404. Les anciennes mentions « domaine manquant » et l'échec CLI non expliqué ci-dessous sont historiques. Les correctifs de cette phase sont dans HOMYA1, sans déploiement Hostinger.
+
 10 octobre 2026. Rapport du travail local et procédure de raccordement ; aucune approbation Google ni décision commerciale supplémentaire.
 
 **Mise à jour après correction du catalogue et installation XAMPP :** voir [CATALOGUE-MERCHANT-XAMPP.md](CATALOGUE-MERCHANT-XAMPP.md). Les résultats de l'audit initial ci-dessous sont historiques : titres/descriptions désormais valides dans les trois langues, URL de sélection pour les 92 options des 26 produits à variantes, export conditionnel des variantes et installation locale sauvegardée. Les données fournisseur non confirmées restent bloquantes.

@@ -47,6 +47,23 @@ final class Seo
         return mb_strlen($text) <= $limit ? $text : rtrim(mb_substr($text, 0, $limit - 1)).'…';
     }
 
+    public function informationIndexable(string $page, ?bool $pending = null): bool
+    {
+        $content = __('pages.entries.'.$page);
+        if (! is_array($content) || $page === 'suivi') {
+            return false;
+        }
+        $pending ??= ($content['pending'] ?? true) !== false;
+        if ($page === 'contact') {
+            $channels = app(ContactChannels::class);
+            if ($channels->phone() !== null || $channels->email() !== null) {
+                $pending = false;
+            }
+        }
+
+        return ! $pending;
+    }
+
     public function page(Request $request, string $title, string $description, array $context = []): array
     {
         $route = $request->route()?->getName();
@@ -83,8 +100,7 @@ final class Seo
         }
         if ($route === 'information') {
             $parameters['page'] = $request->route('page');
-            $public = $public && ! ($context['pending'] ?? true)
-                && ! in_array($parameters['page'], ['suivi'], true);
+            $public = $public && $this->informationIndexable($parameters['page'], $context['pending'] ?? null);
         }
         $canonical = $public && ! $filtered ? $this->url($route, $parameters) : null;
         $indexable = $canonical !== null && $this->onPublicOrigin($request);
@@ -115,15 +131,24 @@ final class Seo
             }
             if ($route === 'product' && isset($context['product'])) {
                 $product = $context['product'];
-                $node = ['@type' => 'Product', '@id' => $canonical.'#product', 'url' => $canonical, 'name' => $product['name']];
+                $node = ['@type' => 'Product', '@id' => $canonical.'#product', 'url' => $canonical,
+                    'name' => $product['name'], 'sku' => MerchantProducts::id($product)];
                 if (! empty($product['description'])) {
                     $node['description'] = $product['description'];
                 }
-                if (! empty($product['reference'])) {
-                    $node['sku'] = $product['reference'];
-                }
                 if (! empty($product['brand'])) {
                     $node['brand'] = ['@type' => 'Brand', 'name' => $product['brand']];
+                }
+                if (! ($product['has_variants'] ?? true)) {
+                    $merchant = app(MerchantProducts::class);
+                    $review = $merchant->reviews()[$product['slug']] ?? [];
+                    if ($merchant->problems($product, $review, $locale) === []) {
+                        foreach (['gtin', 'mpn'] as $identifier) {
+                            if (isset($review[$identifier])) {
+                                $node[$identifier] = $review[$identifier];
+                            }
+                        }
+                    }
                 }
                 $images = array_column($product['images'] ?? [], 'local_url');
                 if ($images) {

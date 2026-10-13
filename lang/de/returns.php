@@ -13,7 +13,7 @@ return [
     'destination_label' => 'Ziel',
     'destination' => 'Morigny-Champigny, Frankreich',
     'overview_notice' => 'Erklären Sie den Widerruf innerhalb von 14 Tagen und senden Sie die Ware innerhalb von 14 Tagen nach Erklärung zurück, sofern HOMYA keine Abholung anbietet. Für mangelhafte Waren gelten gesonderte gesetzliche Rechte.',
-    'logistics_notice' => 'Kontaktieren Sie HOMYA, um den kostenlosen Rücktransport zu organisieren. Bewahren Sie bei Paketen Versandbelege auf. Nennen Sie bei sperrigen Artikeln die Zugangsbedingungen zur Vereinbarung einer Abholung. Ihre Erklärung wird unabhängig vom Transporttermin erfasst.',
+    'logistics_notice' => 'Der Widerruf kann unabhängig von der Transportorganisation erklärt werden. Die kostenlose Rücksendung ist mit HOMYA abzustimmen. Bewahren Sie bei Paketen den Versandnachweis auf; für die Abholung sperriger Waren werden Angaben zu den Zugangsbedingungen benötigt.',
     'sources' => 'Offizielle Quellen ansehen',
     'step' => 'Schritt :step von 2',
     'review' => 'Erklärung überprüfen',
@@ -63,11 +63,10 @@ return [
             'preparation' => [
                 'title' => 'Rücktransport und Bearbeitung',
                 'paragraphs' => [
-                    'Kontaktieren Sie HOMYA, um den kostenlosen Rücktransport zu organisieren. Bewahren Sie bei Paketen Versandbelege auf. Nennen Sie bei sperrigen Artikeln die Zugangsbedingungen zur Vereinbarung einer Abholung. Ihre Erklärung wird unabhängig vom Transporttermin erfasst.',
+                    'Die Online-Erklärung kann gespeichert werden, bevor ein Transporttermin vereinbart ist. Bewahren Sie bei Paketen Versandbelege auf. Nennen Sie bei sperrigen Artikeln die Zugangsbedingungen, damit HOMYA eine Abholung vereinbaren kann.',
                     'HOMYA übernimmt die Rücksendekosten gemäß der veröffentlichten Zusage. Der Sitz empfängt Pakete und sperrige Waren. Erstattungen erfolgen nach den oben erläuterten gesetzlichen Fristen; die Bestätigung belegt keine abgeschlossene Erstattung.',
                 ],
-                'items' => [
-                ],
+                'items' => [],
             ],
             'france' => [
                 'paragraphs' => [

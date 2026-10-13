@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Commerce\AutomaticOrderQuote;
 use App\Services\Commerce\BankTransfer;
 use App\Services\Commerce\Cart;
 use App\Services\Commerce\CheckoutReadiness;
@@ -33,7 +34,7 @@ final class CheckoutController extends CommerceController
                 ->where('owner_hash', $owner)->first();
             if ($last && in_array($last->status, ['expired', 'bank_transfer_expired'], true)
                 && $request->session()->get('commerce.checkout_key') === $last->checkout_key) {
-                $request->session()->forget(['commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_accepted_at']);
+                $request->session()->forget(['commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_hash', 'commerce.terms_accepted_at']);
             }
         }
         $key = $request->session()->get('commerce.checkout_key');
@@ -43,8 +44,10 @@ final class CheckoutController extends CommerceController
         }
         $quoteHash = $this->quoteHash($quote);
         $request->session()->put('commerce.quote_hash', $quoteHash);
+        $termsHash = app(OrderTerms::class)->hash();
+        $request->session()->put('commerce.terms_hash', $termsHash);
 
-        return view('commerce.checkout', compact('quote', 'key', 'quoteHash', 'locale') + ['cardReady' => $readiness->cardReady(), 'bankReady' => $readiness->bankReady()]);
+        return view('commerce.checkout', compact('quote', 'key', 'quoteHash', 'termsHash', 'locale') + ['cardReady' => $readiness->cardReady(), 'bankReady' => $readiness->bankReady()]);
     }
 
     public function store(Request $request, Cart $cart, CheckoutReadiness $readiness, OrderStore $orders, string $locale)
@@ -54,11 +57,13 @@ final class CheckoutController extends CommerceController
         }
         $data = $request->validate([
             'checkout_key' => ['required', 'uuid'], 'quote_hash' => ['required', 'string', 'size:64'],
+            'terms_hash' => ['required', 'string', 'size:64'],
             'email' => ['required', 'email:rfc', 'max:254'], 'name' => ['required', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:30', 'regex:/\\A\\+?[0-9][0-9\\s().-]{5,28}[0-9]\\z/'],
             'address' => ['required', 'string', 'max:200'], 'postal_code' => ['required', 'string', 'max:12'],
             'city' => ['required', 'string', 'max:100'], 'country' => ['required', Rule::in(config('commerce.countries'))],
-            'terms' => ['accepted'], 'payment_method' => ['nullable', Rule::in(['bank_transfer', 'deferred'])],
+            'terms' => ['accepted'], 'privacy_acknowledged' => ['accepted'], 'shipping_acknowledged' => ['accepted'],
+            'payment_method' => ['nullable', Rule::in(['bank_transfer', 'deferred'])],
         ]);
         $quote = $cart->quote($request->session());
         if (! hash_equals((string) $request->session()->get('commerce.checkout_key', ''), $data['checkout_key'])
@@ -67,6 +72,10 @@ final class CheckoutController extends CommerceController
         }
         if (! hash_equals($this->quoteHash($quote), $data['quote_hash'])) {
             throw ValidationException::withMessages(['cart' => __('commerce.changed_offer')]);
+        }
+        if (! hash_equals((string) $request->session()->get('commerce.terms_hash', ''), $data['terms_hash'])
+            || ! hash_equals(app(OrderTerms::class)->hash(), $data['terms_hash'])) {
+            throw ValidationException::withMessages(['cart' => __('commerce.stale_checkout')]);
         }
         $postal = $data['country'] === 'BE' ? '/\A[0-9]{4}\z/' : '/\A[0-9]{5}\z/';
         if (! preg_match($postal, $data['postal_code'])) {
@@ -77,15 +86,20 @@ final class CheckoutController extends CommerceController
         abort_if($method === 'bank_transfer' && ! $readiness->bankReady(), 503);
         abort_if($method === 'deferred' && ! $readiness->deferredReady(), 503);
         $customer['payment_method'] = $method;
-        $customer['terms_hash'] = app(OrderTerms::class)->hash();
+        $customer['terms_hash'] = $data['terms_hash'];
         $customer['terms_accepted_at'] = $request->session()->get('commerce.terms_accepted_at') ?? now()->toIso8601String();
+        // Acknowledgement of information is distinct from consent to marketing.
+        $customer['privacy_acknowledged_at'] = $customer['terms_accepted_at'];
+        $customer['privacy_terms_hash'] = $customer['terms_hash'];
+        $customer['shipping_acknowledged_at'] = $customer['terms_accepted_at'];
+        $customer['shipping_acknowledged_cents'] = 0;
         $request->session()->put('commerce.terms_accepted_at', $customer['terms_accepted_at']);
         $order = $orders->reserve($quote, $customer, $this->ownerHash($request, true), $data['checkout_key'], $locale);
         $request->session()->put('commerce.last_order', $order->id);
         // The order now owns an immutable item snapshot; the customer can start a new basket
         // even while this order is awaiting payment or its quote email is being prepared.
-        $request->session()->forget(['commerce.cart', 'commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_accepted_at']);
-        app(\App\Services\Commerce\AutomaticOrderQuote::class)->sendFor($order);
+        $request->session()->forget(['commerce.cart', 'commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_hash', 'commerce.terms_accepted_at']);
+        app(AutomaticOrderQuote::class)->sendFor($order);
 
         return $this->paymentRedirect($order, $orders, $readiness, $locale);
     }
@@ -111,7 +125,7 @@ final class CheckoutController extends CommerceController
             if (is_array($current)) {
                 ksort($current);
                 if ($current === $ordered && $request->session()->get('commerce.checkout_key') === $order->checkout_key) {
-                    $request->session()->forget(['commerce.cart', 'commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_accepted_at']);
+                    $request->session()->forget(['commerce.cart', 'commerce.checkout_key', 'commerce.quote_hash', 'commerce.terms_hash', 'commerce.terms_accepted_at']);
                 }
             }
         }
@@ -258,6 +272,9 @@ final class CheckoutController extends CommerceController
 
     private function quoteHash(array $quote): string
     {
-        return hash('sha256', json_encode(array_map(fn ($line) => [$line['key'], $line['quantity'], $line['line_cents']], $quote['lines']), JSON_THROW_ON_ERROR));
+        return hash('sha256', json_encode([
+            array_map(fn ($line) => [$line['key'], $line['quantity'], $line['line_cents']], $quote['lines']),
+            $quote['subtotal_cents'], $quote['total_cents'], $quote['currency'],
+        ], JSON_THROW_ON_ERROR));
     }
 }

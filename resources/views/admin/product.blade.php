@@ -13,6 +13,17 @@
 <label>Univers<select name="universe">@foreach(['firewood' => 'Bois et combustibles','heating' => 'Chauffage','appliances' => 'Électroménager','furniture' => 'Mobilier','televisions' => 'Téléviseurs','other' => 'Autres'] as $key => $label)<option value="{{ $key }}" @selected(($product['universe'] ?? 'other') === $key)>{{ $label }}</option>@endforeach</select></label>
 </div>
 <p class="admin-muted">{{ $product['reserved'] ?? 0 }} unité(s) réservée(s) en interne. Ces quantités ne sont pas affichées dans la boutique.</p>
+<fieldset><legend>Identifiants fabricant pour Google Merchant</legend>
+<p class="admin-muted">Renseignez uniquement les identifiants confirmés par le fabricant ou votre fournisseur. La référence interne HOMYA ne permet pas de déduire un MPN. Ces informations alimentent la revue privée du catalogue ; la validation complète pour Google Merchant reste une étape distincte.</p>
+@if($product['has_variants'] ?? false)<p class="admin-muted">Ce produit possède des variantes. Chaque variante doit disposer de ses propres identifiants et d’une vérification distincte ; les identifiants saisis ici ne sont pas repris automatiquement pour les variantes.</p>@endif
+<div class="admin-form-grid">
+<label>GTIN (EAN, UPC, …)<input name="gtin" inputmode="numeric" maxlength="14" pattern="[0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14}" value="{{ $product['manufacturer']['gtin'] ?? '' }}"><span class="admin-muted">8, 12, 13 ou 14 chiffres. Conservez les zéros initiaux.</span></label>
+<label>MPN du fabricant<input name="mpn" maxlength="70" value="{{ $product['manufacturer']['mpn'] ?? '' }}"></label>
+<label>Source fabricant ou fournisseur<input name="manufacturer_source_url" type="url" maxlength="1000" placeholder="https://…" value="{{ $product['manufacturer']['source_url'] ?? '' }}"><span class="admin-muted">Lien HTTPS d’une fiche qui confirme les identifiants, sans accès de connexion dans l’URL.</span></label>
+</div>
+<input type="hidden" name="manufacturer_verified" value="0">
+<label class="admin-check"><input type="checkbox" name="manufacturer_verified" value="1" @checked($product['manufacturer']['verified'] ?? false)> J’ai vérifié les identifiants pour ce produit exact à partir de la source indiquée.</label>
+</fieldset>
 @foreach(['fr' => 'Français','en' => 'Anglais','de' => 'Allemand'] as $locale => $label)
 @if($locale !== 'fr')<details class="admin-disclosure"><summary>{{ $label }} · traduction optionnelle</summary>@endif
 <fieldset><legend>{{ $label }}</legend><label>Nom du produit<input name="languages[{{ $locale }}][name]" maxlength="255" value="{{ $product['languages'][$locale]['name'] ?? '' }}" @required($locale === 'fr')></label><label>Catégorie traduite<input name="languages[{{ $locale }}][category]" maxlength="120" value="{{ $product['languages'][$locale]['category'] ?? ($locale === 'fr' ? $product['category'] : '') }}" @required($locale === 'fr')></label><label>Description<textarea name="languages[{{ $locale }}][description]" rows="5" maxlength="12000">{{ $product['languages'][$locale]['description'] ?? '' }}</textarea></label></fieldset>

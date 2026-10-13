@@ -39,7 +39,7 @@ final class MerchantProducts
     public static function fingerprint(array $product): string
     {
         $facts = [];
-        foreach (['slug', 'reference', 'name', 'description', 'brand', 'condition', 'price_cents', 'currency', 'has_variants', 'variants', 'images', 'specifications', 'specification_reviews', 'issues', 'variant_id', 'variant_attributes', 'title_source', 'description_source'] as $key) {
+        foreach (['slug', 'reference', 'name', 'description', 'brand', 'universe', 'category', 'manufacturer', 'condition', 'price_cents', 'currency', 'has_variants', 'variants', 'images', 'specifications', 'specification_reviews', 'issues', 'variant_id', 'variant_attributes', 'title_source', 'description_source'] as $key) {
             $facts[$key] = $product[$key] ?? null;
         }
 
@@ -90,6 +90,12 @@ final class MerchantProducts
         }
         if (self::condition($product) === null) {
             $problems[] = 'condition_required';
+        }
+        if (isset($review['google_product_category']) && self::googleCategory($review['google_product_category']) === null) {
+            $problems[] = 'google_product_category_invalid';
+        }
+        if (isset($review['eprel_code']) && self::eprelCode($review['eprel_code']) === null) {
+            $problems[] = 'eprel_code_invalid';
         }
         if ($product['has_variants'] ?? true) {
             $variants = $this->variantProducts($product, $review, $locale);
@@ -161,6 +167,8 @@ final class MerchantProducts
             $id = 'v'.($index + 1);
             $variantReview = is_array($review['variants'][$id] ?? null) ? $review['variants'][$id] : [];
             $variant = $product;
+            // The parent identifiers do not establish this option's manufacturer identity.
+            unset($variant['manufacturer']);
             $variant['has_variants'] = false;
             $variant['variant_id'] = $id;
             $variant['variant_title'] = $option['title'];
@@ -197,6 +205,37 @@ final class MerchantProducts
     public static function id(array $product): string
     {
         return 'homya-'.substr(hash('sha256', $product['slug']), 0, 40).(isset($product['variant_id']) ? '-'.$product['variant_id'] : '');
+    }
+
+    /** A reviewed Google taxonomy ID; this validates syntax, not category attribution. */
+    public static function googleCategory(mixed $category): ?string
+    {
+        if (is_int($category)) {
+            $category = (string) $category;
+        }
+
+        return is_string($category) && preg_match('/\A[1-9][0-9]{0,5}\z/', $category) ? $category : null;
+    }
+
+    /** Reviewed registry ID; the local size bound does not verify EPREL attribution. */
+    public static function eprelCode(mixed $code): ?string
+    {
+        return is_string($code) && preg_match('/\A[1-9][0-9]{0,19}\z/', $code) ? $code : null;
+    }
+
+    public static function productType(array $product, string $locale): ?string
+    {
+        $universe = __('home.categories.'.($product['universe'] ?? '').'.name', [], $locale);
+        $category = $product['category']['name'] ?? null;
+        if (! is_string($universe) || str_starts_with($universe, 'home.categories.')
+            || ! is_string($category) || trim($category) === '') {
+            return null;
+        }
+        // Category names come from the same localized projection as the page.
+        $levels = array_unique(array_map(fn ($value) => trim(preg_replace('/\s+/u', ' ', $value)), [$universe, $category]));
+        $type = implode(' > ', $levels);
+
+        return mb_strlen($type) <= 750 && ! preg_match('/[\x00-\x1F]/', $type) ? $type : null;
     }
 
     public function entries(string $locale): array
@@ -284,6 +323,19 @@ final class MerchantProducts
             $this->attribute($xml, 'price', number_format($product['price_cents'] / 100, 2, '.', '').' EUR');
             $this->attribute($xml, 'availability', $inStock ? 'in_stock' : 'out_of_stock');
             $this->attribute($xml, 'condition', self::condition($product));
+            if ($type = self::productType($product, $locale)) {
+                $this->attribute($xml, 'product_type', $type);
+            }
+            if ($category = self::googleCategory($review['google_product_category'] ?? null)) {
+                $this->attribute($xml, 'google_product_category', $category);
+            }
+            if ($code = self::eprelCode($review['eprel_code'] ?? null)) {
+                $xml->startElement('g:certification');
+                $this->attribute($xml, 'certification_authority', 'EC');
+                $this->attribute($xml, 'certification_name', 'EPREL');
+                $this->attribute($xml, 'certification_code', $code);
+                $xml->endElement();
+            }
             if (! empty($product['brand'])) {
                 $this->attribute($xml, 'brand', $product['brand']);
             }

@@ -4,8 +4,10 @@ namespace App\Services\Admin;
 
 use App\Services\Catalogue;
 use App\Services\Commerce\OrderStore;
+use App\Services\MerchantProducts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -48,6 +50,7 @@ final class ProductManager
         if (isset($content['condition'])) {
             $product['condition'] = $content['condition'];
         }
+        $product['manufacturer'] = $content['manufacturer'] ?? self::emptyManufacturer();
         $product['category'] = ['slug' => $content['category']['slug'], 'name' => $text['category'] ?? ($product['category']['name'] ?? $content['category']['name'])];
         $product['admin_published'] = (bool) $row->published;
         if (array_key_exists('images', $content) && $content['images'] === []) {
@@ -106,6 +109,7 @@ final class ProductManager
             'has_variants' => false, 'variants' => [], 'issues' => [], 'condition' => $content['condition'] ?? null,
             'category' => ['slug' => $content['category']['slug'] ?? 'autre', 'name' => $text['category'] ?? ($content['category']['name'] ?? 'Autre')],
             'brand' => $content['brand'] ?? '', 'description_hidden' => false,
+            'manufacturer' => $content['manufacturer'] ?? self::emptyManufacturer(),
             'image' => $image, 'images' => $image ? [$image] : [], 'admin_published' => (bool) $row->published];
     }
 
@@ -113,7 +117,7 @@ final class ProductManager
     {
         $db = app(OrderStore::class)->connection();
         if ($slug === null) {
-            return ['slug' => '', 'reference' => '', 'revision' => 0, 'price' => '', 'quantity' => 0, 'published' => false, 'brand' => '', 'category' => '', 'languages' => ['fr' => ['name' => '', 'description' => ''], 'en' => ['name' => '', 'description' => ''], 'de' => ['name' => '', 'description' => '']]];
+            return ['slug' => '', 'reference' => '', 'revision' => 0, 'price' => '', 'quantity' => 0, 'published' => false, 'brand' => '', 'category' => '', 'manufacturer' => self::emptyManufacturer(), 'has_variants' => false, 'languages' => ['fr' => ['name' => '', 'description' => ''], 'en' => ['name' => '', 'description' => ''], 'de' => ['name' => '', 'description' => '']]];
         }
         $row = $db->table('commerce_admin_products')->where('slug', $slug)->first();
         $inventory = $db->table('commerce_inventory')->where('slug', $slug)->first();
@@ -137,7 +141,55 @@ final class ProductManager
         }
         $content = $row ? json_decode($row->content, true, 32, JSON_THROW_ON_ERROR) : [];
 
-        return ['slug' => $slug, 'reference' => $inventory->reference, 'revision' => $row->revision ?? 0, 'price' => number_format(($inventory->approved_price_cents ?? 0) / 100, 2, '.', ''), 'quantity' => $inventory->quantity, 'reserved' => $inventory->reserved, 'published' => $row ? (bool) $row->published : (bool) ($base['admin_published'] ?? true), 'brand' => $content['brand'] ?? ($base['brand'] ?? ''), 'category' => $content['category']['name'] ?? ($base['category']['name'] ?? ''), 'languages' => $content['languages'] ?? $languages, 'image' => $content['image'] ?? ($base['image'] ?? null), 'universe' => $content['universe'] ?? ($base['universe'] ?? 'other'), 'images' => $content['images'] ?? ($base['images'] ?? []), 'condition' => $content['condition'] ?? ($base['condition'] ?? null)];
+        return ['slug' => $slug, 'reference' => $inventory->reference, 'revision' => $row->revision ?? 0, 'price' => number_format(($inventory->approved_price_cents ?? 0) / 100, 2, '.', ''), 'quantity' => $inventory->quantity, 'reserved' => $inventory->reserved, 'published' => $row ? (bool) $row->published : (bool) ($base['admin_published'] ?? true), 'brand' => $content['brand'] ?? ($base['brand'] ?? ''), 'category' => $content['category']['name'] ?? ($base['category']['name'] ?? ''), 'languages' => $content['languages'] ?? $languages, 'image' => $content['image'] ?? ($base['image'] ?? null), 'universe' => $content['universe'] ?? ($base['universe'] ?? 'other'), 'images' => $content['images'] ?? ($base['images'] ?? []), 'condition' => $content['condition'] ?? ($base['condition'] ?? null), 'manufacturer' => $content['manufacturer'] ?? self::emptyManufacturer(), 'has_variants' => (bool) ($base['has_variants'] ?? false)];
+    }
+
+    public static function manufacturerRules(): array
+    {
+        return [
+            'gtin' => ['nullable', 'string', 'max:14', function ($attribute, $value, $fail) {
+                if (! MerchantProducts::validGtin($value)) {
+                    $fail('Le GTIN doit comporter 8, 12, 13 ou 14 chiffres avec une clé de contrôle valide.');
+                }
+            }],
+            'mpn' => ['nullable', 'string', 'max:70', 'not_regex:/[\p{Cc}]/u'],
+            'manufacturer_source_url' => ['nullable', 'string', 'url:https', 'max:1000', 'not_regex:/[\p{Cc}\s]/u'],
+            'manufacturer_verified' => ['nullable', 'boolean'],
+        ];
+    }
+
+    private static function emptyManufacturer(): array
+    {
+        return ['gtin' => null, 'mpn' => null, 'source_url' => null, 'verified' => false];
+    }
+
+    private function manufacturer(array $data, array $previous): array
+    {
+        $fields = array_intersect_key($data, self::manufacturerRules());
+        if ($fields === []) {
+            // Older editor requests must not erase independently supplied manufacturer evidence.
+            return $previous['manufacturer'] ?? self::emptyManufacturer();
+        }
+        $values = Validator::make($fields, self::manufacturerRules())->validate();
+        $mpn = trim($values['mpn'] ?? '');
+        $manufacturer = ['gtin' => ($values['gtin'] ?? '') ?: null,
+            'mpn' => $mpn === '' ? null : $mpn,
+            'source_url' => ($values['manufacturer_source_url'] ?? '') ?: null,
+            'verified' => (bool) ($values['manufacturer_verified'] ?? false)];
+        if ($manufacturer['source_url'] !== null
+            && (parse_url($manufacturer['source_url'], PHP_URL_USER) !== null
+                || parse_url($manufacturer['source_url'], PHP_URL_PASS) !== null)) {
+            throw ValidationException::withMessages(['manufacturer_source_url' => 'La source fabricant ne doit pas contenir d’identifiants de connexion.']);
+        }
+        if ($manufacturer['verified'] && $manufacturer['source_url'] === null) {
+            throw ValidationException::withMessages(['manufacturer_source_url' => 'Ajoutez le lien du fabricant ou du fournisseur qui confirme ces identifiants.']);
+        }
+        if ($manufacturer['verified'] && ! MerchantProducts::validGtin($manufacturer['gtin'])
+            && ($manufacturer['mpn'] === null || trim($data['brand'] ?? '') === '')) {
+            throw ValidationException::withMessages(['manufacturer_verified' => 'Confirmez un GTIN valide ou un MPN fabricant associé à la marque avant de déclarer ces données vérifiées.']);
+        }
+
+        return $manufacturer;
     }
 
     public function save(?string $slug, array $data, $image = null, array $extraImages = []): string
@@ -155,6 +207,7 @@ final class ProductManager
                 }
             }
             $content = ['custom' => $previous['custom'] ?? $new, 'universe' => $previous['universe'] ?? $data['universe'], 'languages' => $languages, 'condition' => $data['condition'] ?? ($previous['condition'] ?? null), 'brand' => $data['brand'], 'category' => ['slug' => Str::slug($data['category']), 'name' => $data['category']]];
+            $content['manufacturer'] = $this->manufacturer($data, $previous);
             $gallery = $previous['images'] ?? (isset($previous['image']) ? [$previous['image']] : []);
             if (! $existing && ! $new) {
                 $gallery = app(Catalogue::class)->product($slug)['images'] ?? [];

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\Admin\Activity;
+use App\Services\Admin\BankDetailsSettings;
 use App\Services\Admin\Deliveries;
 use App\Services\Admin\Integrations;
 use App\Services\Admin\Messages;
@@ -240,7 +241,7 @@ final class AdminManagementTest extends TestCase
         try {
             $settings = app(PrivateSettings::class);
             $version = $settings->version();
-            $settings->save(['HOMYA_CONTACT_PHONE' => '+33123456789', 'STRIPE_SECRET_KEY' => 'sk_test_fixtureonly'], $version);
+            $settings->save(['HOMYA_CONTACT_PHONE' => '+33123456789', 'HOMYA_CONTACT_EMAIL' => 'fixture@example.invalid'], $version);
             $actual = File::get($this->temporary.'/.env');
             $this->assertStringContainsString('DB_PASSWORD=PRIVATE_FIXTURE', $actual);
             $this->assertSame(0600, fileperms($this->temporary.'/.env') & 0777);
@@ -379,12 +380,13 @@ final class AdminManagementTest extends TestCase
             $data = ['version' => app(PrivateSettings::class)->version(), 'mode' => 'test', 'email' => 'homya@example.invalid', 'current_password' => 'wrong'];
             $this->withSession($this->auth())->post('/admin/parametres', $data)->assertSessionHasErrors('current_password');
             $data['current_password'] = 'fixture-private-password';
+            $data['version'] = app(BankDetailsSettings::class)->version();
             $data['bank_enabled'] = true;
             $data['iban'] = 'FR0000000000000000000000000';
             $data['beneficiary'] = 'Fixture';
             $data['bank_name'] = 'Fixture Bank';
             $data['bic'] = 'FIXTFRPP';
-            $this->post('/admin/parametres', $data)->assertSessionHasErrors('iban');
+            $this->post('/admin/parametres/rib', $data)->assertSessionHasErrors('iban');
             $this->assertSame("PROTECTED_FIXTURE=before\n", File::get($this->temporary.'/.env'));
             $this->get('/admin/parametres')->assertOk()->assertSee('Vendeur HOMYA')->assertDontSee('fixture-private-password');
         } finally {

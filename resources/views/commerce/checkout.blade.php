@@ -10,6 +10,7 @@
             <div class="checkout-main">
             <form id="checkout-form" class="checkout-form" method="post" action="{{ route('checkout.store', ['locale' => $locale]) }}">@csrf
                 <input type="hidden" name="checkout_key" value="{{ $key }}"><input type="hidden" name="quote_hash" value="{{ $quoteHash }}">
+                <input type="hidden" name="terms_hash" value="{{ $termsHash }}">
                 <fieldset class="checkout-panel"><legend><span class="checkout-section-number" aria-hidden="true">1</span> {{ __('commerce.contact_details') }}</legend>
                     <div class="checkout-fields">
                         <x-checkout-field name="name" autocomplete="name" :max="150" />
@@ -46,7 +47,11 @@
                 <div class="checkout-panel checkout-consent">
                     <label class="terms-checkbox"><input type="checkbox" name="terms" value="1" required @if($errors->has('terms')) aria-invalid="true" aria-describedby="checkout-terms-error" @endif><span>{{ __('commerce.accept_terms') }} <a href="{{ route('information', ['locale' => $locale, 'page' => 'cgv']) }}">{{ __('commerce.terms') }}</a>.</span></label>
                     @error('terms')<p id="checkout-terms-error" class="checkout-field-error">{{ $message }}</p>@enderror
-                    <p class="checkout-help"><a href="{{ route('information', ['locale' => $locale, 'page' => 'confidentialite']) }}">{{ __('commerce.privacy') }}</a></p>
+                    <label class="terms-checkbox"><input type="checkbox" name="privacy_acknowledged" value="1" required @if($errors->has('privacy_acknowledged')) aria-invalid="true" aria-describedby="checkout-privacy-error" @endif><span>{{ __('commerce.acknowledge_privacy') }} <a href="{{ route('information', ['locale' => $locale, 'page' => 'confidentialite']) }}">{{ __('commerce.privacy') }}</a>.</span></label>
+                    @error('privacy_acknowledged')<p id="checkout-privacy-error" class="checkout-field-error">{{ $message }}</p>@enderror
+                    <label class="terms-checkbox"><input type="checkbox" name="shipping_acknowledged" value="1" required @if($errors->has('shipping_acknowledged')) aria-invalid="true" aria-describedby="checkout-shipping-error" @endif><span>{{ __('commerce.acknowledge_shipping') }}</span></label>
+                    @error('shipping_acknowledged')<p id="checkout-shipping-error" class="checkout-field-error">{{ $message }}</p>@enderror
+                    <p class="checkout-help">{{ __('commerce.privacy_acknowledgement_notice') }}</p>
                 </div>
             </form>
                 @if($bankReady)<x-bank-transfer-guide :locale="$locale" :ready="true" />@endif

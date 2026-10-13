@@ -134,7 +134,10 @@ class LegalInformationTest extends TestCase
                     $this->assertNotEmpty(trim($link->textContent));
                 }
                 $this->assertStringNotContainsString('ec.europa.eu/consumers/odr', $html);
-                $this->assertStringNotContainsString('mailto:', $html);
+                // Hosting contacts are confirmed separately from seller contacts.
+                foreach ($xpath->query('//a[starts-with(@href,"mailto:")]') as $emailLink) {
+                    $this->assertSame('mailto:'.config('legal.hosting.email'), $emailLink->getAttribute('href'));
+                }
                 $this->assertStringNotContainsString('wa.me/', $html);
             }
         }
@@ -221,12 +224,12 @@ class LegalInformationTest extends TestCase
                 $response->assertSee(__('legal.contact_pending', [], $locale))
                     ->assertDontSee('contact@homeconfort.com', false)
                     ->assertDontSee('938 138 179', false)
-                    ->assertDontSee('Gay Lussac', false)
-                    ->assertDontSee('mailto:', false)
-                    ->assertDontSee('tel:', false);
+                    ->assertDontSee('Gay Lussac', false);
                 $xpath = $this->xpath($response->getContent());
-                $this->assertSame(1, $xpath->query('//dl[@class="company-details"]')->length);
-                $this->assertSame(13, $xpath->query('//dl[@class="company-details"]/div')->length);
+                $seller = $page === 'mentions-legales' ? '//section[@aria-labelledby="legal-editeur"]' : '//article';
+                $this->assertSame(0, $xpath->query($seller.'//dl[@class="company-details"]//a')->length);
+                $this->assertSame(1, $xpath->query($seller.'//dl[@class="company-details"]')->length);
+                $this->assertSame(13, $xpath->query($seller.'//dl[@class="company-details"]/div')->length);
             }
         }
     }
