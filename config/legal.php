@@ -2,7 +2,16 @@
 
 return [
     // Company facts supplied by the user on 2026-10-09; not a legal certification.
-    'reviewed_on' => '2026-10-09',
+    'reviewed_on' => '2026-10-13',
+    // Hosting details supplied by the user on 2026-10-13.
+    'hosting' => [
+        'name' => 'HOSTINGER operations, UAB',
+        'street' => 'Švitrigailos str. 34',
+        'city' => '03230 Vilnius',
+        'phone' => '+370 645 03378',
+        'email' => 'domains@hostinger.com',
+        'website' => 'https://www.hostinger.fr/',
+    ],
     // User confirmed receipt of returns at the registered office, including bulky goods.
     'returns_at_registered_office' => true,
     // CM2C public details verified; effective membership confirmed by the user on 2026-10-09.

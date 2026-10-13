@@ -2,8 +2,11 @@
 
 return [
     'draft' => 'Informationen zum Service',
-    'draft_detail' => 'HOMYA ist unten identifiziert. Diese Version ist lokal: der öffentliche Hosting-Anbieter ist noch nicht angegeben. Rücktransport- und Erstattungsdienste sind nicht angebunden. Postanschrift und Online-Widerruf bleiben verfügbar.',
-    'reviewed' => 'Aktualisiert am 9. Oktober 2026',
+    'draft_detail' => 'HOMYA und der Hosting-Anbieter der Website sind unten angegeben. Rücktransport- und Erstattungsdienste sind nicht angebunden. Postanschrift und Online-Widerruf bleiben verfügbar.',
+    'reviewed' => 'Aktualisiert am 13. Oktober 2026',
+    'hosting_address' => 'Anschrift des Hosting-Anbieters',
+    'hosting_country' => 'Litauen',
+    'hosting_website' => 'Offizielle Website',
     'toc' => 'Auf dieser Seite',
     'purchase_information' => 'Lieferung, Zahlung und wichtige Dokumente',
     'related' => 'Rechtliche Informationen',
@@ -52,9 +55,9 @@ return [
             'legal' => true,
             'sections' => [
                 ['id' => 'editeur', 'title' => 'Betreiber und Kontakt', 'paragraphs' => ['Die Website wird von HOMYA, einer französischen EURL mit den unten angegebenen Daten, betrieben. Der Katalog umfasst Brennholz und Brennstoffe, Heizgeräte, Haushaltsgeräte, Möbel und Fernseher.', 'HOMYA ist ein unabhängiger Händler. Herstellermarken gehören ihren Inhabern; eine offizielle Verbindung wird nicht behauptet.'], 'items' => ['Kontaktieren Sie HOMYA über die unten angegebenen E-Mail- und Telefondaten. Korrespondenz kann auch an den angegebenen Sitz gerichtet werden.', 'Der Geschäftsführer ist oben angegeben.', 'Der Sitz empfängt Erklärungen und zurückgesendete Waren, auch sperrige Güter, nach den Verfahren unter Rückgabe & Widerruf. Ein Laden oder Abholpunkt wird nicht angekündigt.'], 'company_details' => true],
-                ['id' => 'hebergement', 'title' => 'Informationen zur Website', 'paragraphs' => ['Die Website wird von HOMYA betrieben. Identität und Kontaktdaten stehen auf dieser Seite. Bei Fragen zur Nutzung kontaktieren Sie unser Team.']],
+                ['id' => 'hebergement', 'title' => 'Hosting-Anbieter der Website', 'paragraphs' => ['Die HOMYA-Website wird von HOSTINGER operations, UAB gehostet.'], 'hosting_details' => true],
                 ['id' => 'contenus', 'title' => 'Inhalte, geistiges Eigentum und externe Links', 'paragraphs' => ['Das HOMYA-Logo und eigene Seitenelemente sind im Rahmen der geltenden Rechte geschützt. Fotos, Anleitungen, Marken und Inhalte Dritter unterliegen den Rechten ihrer Inhaber. Wiederverwendung muss diese Rechte beachten; kein ausschließliches Eigentum an fremden Inhalten wird behauptet.', 'Externe Links öffnen eigenständige Dienste. Beachten Sie deren Bedingungen und Datenschutzinformationen. HOMYA bleibt für seine eigenen Pflichten und Produktinformationen verantwortlich.']],
-                ['id' => 'france', 'title' => 'Frankreich', 'paragraphs' => ['HOMYA hat seinen Sitz in Frankreich. Die vom Unternehmen mitgeteilten Daten stehen oben. Angaben zum öffentlichen Hosting sind noch zu ergänzen.']],
+                ['id' => 'france', 'title' => 'Frankreich', 'paragraphs' => ['HOMYA hat seinen Sitz in Frankreich. Die vom Unternehmen mitgeteilten Daten und die Kontaktdaten des Hosting-Anbieters stehen oben.']],
                 ['id' => 'belgique', 'title' => 'Belgien', 'paragraphs' => ['Bei einem Unternehmen mit Sitz in Belgien sind insbesondere Name, geografische Anschrift, Kontaktdaten, Unternehmensnummer der ZDU/BCE und gegebenenfalls Umsatzsteuerangaben anzugeben. Eine Lieferung nach Belgien bedeutet nicht, dass HOMYA dort eine Niederlassung oder Registereintragung besitzt.']],
                 ['id' => 'allemagne', 'title' => 'Deutschland', 'paragraphs' => ['Bei einer deutschen Niederlassung muss das Impressum leicht zugänglich sein: Name, Anschrift, bei juristischen Personen Rechtsform und Vertreter, elektronische Kontaktmöglichkeit, gegebenenfalls Register und Registernummer sowie vorhandene steuerliche Identifikationsnummern nach DDG. Die genaue Anwendung auf HOMYA ist anhand des Unternehmenssitzes zu prüfen.']],
                 ['id' => 'mediation', 'title' => 'Verbraucherschlichtung', 'paragraphs' => [], 'mediator_details' => true],

@@ -2,8 +2,11 @@
 
 return [
     'draft' => 'Service information',
-    'draft_detail' => 'HOMYA is identified below. This is a local version: public hosting details have not been supplied. Return transport and refund services are not connected. Postal correspondence and the online withdrawal declaration remain available.',
-    'reviewed' => 'Updated on 9 October 2026',
+    'draft_detail' => 'HOMYA and the website hosting provider are identified below. Return transport and refund services are not connected. Postal correspondence and the online withdrawal declaration remain available.',
+    'reviewed' => 'Updated on 13 October 2026',
+    'hosting_address' => 'Hosting provider address',
+    'hosting_country' => 'Lithuania',
+    'hosting_website' => 'Official website',
     'toc' => 'On this page',
     'purchase_information' => 'Delivery, payment and useful documents',
     'related' => 'Legal information',
@@ -52,9 +55,9 @@ return [
             'legal' => true,
             'sections' => [
                 ['id' => 'editeur', 'title' => 'Operator and contact', 'paragraphs' => ['HOMYA is operated by HOMYA, a French EURL, identified below. Its catalogue covers firewood and fuels, heating equipment, appliances, furniture and televisions.', 'HOMYA is an independent retailer. Manufacturer trademarks belong to their owners; no official affiliation is claimed.'], 'items' => ['Use the email and telephone details below to contact HOMYA. Correspondence may also be sent to its registered office.', 'The company manager is identified above.', 'The registered office receives notifications and returned goods, including bulky items, under the Returns & withdrawal procedures. No shop or order collection point is advertised.'], 'company_details' => true],
-                ['id' => 'hebergement', 'title' => 'About this website', 'paragraphs' => ['The website is operated by HOMYA, whose identity and contact details appear on this page. Contact our team for questions about using it.']],
+                ['id' => 'hebergement', 'title' => 'Website hosting provider', 'paragraphs' => ['The HOMYA website is hosted by HOSTINGER operations, UAB.'], 'hosting_details' => true],
                 ['id' => 'contenus', 'title' => 'Content, intellectual property and external links', 'paragraphs' => ['The HOMYA logo and original site elements are protected within the scope of applicable rights. Third-party photos, manuals, trademarks and content remain subject to their owners’ rights. Reuse must respect those rights; no exclusive ownership of third-party content is claimed.', 'External links open separate services. Check their terms and privacy policies when using them. HOMYA remains responsible for its own obligations and the product information it supplies.']],
-                ['id' => 'france', 'title' => 'France', 'paragraphs' => ['HOMYA is established in France. Company details supplied by the seller appear above. Public hosting information remains to be completed.']],
+                ['id' => 'france', 'title' => 'France', 'paragraphs' => ['HOMYA is established in France. Company details supplied by the seller and the hosting provider’s contact details appear above.']],
                 ['id' => 'belgique', 'title' => 'Belgium', 'paragraphs' => ['For a company established in Belgium, provide its name, geographical address, contact details, CBE enterprise number and VAT details where applicable. Delivery to Belgium does not mean that HOMYA has a Belgian establishment or registration.']],
                 ['id' => 'allemagne', 'title' => 'Germany', 'paragraphs' => ['For a German establishment, the Impressum must be readily accessible: name, address, legal form and representative for a legal entity, electronic contact, register and number where registered, and the tax identifiers specified by the DDG where held. Exact application to HOMYA must be checked against its establishment.']],
                 ['id' => 'mediation', 'title' => 'Consumer mediation', 'paragraphs' => [], 'mediator_details' => true],

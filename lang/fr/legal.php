@@ -2,8 +2,11 @@
 
 return [
     'draft' => 'Informations sur ce service',
-    'draft_detail' => 'HOMYA est identifié ci-dessous. Cette version est locale : l’hébergeur public n’est pas encore renseigné. Les services de transport de retour et de remboursement ne sont pas connectés. Le courrier au siège et la déclaration de rétractation en ligne restent accessibles.',
-    'reviewed' => 'Mise à jour le 9 octobre 2026',
+    'draft_detail' => 'HOMYA et l’hébergeur du site sont identifiés ci-dessous. Les services de transport de retour et de remboursement ne sont pas connectés. Le courrier au siège et la déclaration de rétractation en ligne restent accessibles.',
+    'reviewed' => 'Mise à jour le 13 octobre 2026',
+    'hosting_address' => 'Adresse de l’hébergeur',
+    'hosting_country' => 'Lituanie',
+    'hosting_website' => 'Site officiel',
     'toc' => 'Sur cette page',
     'purchase_information' => 'Livraison, paiement et documents utiles',
     'related' => 'Informations légales',
@@ -52,9 +55,9 @@ return [
             'legal' => true,
             'sections' => [
                 ['id' => 'editeur', 'title' => 'Éditeur et contact', 'paragraphs' => ['Le site HOMYA est exploité par la société HOMYA, EURL établie en France, dont l’identité figure ci-dessous. Le catalogue propose du bois et des combustibles, des appareils de chauffage, de l’électroménager, du mobilier et des téléviseurs.', 'HOMYA est un revendeur indépendant. Les marques des fabricants restent la propriété de leurs titulaires ; aucune affiliation officielle n’est revendiquée.'], 'items' => ['Utilisez les coordonnées e-mail et téléphone ci-dessous pour contacter HOMYA. Toute correspondance peut également être adressée au siège indiqué.', 'Le gérant de l’entreprise est identifié ci-dessus.', 'Le siège reçoit les notifications et les produits retournés, y compris les biens volumineux, selon les modalités de la page Retours & rétractation. Aucun magasin ou point de retrait n’est annoncé.'], 'company_details' => true],
-                ['id' => 'hebergement', 'title' => 'Informations sur le site', 'paragraphs' => ['Le site est exploité par HOMYA, dont l’identité et les coordonnées figurent sur cette page. Pour une question sur son utilisation, contactez notre équipe.']],
+                ['id' => 'hebergement', 'title' => 'Hébergeur du site', 'paragraphs' => ['Le site HOMYA est hébergé par HOSTINGER operations, UAB.'], 'hosting_details' => true],
                 ['id' => 'contenus', 'title' => 'Contenus, propriété intellectuelle et liens externes', 'paragraphs' => ['Le logo HOMYA et les éléments propres au site sont protégés dans les limites des droits applicables. Les photographies, notices, marques et contenus de tiers restent soumis aux droits de leurs titulaires. Toute réutilisation doit respecter ces droits ; aucune propriété exclusive de contenus tiers n’est revendiquée.', 'Les liens externes ouvrent des services distincts. Consultez leurs conditions et politiques lorsque vous les utilisez. HOMYA demeure responsable de ses propres obligations et des informations qu’il fournit sur ses produits.']],
-                ['id' => 'france', 'title' => 'France', 'paragraphs' => ['HOMYA est établi en France. Les informations d’identification fournies par la société sont reprises ci-dessus. Les informations de l’hébergeur public doivent encore être complétées.']],
+                ['id' => 'france', 'title' => 'France', 'paragraphs' => ['HOMYA est établi en France. Les informations d’identification fournies par la société et les coordonnées de l’hébergeur figurent ci-dessus.']],
                 ['id' => 'belgique', 'title' => 'Belgique', 'paragraphs' => ['Pour une entreprise établie en Belgique, renseigner notamment la dénomination, l’adresse géographique, les coordonnées de contact, le numéro d’entreprise BCE et la TVA si applicable. Livrer en Belgique ne signifie pas que HOMYA possède une entreprise ou une immatriculation belge.']],
                 ['id' => 'allemagne', 'title' => 'Allemagne', 'paragraphs' => ['Pour un établissement allemand, l’Impressum doit être facilement accessible : nom, adresse, forme juridique et représentant pour une personne morale, contact électronique, registre et numéro lorsqu’il y a immatriculation, identifiants fiscaux visés par le DDG lorsqu’ils existent. L’application exacte à HOMYA reste à vérifier selon son établissement.']],
                 ['id' => 'mediation', 'title' => 'Médiation de la consommation', 'paragraphs' => [], 'mediator_details' => true],

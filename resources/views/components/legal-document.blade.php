@@ -16,6 +16,7 @@
                 @endunless
             @endforeach
             @if($section['company_details'] ?? false)<x-company-details />@endif
+            @if($section['hosting_details'] ?? false)<x-hosting-details />@endif
             @if($section['return_details'] ?? false)<x-return-details />@endif
             @if($section['mediator_details'] ?? false)<x-mediator-details />@endif
             @if(isset($section['items']))<ul>@foreach($section['items'] as $item)<li>{{ $item }}</li>@endforeach</ul>@endif

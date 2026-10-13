@@ -44,6 +44,7 @@ final class OrderTerms
         }
 
         $terms['seller'] = config('legal.company');
+        $terms['hosting'] = config('legal.hosting');
         $terms['returns_address'] = app(LegalInformation::class)->returnAddress();
         $terms['mediator'] = app(LegalInformation::class)->mediator();
         $terms['contact'] = [
