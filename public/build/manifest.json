@@ -4,7 +4,7 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-N3qMbCsG.css",
+    "file": "assets/app-DwAQkvhW.css",
     "name": "app",
     "names": [
       "app.css"
@@ -16,13 +16,13 @@
     ]
   },
   "resources/js/admin.js": {
-    "file": "assets/admin-DUnB6SGt.js",
+    "file": "assets/admin-Bia_Djch.js",
     "name": "admin",
     "src": "resources/js/admin.js",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CaCZG12P.js",
+    "file": "assets/app-D34Q0VWe.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

@@ -9,10 +9,14 @@
 </head>
 <body class="admin-page">
 <a class="skip-link" href="#main">Aller au contenu</a>
-<header class="admin-header"><a href="{{ route('admin.dashboard') }}" aria-label="HOMYA Administration"><x-brand-logo /></a><span class="admin-label">Administration · Local</span><a href="{{ route('home', ['locale' => 'fr']) }}">Voir la boutique ↗</a></header>
+<header class="admin-header"><a href="{{ route('admin.dashboard') }}" aria-label="HOMYA Administration"><x-brand-logo /></a><span class="admin-label">Administration · Local</span>
+@unless($guest)
+<button class="admin-menu-toggle" type="button" data-admin-menu-toggle aria-controls="admin-navigation-panel" aria-expanded="false" hidden><i class="fa-solid fa-bars" aria-hidden="true"></i><span>Menu</span><span class="admin-count-badge" data-admin-count="orders" aria-label="Commandes non consultées"></span></button>
+@endunless
+<a href="{{ route('home', ['locale' => 'fr']) }}">Voir la boutique ↗</a></header>
 <div class="admin-shell {{ $guest ? 'admin-shell--guest' : '' }}">
 @unless($guest)
-<aside class="admin-sidebar"><nav aria-label="Administration">
+<aside id="admin-navigation-panel" class="admin-sidebar"><nav aria-label="Administration">
 @foreach(['dashboard' => 'Vue d’ensemble', 'orders' => 'Commandes', 'inventory' => 'Produits et stocks', 'returns' => 'Demandes de retour'] as $key => $label)
 @php($active = request()->routeIs('admin.'.$key) || ($key === 'orders' && request()->routeIs('admin.order')) || ($key === 'returns' && request()->routeIs('admin.return')))
 <a href="{{ route('admin.'.$key) }}" @if($active) aria-current="page" @endif>{{ $label }} @if($key === 'orders')<span class="admin-count-badge" data-admin-count="orders" aria-label="Commandes non consultées"></span>@endif</a>
@@ -28,7 +32,7 @@
 <p>Les quantités de stock sont visibles uniquement dans cet espace privé.</p>
 <form method="post" action="{{ route('admin.logout') }}">@csrf<button class="admin-secondary" type="submit">Se déconnecter</button></form></aside>
 @endunless
-<main id="main" class="admin-main"><p class="admin-eyebrow">HOMYA / Espace administrateur</p><h1>{{ $title }}</h1>
+<main id="main" class="admin-main" tabindex="-1"><p class="admin-eyebrow">HOMYA / Espace administrateur</p><h1>{{ $title }}</h1>
 <div class="admin-new-order-alert" data-admin-new-order-alert hidden role="alert"><span><i class="fa-solid fa-bell" aria-hidden="true"></i> Nouvelle commande reçue. Le badge du menu Commandes indique le nombre à consulter.</span><a href="{{ route('admin.orders') }}">Voir les commandes →</a></div>
 @if($errors->any())<div class="admin-notice" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 @if(session('admin_message'))<div class="admin-notice admin-notice--success" role="status">{{ session('admin_message') }}</div>@endif

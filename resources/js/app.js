@@ -166,10 +166,13 @@ document.querySelector('.form-error')?.focus();
 // Measured sticky header offset also protects anchors with long translated labels.
 const stickyHeader = document.querySelector('.home-header-wrap');
 if (stickyHeader && 'ResizeObserver' in window) {
-    const observer = new ResizeObserver(() => {
-        document.documentElement.style.setProperty('--anchor-offset', `${Math.ceil(stickyHeader.getBoundingClientRect().height) + 20}px`);
-    });
+    const updateAnchorOffset = () => {
+        const height = getComputedStyle(stickyHeader).position === 'sticky' ? stickyHeader.getBoundingClientRect().height : 0;
+        document.documentElement.style.setProperty('--anchor-offset', `${Math.ceil(height) + 20}px`);
+    };
+    const observer = new ResizeObserver(updateAnchorOffset);
     observer.observe(stickyHeader);
+    window.addEventListener('resize', updateAnchorOffset);
 }
 
 document.querySelector('[data-open-category-filter]')?.addEventListener('click', () => {

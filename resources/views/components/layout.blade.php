@@ -43,7 +43,7 @@
             <label for="catalogue-search">{{ __('home.search') }}</label>
             <div class="search-controls">
                 <input id="catalogue-search" name="q" maxlength="120" type="search" value="{{ $searchQuery }}" placeholder="{{ __('home.search_placeholder') }}" aria-describedby="search-help" @disabled(! $catalogueReady)>
-                @if ($catalogueReady)<button type="submit" class="search-submit" aria-label="{{ __('catalogue.search_submit') }}">{{ __('catalogue.search_submit') }}</button>@endif
+                @if ($catalogueReady)<button type="submit" class="search-submit" aria-label="{{ __('catalogue.search_submit') }}"><svg class="search-submit-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="search-submit-label">{{ __('catalogue.search_submit') }}</span></button>@endif
             </div>
             <p id="search-help">{{ $catalogueReady ? __('catalogue.search_help') : __('home.search_unavailable') }}</p>
         </form>

@@ -45,12 +45,12 @@
     <style>
         :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #28241b; background: #faf9f6; }
         * { box-sizing: border-box; }
-        body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; }
-        main { width: min(100%, 620px); padding: clamp(28px, 7vw, 64px); background: #fff; border: 1px solid #28241b24; border-radius: 20px; box-shadow: 0 18px 60px #28241b12; }
+        body { min-height: 100vh; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 24px; }
+        main { min-width: 0; width: min(100%, 620px); padding: clamp(28px, 7vw, 64px); background: #fff; border: 1px solid #28241b24; border-radius: 20px; box-shadow: 0 18px 60px #28241b12; overflow-wrap: anywhere; }
         .brand { display: inline-block; color: #28241b; font-size: 23px; font-weight: 850; letter-spacing: -.06em; text-decoration: none; }
         .brand span { color: #a76b00; }
         .eyebrow { margin: 42px 0 12px; color: #6d675b; font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
-        h1 { max-width: 13ch; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(34px, 8vw, 52px); line-height: 1.08; letter-spacing: -.035em; }
+        h1 { max-width: 100%; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(24px, 7.5vw, 52px); line-height: 1.08; letter-spacing: -.035em; overflow-wrap: normal; word-break: normal; }
         .details { margin: 20px 0 0; color: #514c42; font-size: 17px; line-height: 1.65; }
         .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
         .button { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 11px 18px; border: 1px solid #947200; border-radius: 9px; background: #f5c842; color: #28241b; font-size: 15px; font-weight: 750; text-align: center; text-decoration: none; }

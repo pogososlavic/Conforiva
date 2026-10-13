@@ -2,6 +2,44 @@ const panel = document.querySelector('[data-admin-notifications]');
 const soundToggle = document.querySelector('[data-admin-sound-toggle]');
 const soundTest = document.querySelector('[data-admin-sound-test]');
 const newOrderAlert = document.querySelector('[data-admin-new-order-alert]');
+const menuToggle = document.querySelector('[data-admin-menu-toggle]');
+const navigationPanel = document.getElementById('admin-navigation-panel');
+
+if (menuToggle && navigationPanel) {
+    const mobileNavigation = window.matchMedia('(max-width: 959px)');
+    const closeMenu = (restoreFocus = false) => {
+        if (restoreFocus) menuToggle.focus();
+        menuToggle.setAttribute('aria-expanded', 'false');
+        navigationPanel.hidden = true;
+    };
+    const syncNavigation = () => {
+        if (mobileNavigation.matches) {
+            menuToggle.hidden = false;
+            closeMenu(navigationPanel.contains(document.activeElement));
+        } else {
+            navigationPanel.hidden = false;
+            if (document.activeElement === menuToggle) {
+                navigationPanel.querySelector('[aria-current="page"], a, button')?.focus();
+            }
+            menuToggle.setAttribute('aria-expanded', 'false');
+            menuToggle.hidden = true;
+        }
+    };
+    menuToggle.addEventListener('click', () => {
+        if (!mobileNavigation.matches) return;
+        const open = menuToggle.getAttribute('aria-expanded') !== 'true';
+        menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        navigationPanel.hidden = !open;
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && mobileNavigation.matches && !navigationPanel.hidden) {
+            closeMenu(true);
+        }
+    });
+    mobileNavigation.addEventListener('change', syncNavigation);
+    syncNavigation();
+}
+
 let busy = false;
 const soundPreferenceKey = 'homya-admin-order-sound';
 let soundEnabled = (() => { try { return window.localStorage.getItem(soundPreferenceKey) === 'enabled'; } catch { return false; } })();
@@ -99,14 +137,14 @@ const refresh = async () => {
         for (const key of ['messages', 'notifications', 'orders']) {
             const count = counts[key];
             if (!Number.isInteger(count) || count < 0) throw new Error('invalid');
-            const badge = document.querySelector(`[data-admin-count="${key}"]`);
-            if (badge) {
+            const badges = document.querySelectorAll(`[data-admin-count="${key}"]`);
+            badges.forEach(badge => {
                 badge.textContent = count > 0 ? String(count) : '';
                 if (key === 'orders') {
                     badge.setAttribute('aria-label', `${count} commande(s) non consultée(s)`);
                     badge.title = `${count} commande(s) non consultée(s)`;
                 }
-            }
+            });
         }
         const currentLatestOrderId = typeof counts.latest_order_id === 'string' ? counts.latest_order_id : null;
         const newOrderArrived = orderBaselineReady && currentLatestOrderId && currentLatestOrderId !== latestOrderId;
