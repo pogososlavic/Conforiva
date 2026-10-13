@@ -1,6 +1,6 @@
 # HOMYA — connexion à Search Console et Merchant Center
 
-Préparation du 13 octobre 2026. Domaine confirmé : **https://homya.eu**. Même compte Google pour les deux services. Livraison gratuite FR/BE/DE confirmée ; prix et stocks validés par HOMYA, données fabricant encore à compléter. Les modifications de ce travail sont dans le dépôt HOMYA1 ; aucune installation sur Hostinger ni action dans un compte Google effectuée.
+Préparation du 13 octobre 2026. Domaine confirmé : **https://homya.eu**. Même compte Google pour les deux services. Livraison gratuite FR/BE/DE confirmée ; prix et stocks validés par HOMYA, données fabricant encore à compléter. Le commit SEO `8020cfc2` a été déployé par l'utilisateur. Après son autorisation explicite, l'ouverture de l'indexation et le renouvellement des caches ont été appliqués dans hPanel. Le correctif complémentaire de disponibilité du sitemap est inclus dans le dépôt pour le déploiement Git suivant. À la demande de résolution de l'erreur Search Console, un test actif Google et une nouvelle soumission du sitemap HTTPS ont ensuite été effectués ; le traitement du rapport reste à confirmer.
 
 ## 1. État vérifié et corrections
 
@@ -10,7 +10,7 @@ Audit courant FR/EN/DE : 3 709 produits dans chaque langue, titres/descriptions 
 
 | Correction dans le dépôt | Résultat |
 | --- | --- |
-| Sitemap | Toutes les pages d'information éligibles utilisent la même règle que leurs métadonnées ; contact/livraison/paiement ajoutés, pages privées ou encore préparatoires exclues |
+| Sitemap | Toutes les pages d'information éligibles utilisent la même règle que leurs métadonnées ; contact/livraison/paiement ajoutés, pages privées ou encore préparatoires exclues. XML consultable sur l'origine HTTPS exacte en production sans debug, même avec l'indexation fermée ; `noindex` reste alors actif |
 | Architecture Merchant | `product_type` dérivé de l'univers et de la catégorie affichés, dans la langue du flux |
 | Identifiants | SKU HOMYA stable dans flux/JSON-LD ; GTIN/MPN structurés seulement après revue factuelle actuelle ; référence interne jamais assimilée automatiquement à un MPN |
 | Catégorie Google / EPREL | Champs de revue facultatifs, format contrôlé ; aucun numéro de catégorie ou code de certification inventé |
@@ -54,6 +54,10 @@ L'architecture de la boutique passe par `product_type`, distinct de la taxonomie
 
 Contrôle public du 13 octobre : accueil FR accessible en HTTPS, directive `noindex, nofollow` ; robots `Disallow: /` ; `/sitemap.xml` et `/google/merchant/fr.xml` répondent 404. Les pages contact/livraison/paiement/retours/confidentialité sont accessibles, mais non indexables. Quelques lectures GET des accueils ont échoué au niveau réseau ; ce n'est pas une mesure d'indisponibilité globale.
 
+Diagnostic hPanel du même jour : le commit `8020cfc2` est déjà déployé sur `main`. La configuration privée contient `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://homya.eu`, `HOMYA_PUBLIC_URL=https://homya.eu`, mais `HOMYA_SEO_INDEXING_ENABLED=false`. Un cache `bootstrap/cache/config.php` antérieur au dernier déploiement est présent. Le code déployé lie encore l'accès au sitemap à l'ouverture de l'indexation ; le correctif local sépare ces contrôles.
+
+Un commit/push seul ne change pas le `.env` privé de Hostinger et ne renouvelle pas ce cache. La validation DNS de la propriété Search Console peut être faite avant le déploiement ; la soumission du sitemap doit attendre un XML public accessible et l'ouverture effective de l'exploration.
+
 Installer les fichiers préparés sur l'hébergement avec sauvegarde, puis appliquer dans **la configuration privée de production**, après recette :
 
 ```dotenv
@@ -64,7 +68,7 @@ HOMYA_PUBLIC_URL=https://homya.eu
 HOMYA_SEO_INDEXING_ENABLED=true
 ```
 
-Ces valeurs sont une procédure de production ; elles n'ont pas été appliquées à `.env` local ou distant pendant ce travail. L'exemple de configuration indique désormais le domaine confirmé. Le serveur doit diriger le site vers Laravel `public/`, conserver la règle dynamique de `robots.txt`, rediriger HTTP et l'éventuel www vers l'origine HTTPS choisie. Les versions FR/EN/DE restent des chemins sur cette origine.
+Ces valeurs sont une procédure de production. Le 13 octobre, après autorisation explicite, seul `HOMYA_SEO_INDEXING_ENABLED` a été passé de `false` à `true` dans le `.env` distant ; les quatre autres valeurs étaient déjà correctes. Le `.env` local reste inchangé. Le serveur doit diriger le site vers Laravel `public/`, conserver la règle dynamique de `robots.txt`, rediriger HTTP et l'éventuel www vers l'origine HTTPS choisie. Les versions FR/EN/DE restent des chemins sur cette origine.
 
 Après configuration, purger puis reconstruire les caches avec le PHP compatible de l'hébergement :
 
@@ -72,6 +76,8 @@ Après configuration, purger puis reconstruire les caches avec le PHP compatible
 php artisan optimize:clear
 php artisan config:cache
 ```
+
+Avec le gestionnaire de fichiers hPanel, si aucun terminal compatible n'est disponible : après validation du changement de production, modifier uniquement les variables concernées dans le `.env` existant. Pour retirer le cache de configuration de façon réversible, renommer seulement `bootstrap/cache/config.php` en `config.before-indexing-20261013.php.bak`, dans le même dossier protégé. Ne pas modifier `packages.php`, `services.php` ni les autres fichiers. Laravel relira alors les variables privées à la prochaine requête. Le bouton hPanel **Vider le cache** renouvelle le cache Web/CDN ; il ne remplace pas cette opération Laravel. Reconstruire ensuite le cache de configuration avec `php artisan config:cache` lorsqu'un terminal compatible sera disponible. Les secrets du `.env` et de la sauvegarde de cache restent privés.
 
 Contrôler de nouveau les réponses réelles :
 
@@ -81,6 +87,16 @@ Contrôler de nouveau les réponses réelles :
 - Panier/commande/suivi/administration : accès protégés et `noindex` conservé. Les pages légales encore préparatoires restent accessibles aux utilisateurs, sans prétendre à leur validation juridique.
 
 Ne pas simplement supprimer le fichier robots fermé : il est un repli de sécurité. C'est le contrôleur Laravel, avec la bonne configuration de production, qui doit servir la réponse publique. Le script `python3 scripts/audit_google_public.py` facilite le relevé des statuts publics, sans cookies affichés ni formulaire soumis.
+
+Vérification du correctif sitemap local : **9 tests / 327 assertions réussis** dans `GoogleSeoMerchantTest`, sans base réelle ni réseau. Couverture : index XML et enfants FR/EN/DE avec l'indexation fermée, conservation de `noindex`/robots fermé/Merchant fermé, refus hors origine HTTPS de production ou en debug, erreurs catalogue 503 et blocs inexistants 404. Pint et `git diff --check` réussis. Ce correctif local n'est pas encore inclus dans le commit déployé mentionné ci-dessus.
+
+### Résultat de l'intervention hPanel autorisée
+
+- Le réglage d'indexation a été enregistré à `true` ; l'ancien cache a été renommé en `bootstrap/cache/config.before-indexing-20261013.php.bak`, dans son dossier protégé. Aucun autre fichier de cache n'a été modifié. Le bouton hPanel **Vider le cache** a confirmé le succès. Le cache Laravel n'a pas été reconstruit, faute de terminal utilisé pour cette intervention.
+- Contrôle public GET du 13 octobre 2026 à 22:55 UTC : `/sitemap.xml` répond **200 XML valide**, avec 15 enfants. Tous répondent **200 XML valide**, sans directive `noindex` : 79 URL de pages et 3 709 URL de produits par langue, réparties sur quatre blocs (1 000 / 1 000 / 1 000 / 709).
+- `/robots.txt` répond 200 avec `Allow: /` et l'URL exacte du sitemap. L'accueil `/fr` répond 200 avec meta et en-tête `index, follow, max-image-preview:large`, et canonical `https://homya.eu/fr`.
+- Le flux `/google/merchant/fr.xml` reste 404 : aucun prérequis ou produit n'a été approuvé pour ouvrir Merchant. Aucun prix, stock, commande, politique commerciale ni compte Google n'a été modifié.
+- Preuve : `output/qa-google-20261013/public-sitemap-after-hostinger-fix.json`. Chrome contrôlé a affiché `ERR_BLOCKED_BY_CLIENT` pour les fichiers XML/texte ; la réponse serveur a été vérifiée séparément par HTTP HEAD puis GET, sans contourner de protection du navigateur. Ce contrôle confirme l'accessibilité publique, pas encore la récupération ou l'indexation par Google.
 
 ## 4. Connecter Search Console
 
@@ -92,6 +108,18 @@ Ne pas simplement supprimer le fichier robots fermé : il est un repli de sécur
 6. Suivre les pages exclues, erreurs serveur, canonicals et résultats enrichis. La validation DNS prouve la propriété ; elle ne force pas l'indexation.
 
 Le DNS couvre le domaine et ses variantes. La balise `HOMYA_GOOGLE_SITE_VERIFICATION` n'est nécessaire que si une méthode HTML/préfixe d'URL est choisie à la place ; utiliser alors la valeur fournie par Google, pas un code fictif. Aucun compte Analytics ou tag publicitaire n'est nécessaire pour cette méthode DNS.
+
+### Diagnostic « Impossible de récupérer le sitemap » — 13 octobre 2026
+
+Le compte contient deux tentatives, `http://homya.eu/sitemap.xml` et `https://homya.eu/sitemap.xml`. La propriété Domaine est confirmée ; elle a été ajoutée le 13 octobre. Lors de la lecture initiale, les deux lignes indiquaient un type inconnu, zéro page découverte et un échec. L'adresse HTTP répond 301 vers HTTPS : utiliser directement l'adresse HTTPS, les redirections n'étant pas suivies pour l'URL soumise dans ce rapport. [Rapport Google](https://support.google.com/webmasters/answer/7451001?hl=fr).
+
+Contrôles publics renouvelés : sitemap HTTPS 200 XML valide, 15 enfants référencés, aucun `noindex`, aucune redirection, environ une seconde pour le GET. `robots.txt` répond 200 avec `Allow: /` et l'adresse exacte du sitemap. Les mêmes réponses ont été observées avec des User-Agent simulant Googlebot et l'outil d'inspection ; ces requêtes ne provenaient pas de Google et ne suffisent pas à prouver son accès.
+
+La preuve indépendante provient du **Test en ligne réel dans Search Console** : le 13 octobre à **23:02:25 UTC**, l'outil d'inspection Google pour smartphone indique **Google a accès à cette URL**, **Exploration autorisée : Oui**, **Récupération de page : Réussie**, **Indexation autorisée : Oui**. Ce test prouve la récupération directe du sitemap, pas son analyse complète par le service de sitemaps ni l'indexation des produits. Aucune demande d'indexation du XML comme page de résultats n'a été envoyée.
+
+Le sitemap exact `https://homya.eu/sitemap.xml` a été soumis de nouveau. Search Console a confirmé **Sitemap envoyé**. Juste après et lors du rechargement du rapport, la ligne conservait encore l'état d'échec et zéro page découverte : ne pas présenter la confirmation d'envoi comme un traitement réussi. Le rapport des actions manuelles indiquait **Aucun problème détecté**. Une précédente réponse fermée de `robots.txt` ou un état de récupération ancien reste une hypothèse ; Google conserve généralement robots jusqu'à 24 heures, parfois davantage lorsque le rafraîchissement échoue. Aucun cache Google ancien n'a été observé directement ; le rapport robots n'était pas encore disponible pour cette nouvelle propriété. [Cache robots Google](https://developers.google.com/crawling/docs/robots-txt/robots-txt-spec#caching).
+
+Preuves privées : `output/qa-google-20261013/public-sitemap-google-agent-check.json`, `gsc-sitemap-live-fetch-success.jpg` et `gsc-sitemap-resubmitted.jpg`. Vérifier l'état après le prochain traitement ; si l'échec persiste, consulter le nouveau détail et l'heure de récupération avant de modifier le site ou l'hébergement. Ne pas créer de nouvelles URL de sitemap ou soumissions multiples pour contourner un état ancien.
 
 ## 5. Connecter Merchant Center
 
@@ -118,6 +146,6 @@ Le DNS couvre le domaine et ses variantes. La balise `HOMYA_GOOGLE_SITE_VERIFICA
 
 Les identifiants, caractéristiques et images spécifiques aux variantes exigent encore des données fournisseur. Les politiques décrivent maintenant Hostinger pour l'envoi des devis ; lieux de traitement/sauvegardes, contrats, transferts et calendrier effectif de conservation restent à vérifier. La proposition de conservation figure en fin de [INFORMATIONS-LEGALES-HOMYA.md](INFORMATIONS-LEGALES-HOMYA.md) et attend validation avant publication comme règle effective ou mise en place d'une suppression.
 
-La publication des correctifs, l'ouverture de l'indexation, la revue des moyens de règlement et la connexion aux comptes Google sont des étapes distinctes. Aucune campagne, dépense, commande réelle, émission d'e-mail ou demande d'indexation n'a été effectuée pour ces corrections. Les tests locaux portent sur fixtures/SQLite ; la lecture du catalogue/inventaire réel est séparée de ces tests. Google décide de l'indexation et de l'approbation.
+La publication des correctifs, l'ouverture de l'indexation, la revue des moyens de règlement et la connexion aux comptes Google sont des étapes distinctes. L'indexation est ouverte sur le serveur et le sitemap HTTPS a été soumis de nouveau dans Search Console après un test actif réussi ; son traitement reste à confirmer. Aucune campagne, dépense, commande réelle, émission d'e-mail ou demande d'indexation de page n'a été effectuée par Codex. Les tests locaux portent sur fixtures/SQLite ; la lecture du catalogue/inventaire réel est séparée de ces tests. Google décide de l'indexation et de l'approbation.
 
 Vérification finale : **82 tests ciblés / 4 097 assertions réussis**, sur SEO/flux/audit, informations légales/retours, panier/checkout/virement et administration. Les anciens tests qui attendaient les routes et clés Stripe supprimées ou un RIB dans l'ancien écran de paramètres ont été alignés sur les routes de virement/RIB actuelles ; les protections et la vérification financière restent testées. Pint, syntaxe PHP/Python et `git diff --check` réussis. Aucune régression générale exhaustive, recette responsive, mesure CWV publique, réception réelle d'un devis ni validation de compte Google n'est revendiquée. Preuves dans `output/qa-google-20261013/verification-summary.json`, `inventory-observation.json`, `public-site-audit.json` et les rapports catalogue.

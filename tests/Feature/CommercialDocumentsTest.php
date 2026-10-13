@@ -30,6 +30,8 @@ final class CommercialDocumentsTest extends TestCase
         File::ensureDirectoryExists($this->temporary, 0700);
         $this->app->useStoragePath($this->temporary);
         config(['dashboard.enabled' => true, 'admin.username' => 'fixture', 'admin.password_hash' => Hash::make('fixture-password'), 'database.connections.commerce' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '', 'foreign_key_constraints' => true]]);
+        // Artificial account of zeroes with a valid checksum; never use a real RIB.
+        config(['commerce.bank' => ['enabled' => true, 'beneficiary' => 'Bénéficiaire fictif de test', 'bank_name' => 'Banque fictive de test', 'iban' => 'DE36000000000000000000', 'bic' => 'TESTDE00'], 'mail.default' => 'array']);
         DB::purge('commerce');
         (require database_path('migrations/commerce/2026_10_09_000001_create_commerce_tables.php'))->up();
         (require database_path('migrations/commerce/2026_10_09_000002_create_admin_tables.php'))->up();
@@ -74,7 +76,7 @@ final class CommercialDocumentsTest extends TestCase
 
     private function issue(array $record, ?callable $renderer = null): array
     {
-        return app(DocumentStore::class)->issue($record['id'], $record['revision'], ['prefix' => strtoupper($record['data']['type']).'-TEST', 'first_sequence' => 41, 'series_confirmed' => true], $renderer ?? fn () => '%PDF-fixture');
+        return app(DocumentStore::class)->issue($record['id'], $record['revision'], ['prefix' => 'HOMYA', 'first_sequence' => 1, 'series_confirmed' => true], $renderer ?? fn () => '%PDF-fixture');
     }
 
     public function test_routes_require_private_admin_and_enabled_module(): void
@@ -94,6 +96,20 @@ final class CommercialDocumentsTest extends TestCase
         $this->post('/admin/documents/'.$record['id'], $this->complete('quote') + ['revision' => 1])->assertRedirect();
         $this->get('/admin/documents?q='.rawurlencode('Élodie').'&type=quote')->assertOk()->assertSee('Client synthétique Élodie')->assertSee('24,02');
         $this->get('/admin/documents/'.$record['id'].'/pdf')->assertOk()->assertHeader('Content-Type', 'application/pdf')->assertHeader('Cache-Control', 'no-store, private');
+        $this->assertSame(0, DB::connection('commerce')->table('commerce_orders')->count());
+    }
+
+    public function test_all_draft_types_generate_pdfs_without_issuing_documents(): void
+    {
+        foreach (['quote', 'purchase_order', 'invoice'] as $type) {
+            $draft = $this->draft($type);
+            $store = app(DocumentStore::class);
+
+            $this->assertStringStartsWith('%PDF-', $store->pdf($draft));
+            $this->assertSame('draft', $store->find($draft['id'])['status']);
+            $this->assertNull($store->currentSeries($type));
+        }
+        $this->assertSame([], glob(storage_path('app/private/commercial-documents/*-issued.encrypted')));
         $this->assertSame(0, DB::connection('commerce')->table('commerce_orders')->count());
     }
 
@@ -160,7 +176,7 @@ final class CommercialDocumentsTest extends TestCase
         $this->assertStringContainsString('numéro de TVA', implode(' ', app(DocumentData::class)->missing($result)));
     }
 
-    public function test_numbering_confirmation_is_required_and_global_collisions_are_rejected(): void
+    public function test_numbering_requires_confirmation_and_uses_one_series_for_all_types_and_languages(): void
     {
         $record = $this->draft();
         try {
@@ -169,13 +185,51 @@ final class CommercialDocumentsTest extends TestCase
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('numbering', $e->errors());
         }
+        foreach ([0, 8, 41] as $wrongFirstSequence) {
+            try {
+                app(DocumentStore::class)->issue($record['id'], 1, ['series_confirmed' => true, 'prefix' => 'HOMYA', 'first_sequence' => $wrongFirstSequence], fn () => '%PDF-fixture');
+                $this->fail('The confirmed first sequence cannot be replaced.');
+            } catch (ValidationException $e) {
+                $this->assertArrayHasKey('numbering', $e->errors());
+            }
+            $this->assertNull(app(DocumentStore::class)->currentSeries('invoice'));
+            $this->assertSame('draft', app(DocumentStore::class)->find($record['id'])['status']);
+        }
         $first = $this->issue($record);
-        $this->assertSame('INVOICE-TEST-0041', $first['number']);
+        $this->assertSame('HOMYA/FR-001', $first['number']);
         $next = $this->issue($this->draft());
-        $this->assertSame('INVOICE-TEST-0042', $next['number']);
+        $this->assertSame('HOMYA/FR-002', $next['number']);
         $quote = $this->draft('quote');
-        $this->expectException(ValidationException::class);
-        app(DocumentStore::class)->issue($quote['id'], 1, ['series_confirmed' => true, 'prefix' => 'INVOICE-TEST', 'first_sequence' => 41], fn () => '%PDF-fixture');
+        $english = app(DocumentStore::class)->issue($quote['id'], 1, ['document_language' => 'en'], fn () => '%PDF-fixture');
+        $this->assertSame('HOMYA/EN-003', $english['number']);
+        $purchaseOrder = $this->draft('purchase_order');
+        $german = app(DocumentStore::class)->issue($purchaseOrder['id'], 1, ['document_language' => 'de'], fn () => '%PDF-fixture');
+        $this->assertSame('HOMYA/DE-004', $german['number']);
+        $this->assertSame('en', $english['data']['document_language']);
+        $this->assertSame('de', $german['data']['document_language']);
+        foreach (array_keys(DocumentData::TYPES) as $type) {
+            $this->assertSame(4, app(DocumentStore::class)->currentSeries($type)['sequence']);
+        }
+    }
+
+    public function test_global_archive_collision_blocks_issuance_without_consuming_a_number(): void
+    {
+        $issued = $this->issue($this->draft());
+        // Simulate inconsistent historic numbering in the isolated encrypted archive.
+        $issued['number'] = 'HOMYA/FR-002';
+        $path = storage_path('app/private/commercial-documents/'.$issued['id'].'-issued.encrypted');
+        file_put_contents($path, Crypt::encryptString(json_encode($issued, JSON_THROW_ON_ERROR)));
+        $draft = $this->draft('quote');
+        try {
+            $this->issue($draft);
+            $this->fail('A historic number collision must block issuance.');
+        } catch (ValidationException $error) {
+            $this->assertArrayHasKey('numbering', $error->errors());
+        }
+        $this->assertSame('draft', app(DocumentStore::class)->find($draft['id'])['status']);
+        $this->assertNull(app(DocumentStore::class)->find($draft['id'])['number']);
+        $this->assertSame(1, app(DocumentStore::class)->currentSeries('quote')['sequence']);
+        $this->assertCount(1, glob(storage_path('app/private/commercial-documents/*-issued.encrypted')));
     }
 
     public function test_frozen_archive_encryption_revisions_idempotence_and_duplicate(): void
@@ -225,7 +279,7 @@ final class CommercialDocumentsTest extends TestCase
         }
         $this->assertNull(app(DocumentStore::class)->currentSeries('invoice'));
         $this->assertSame('draft', app(DocumentStore::class)->find($record['id'])['status']);
-        $this->assertSame('INVOICE-TEST-0041', $this->issue($record)['number']);
+        $this->assertSame('HOMYA/FR-001', $this->issue($record)['number']);
     }
 
     public function test_corrupt_archive_stops_numbering_and_symlinks_are_rejected(): void
@@ -252,16 +306,16 @@ final class CommercialDocumentsTest extends TestCase
     {
         $record = $this->draft('quote');
         $url = '/admin/documents/'.$record['id'].'/emettre';
-        $payload = ['revision' => 1, 'password' => 'fixture-password', 'confirmed' => 1, 'prefix' => 'DEV-TEST', 'first_sequence' => 8, 'series_confirmed' => 1];
+        $payload = ['revision' => 1, 'password' => 'fixture-password', 'confirmed' => 1, 'prefix' => 'HOMYA', 'first_sequence' => 1, 'series_confirmed' => 1];
         $this->withSession($this->auth())->post($url, $payload)->assertRedirect('/admin/documents/'.$record['id']);
         $issued = app(DocumentStore::class)->find($record['id']);
-        $this->assertSame('DEV-TEST-0008', $issued['number']);
+        $this->assertSame('HOMYA/FR-001', $issued['number']);
         $this->get('/admin/documents/'.$record['id'])->assertOk()->assertSee('Archive originale');
         $download = $this->get('/admin/documents/'.$record['id'].'/pdf')->assertOk();
         $this->assertSame($issued['pdf_sha256'], hash('sha256', $download->getContent()));
         $this->post($url, $payload)->assertRedirect();
         $this->assertSame(1, DB::connection('commerce')->table('commerce_admin_events')->where('type', 'document_issued')->count());
-        $this->assertSame(8, app(DocumentStore::class)->currentSeries('quote')['sequence']);
+        $this->assertSame(1, app(DocumentStore::class)->currentSeries('quote')['sequence']);
         $this->assertSame(0, DB::connection('commerce')->table('commerce_orders')->count());
         $this->post('/admin/documents/'.$record['id'], $this->complete('quote') + ['revision' => 1])->assertSessionHasErrors('document');
     }
@@ -293,7 +347,7 @@ final class CommercialDocumentsTest extends TestCase
             $this->get('/admin/notifications')->assertOk();
         }
         $this->get('/admin/documents/'.$record['id'].'/pdf')->assertOk();
-        $this->post('/admin/documents/'.$record['id'].'/emettre', ['revision' => 1, 'confirmed' => 1, 'password' => 'fixture-password', 'series_confirmed' => 1, 'prefix' => 'FAC-TEST', 'first_sequence' => 1])->assertRedirect();
+        $this->post('/admin/documents/'.$record['id'].'/emettre', ['revision' => 1, 'confirmed' => 1, 'password' => 'fixture-password', 'series_confirmed' => 1, 'prefix' => 'HOMYA', 'first_sequence' => 1])->assertRedirect();
         $this->assertSame('issued', app(DocumentStore::class)->find($record['id'])['status']);
     }
 
@@ -409,6 +463,6 @@ final class CommercialDocumentsTest extends TestCase
         }
         $numbers = array_column(app(DocumentStore::class)->all(), 'number');
         sort($numbers);
-        $this->assertSame(['QUOTE-TEST-0041', 'QUOTE-TEST-0042'], $numbers);
+        $this->assertSame(['HOMYA/FR-001', 'HOMYA/FR-002'], $numbers);
     }
 }

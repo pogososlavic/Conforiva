@@ -22,7 +22,7 @@ final class SeoController extends Controller
 
     public function index(Request $request, Catalogue $catalogue, Seo $seo)
     {
-        abort_unless($seo->onPublicOrigin($request), 404);
+        abort_unless($seo->onConfiguredPublicOrigin($request), 404);
         app()->setLocale('fr');
         $products = $catalogue->products();
         abort_if($catalogue->sourceUnavailable() || $catalogue->translationUnavailable() || $products->isEmpty(), 503);
@@ -43,7 +43,7 @@ final class SeoController extends Controller
 
     public function pages(Request $request, Catalogue $catalogue, Seo $seo, string $locale)
     {
-        abort_unless($seo->onPublicOrigin($request), 404);
+        abort_unless($seo->onConfiguredPublicOrigin($request), 404);
         app()->setLocale($locale);
         $products = $catalogue->products();
         abort_if($catalogue->sourceUnavailable() || $catalogue->translationUnavailable() || $products->isEmpty(), 503);
@@ -69,7 +69,7 @@ final class SeoController extends Controller
 
     public function products(Request $request, Catalogue $catalogue, Seo $seo, string $locale, string $chunk)
     {
-        abort_unless($seo->onPublicOrigin($request), 404);
+        abort_unless($seo->onConfiguredPublicOrigin($request), 404);
         app()->setLocale($locale);
         $products = $catalogue->products();
         abort_if($catalogue->sourceUnavailable() || $catalogue->translationUnavailable() || $products->isEmpty(), 503);

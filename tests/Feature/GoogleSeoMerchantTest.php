@@ -80,12 +80,18 @@ class GoogleSeoMerchantTest extends TestCase
         return $request;
     }
 
-    private function sitemap(): DOMXPath
+    private function catalogue(array $products, bool $sourceUnavailable = false, bool $translationUnavailable = false): void
     {
         $catalogue = Mockery::mock(Catalogue::class);
-        $catalogue->shouldReceive('products')->andReturn(collect([$this->product() + ['promotion' => null]]));
-        $catalogue->shouldReceive('sourceUnavailable', 'translationUnavailable')->andReturn(false);
+        $catalogue->shouldReceive('products')->andReturn(collect($products));
+        $catalogue->shouldReceive('sourceUnavailable')->andReturn($sourceUnavailable);
+        $catalogue->shouldReceive('translationUnavailable')->andReturn($translationUnavailable);
         $this->app->instance(Catalogue::class, $catalogue);
+    }
+
+    private function sitemap(): DOMXPath
+    {
+        $this->catalogue([$this->product() + ['promotion' => null]]);
         $response = $this->get('https://homya-store.com/sitemaps/fr/pages.xml')->assertOk();
         $document = new DOMDocument;
         $this->assertTrue($document->loadXML($response->getContent()));
@@ -93,6 +99,83 @@ class GoogleSeoMerchantTest extends TestCase
         $xpath->registerNamespace('s', 'http://www.sitemaps.org/schemas/sitemap/0.9');
 
         return $xpath;
+    }
+
+    public function test_production_sitemaps_can_be_inspected_before_indexing_is_enabled(): void
+    {
+        $this->production();
+        config(['seo.indexing_enabled' => false, 'merchant.enabled' => true]);
+        $this->catalogue([$this->product() + ['promotion' => null]]);
+        $origin = 'https://homya-store.com';
+        $index = $this->get($origin.'/sitemap.xml')->assertOk()
+            ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $document = new DOMDocument;
+        $this->assertTrue($document->loadXML($index->getContent()));
+        $xpath = new DOMXPath($document);
+        $xpath->registerNamespace('s', 'http://www.sitemaps.org/schemas/sitemap/0.9');
+        $locations = array_map(fn ($node) => $node->textContent, iterator_to_array($xpath->query('/s:sitemapindex/s:sitemap/s:loc')));
+        $this->assertCount(count(config('homya.locales')) * 2, $locations);
+        foreach (config('homya.locales') as $locale) {
+            foreach (['pages.xml', 'products-1.xml'] as $file) {
+                $url = $origin.'/sitemaps/'.$locale.'/'.$file;
+                $this->assertContains($url, $locations);
+                $response = $this->get($url)->assertOk()
+                    ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
+                    ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+                $child = new DOMDocument;
+                $this->assertTrue($child->loadXML($response->getContent()));
+                $this->assertSame('urlset', $child->documentElement->localName);
+                $this->assertSame('http://www.sitemaps.org/schemas/sitemap/0.9', $child->documentElement->namespaceURI);
+            }
+        }
+        $this->get($origin.'/robots.txt')->assertOk()->assertSee('Disallow: /', false)->assertDontSee('Sitemap:', false);
+        $this->get($origin.'/google/merchant/fr.xml')->assertNotFound();
+        $this->assertFalse(app(Seo::class)->enabled());
+        $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => 'fixture-product']),
+            'Fixture title', 'Fixture description', ['available' => true]);
+        $this->assertSame('noindex, nofollow', $metadata['robots']);
+    }
+
+    public function test_sitemaps_stay_closed_outside_the_configured_safe_public_origin(): void
+    {
+        $this->catalogue([$this->product() + ['promotion' => null]]);
+        $publicOrigin = 'https://homya-store.com';
+        $cases = [
+            ['testing', false, $publicOrigin, $publicOrigin],
+            ['local', false, $publicOrigin, $publicOrigin],
+            ['production', true, $publicOrigin, $publicOrigin],
+            ['production', false, $publicOrigin, 'http://homya-store.com'],
+            ['production', false, $publicOrigin, 'https://www.homya-store.com'],
+            ['production', false, $publicOrigin, 'https://other-store.com'],
+            ['production', false, '', $publicOrigin],
+            ['production', false, 'http://homya-store.com', 'http://homya-store.com'],
+            ['production', false, 'https://homya-store.com/store', $publicOrigin],
+            ['production', false, 'https://homya-store.test', 'https://homya-store.test'],
+        ];
+        foreach ($cases as [$environment, $debug, $configuredOrigin, $requestOrigin]) {
+            foreach (['/sitemap.xml', '/sitemaps/fr/pages.xml', '/sitemaps/fr/products-1.xml'] as $path) {
+                $this->app['env'] = $environment;
+                config(['app.debug' => $debug, 'seo.public_url' => $configuredOrigin, 'seo.indexing_enabled' => false]);
+                $this->get($requestOrigin.$path)->assertNotFound()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+            }
+        }
+    }
+
+    public function test_public_sitemaps_report_unavailable_catalogues_and_missing_chunks(): void
+    {
+        $this->production();
+        config(['seo.indexing_enabled' => false]);
+        $product = $this->product() + ['promotion' => null];
+        foreach ([[[$product], true, false], [[$product], false, true], [[], false, false]] as [$products, $sourceUnavailable, $translationUnavailable]) {
+            $this->catalogue($products, $sourceUnavailable, $translationUnavailable);
+            foreach (['/sitemap.xml', '/sitemaps/fr/pages.xml', '/sitemaps/fr/products-1.xml'] as $path) {
+                $this->get('https://homya-store.com'.$path)->assertStatus(503)
+                    ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+            }
+        }
+        $this->catalogue([$product]);
+        $this->get('https://homya-store.com/sitemaps/fr/products-2.xml')->assertNotFound();
     }
 
     public function test_sitemap_and_page_metadata_agree_for_all_completed_information_pages(): void

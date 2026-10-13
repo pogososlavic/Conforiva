@@ -2,6 +2,7 @@
 
 namespace App\Services\Documents;
 
+use App\Services\Commerce\BankTransfer;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;

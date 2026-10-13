@@ -9,9 +9,12 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import subprocess
 from pathlib import Path
+from local_operation_security import (
+    command_environment, file_metadata, private_write, regular_file, require_local_commerce,
+    require_local_project, safe_path,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path('/Applications/XAMPP/xamppfiles/htdocs/HOMYA')
@@ -31,11 +34,19 @@ def require(condition, reason):
 
 
 def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    path = regular_file(path)
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    with os.fdopen(descriptor, 'rb') as stream:
+        file_metadata(os.fstat(stream.fileno()))
+        return hashlib.sha256(stream.read()).hexdigest()
 
 
 def run(command, input=None):
-    result = subprocess.run(command, input=input, text=True, capture_output=True)
+    try:
+        result = subprocess.run(command, input=input, text=True, capture_output=True,
+                                shell=False, timeout=60, env=command_environment())
+    except subprocess.TimeoutExpired:
+        raise RuntimeError('COMMAND_TIMEOUT') from None
     require(result.returncode == 0, 'COMMAND_FAILED')
     return result.stdout.strip()
 
@@ -45,24 +56,24 @@ def sql(statement):
 
 
 def private(path, content):
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, 'w') as stream:
-        stream.write(content)
+    private_write(path, content)
 
 
 def prepare():
+    require_local_project(ROOT)
     prepared = json.loads(run(['/opt/homebrew/bin/php', str(ROOT / 'scripts/prepare_admin_schema.php')]))
     require(prepared['migration_sha256'] == digest(SCHEMA), 'SCHEMA_CHANGED')
     for query in prepared['queries']:
         match = re.match(r'(?:create table|alter table) `([^`]+)`', query, re.I)
         require(match and match[1] in TABLES and ';' not in query, 'DDL_OUTSIDE_SCOPE')
     value = {'target': 'XAMPP MariaDB / homya_local', 'tables': TABLES, 'migration_sha256': digest(SCHEMA), 'document_sha256': digest(DOC), 'queries': prepared['queries'], 'backup': 'Full private SQL dump before DDL', 'rights': 'SELECT,INSERT,UPDATE on six new tables only', 'existing_data': 'Preserved; no stock reset', 'activation': 'HOMYA_ADMIN_MANAGEMENT_ENABLED=true in source and local served copy only after schema verification', 'sql_executed': False}
-    PLAN.parent.mkdir(parents=True, exist_ok=True)
+    safe_path(PLAN).parent.mkdir(parents=True, exist_ok=True)
     PLAN.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps({'result': 'prepared', 'plan': str(PLAN), 'sha256': digest(PLAN), 'tables': len(TABLES), 'sql_executed': False}))
 
 
 def enable(path, backup):
+    require_local_project(path.parent)
     require(path.is_file() and not path.is_symlink(), 'ENV_UNSAFE')
     before = path.read_text()
     require(len(re.findall(r'^HOMYA_ADMIN_MANAGEMENT_ENABLED=', before, re.M)) <= 1, 'DUPLICATE_FLAG')
@@ -76,6 +87,9 @@ def enable(path, backup):
 
 
 def apply(expected):
+    # Refuse production, a remote URL or a substituted DB before any SQL/DDL.
+    require_local_commerce(ROOT)
+    require_local_commerce(TARGET)
     require(PLAN.is_file() and digest(PLAN) == expected, 'PLAN_CHANGED')
     plan = json.loads(PLAN.read_text())
     require(plan['tables'] == TABLES and plan['migration_sha256'] == digest(SCHEMA) and plan['document_sha256'] == digest(DOC), 'INPUT_CHANGED')
@@ -91,13 +105,18 @@ def apply(expected):
     catalogue = ROOT / 'storage/app/catalogue/index.json'
     catalogue_hash = digest(catalogue)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    directory = ROOT / 'storage/app/private/admin' / ('install-' + stamp)
+    directory = safe_path(ROOT / 'storage/app/private/admin' / ('install-' + stamp))
     directory.mkdir(parents=True, mode=0o700)
+    require(directory.stat().st_mode & 0o077 == 0, 'PRIVATE_BACKUP_REQUIRED')
     private(directory / 'plan.json', PLAN.read_text())
     backup = directory / 'homya_local-before.sql'
-    descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     with os.fdopen(descriptor, 'w') as stream:
-        result = subprocess.run([DUMP, '--no-defaults', '--protocol=SOCKET', '--socket=' + SOCKET, '-u', 'root', '--single-transaction', '--routines', '--triggers', 'homya_local'], stdout=stream, stderr=subprocess.PIPE, text=True)
+        try:
+            result = subprocess.run([DUMP, '--no-defaults', '--protocol=SOCKET', '--socket=' + SOCKET, '-u', 'root', '--single-transaction', '--routines', '--triggers', 'homya_local'], stdout=stream, stderr=subprocess.PIPE, text=True,
+                                    shell=False, timeout=180, env=command_environment())
+        except subprocess.TimeoutExpired:
+            raise RuntimeError('BACKUP_TIMEOUT') from None
     require(result.returncode == 0 and backup.stat().st_size > 1000, 'BACKUP_FAILED')
     state = {'result': 'started', 'ddl_completed': 0, 'backup': str(directory), 'existing_tables': len(existing)}
     private(directory / 'before.json', json.dumps({'checksums': checksums, 'catalogue_sha256': catalogue_hash}))

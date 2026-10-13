@@ -31,7 +31,13 @@ final class Seo
 
     public function onPublicOrigin(Request $request): bool
     {
-        return $this->enabled() && $request->getSchemeAndHttpHost() === $this->origin();
+        return $this->enabled() && $this->onConfiguredPublicOrigin($request);
+    }
+
+    public function onConfiguredPublicOrigin(Request $request): bool
+    {
+        return app()->environment('production') && ! config('app.debug')
+            && $this->origin() !== null && $request->getSchemeAndHttpHost() === $this->origin();
     }
 
     public function url(string $route, array $parameters): string

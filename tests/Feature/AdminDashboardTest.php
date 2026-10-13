@@ -25,7 +25,7 @@ final class AdminDashboardTest extends TestCase
         $this->previousStorage = storage_path();
         $this->temporary = sys_get_temp_dir().'/homya-admin-test-'.Str::uuid();
         $this->app->useStoragePath($this->temporary);
-        config(['admin.username' => 'fixture-admin', 'admin.password_hash' => Hash::make('fixture-only-password-12345')]);
+        config(['admin.remote_enabled' => false, 'admin.username' => 'fixture-admin', 'admin.password_hash' => Hash::make('fixture-only-password-12345')]);
     }
 
     protected function tearDown(): void
@@ -69,6 +69,8 @@ final class AdminDashboardTest extends TestCase
     public function test_actual_peer_and_environment_guard_cannot_be_bypassed_by_forwarded_headers(): void
     {
         $this->withSession($this->authenticated())->withServerVariables(['REMOTE_ADDR' => '192.0.2.10'])->withHeaders(['X-Forwarded-For' => '127.0.0.1'])->get('/admin')->assertNotFound();
+        // PHPUnit permits synthetic hosts only in testing; the deployed local guard remains strict.
+        $this->app->instance('env', 'local');
         $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])->get('http://example.invalid/admin')->assertNotFound();
         $this->app->instance('env', 'production');
         $this->get('/admin/connexion')->assertNotFound();
