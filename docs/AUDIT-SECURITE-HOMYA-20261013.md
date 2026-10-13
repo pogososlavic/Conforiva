@@ -84,3 +84,30 @@ La correction complémentaire du sitemap préparée dans la même session est é
 ## 5. Limites de livraison
 
 Cette revue ne constitue pas un test d'intrusion de homya.eu, une inspection des logs privés Hostinger, une vérification de tous les paramètres effectifs du CDN/hébergement, ni un examen des 67 emplacements non fournis. Le commit/push publie le code et les tests ; les scripts d'installation et recettes locales restent soumis à leurs autorisations d'exécution propres.
+
+## 6. Second rapport Herozion fourni
+
+Le scan `c1ee587bb3d0`, réalisé avec Herozion 2.0.14 et fourni après le commit `ec40621`, annonce **67 alertes : 46 critiques, 10 élevées et 11 moyennes, dont quatre détaillées et 63 masquées**. Le précédent en annonçait 72. Cette baisse de cinq ne permet pas d'attribuer cinq corrections précises : les identifiants et emplacements de toutes les alertes ne sont pas fournis. Le score `0/100` constitue le résultat de l'outil ; il ne démontre pas l'exploitabilité des flux ci-dessous.
+
+Les quatre emplacements visibles reprennent des alertes du premier rapport. Deux revues indépendantes du code actuel confirment leur qualification :
+
+| Emplacement du second rapport | Preuve vérifiée sur `ec40621` | Qualification |
+| --- | --- | --- |
+| `app/Services/Admin/Messages.php:97` | Table/colonnes constantes ; `insert(array)` et `where()` du Query Builder. Le framework installé compile les placeholders et transmet les bindings séparément : `Query/Builder.php:4231`, `Query/Grammars/Grammar.php:1289`, `Database/Grammar.php:219`, `Database/Connection.php:595`. Aucun objet `Expression` issu d'une entrée utilisateur. | Faux positif SQL dans ce flux. |
+| `resources/views/admin/documents/edit.blade.php:21` | Formulaire POST, `route()`, `config()` et `str_pad()`. Aucun SQL ; les affichages `{{ … }}` sont compilés avec `e(%s)` par Blade. La langue est normalisée/validée dans le traitement du document. | Faux positif SQL. |
+| `scripts/install_admin_management.py:46` | `subprocess.run` reçoit une liste, `shell=False`, timeout de 60 secondes et environnement limité. Ses appelants ciblent le client MariaDB XAMPP et un script PHP du dépôt ; aucune entrée LLM. | Faux positif « sortie LLM vers un shell ». |
+| `scripts/install_commerce_preview.py:33` | Liste d'arguments, `shell=False`, timeout de 30 secondes et environnement limité. Son appelant utilise deux commandes Git définies dans le script. Les noms de fichier de l'autre appel Git sont contrôlés et restent des arguments séparés. | Faux positif « sortie LLM vers un shell ». |
+
+Aucune modification du code applicatif ni suppression globale de règles n'est requise pour ces quatre alertes. Ces preuves permettent leur requalification ; elles ne modifient pas automatiquement le résultat affiché par Herozion. Les **63 alertes masquées du second rapport restent non attribuables individuellement**, malgré la revue élargie déjà décrite. Un export détaillé serait nécessaire pour relier chacune à une correction ou à une qualification.
+
+### Preuve de non-régression ajoutée et exécutée
+
+`AdminManagementTest::test_message_sql_fragments_remain_bound_and_encrypted_without_changing_neighboring_data` vérifie le service réellement signalé, sur SQLite en mémoire. Les nonce et identifiants contenant guillemets et fragments SQL restent dans les bindings ; le journal des requêtes ne contient jamais ces entrées interpolées. Le corps et le client restent chiffrés et sont relus intacts ; l'identifiant malformé et le nonce rejoué sont refusés. Les tables et les lignes voisines sont préservées. Les transports e-mail et HTTP sont contrôlés sans envoi. **Le nouveau test passe avec 161 assertions.**
+
+Nouvelle exécution des suites ciblées : **140 tests réussis**, soit 93 PHP / 1 855 assertions, 15 Node, 4 Python de recettes et 28 Python d'opérations locales. Les tests PHP ont été lancés avec `APP_ENV=testing` et une clé de chiffrement artificielle. Aucun accès à MariaDB/XAMPP, installateur réel ou test de production. Pint et `php -l` passent sur le fichier ajouté à la vérification.
+
+Les trois commandes Node/Python de la section 4 restent identiques. Commande PHP de cette seconde vérification :
+
+```sh
+APP_ENV=testing APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= php vendor/bin/phpunit --filter '(SecurityHeadersTest|AdminManagementTest|AdminDashboardTest|CommerceTest|ReturnRequestsTest|GoogleSeoMerchantTest|CommercialDocumentsTest)'
+```

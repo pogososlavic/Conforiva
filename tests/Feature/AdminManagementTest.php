@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
 
 final class AdminManagementTest extends TestCase
@@ -113,6 +114,83 @@ final class AdminManagementTest extends TestCase
         $this->withSession($this->auth())->post('/admin/messages/'.$ticket['id'], ['body' => 'PRIVATE_FIXTURE_BODY', 'nonce' => (string) Str::uuid()])->assertStatus(419);
         $this->post('/admin/parametres', ['current_password' => 'wrong', 'secret' => 'PRIVATE_FIXTURE_SECRET'])->assertSessionHasErrors()->assertSessionMissing('_old_input.secret')->assertSessionMissing('_old_input.current_password');
         $this->assertSame(1, DB::connection('commerce')->table('commerce_admin_messages')->count());
+    }
+
+    public function test_message_sql_fragments_remain_bound_and_encrypted_without_changing_neighboring_data(): void
+    {
+        Mail::fake();
+        $db = DB::connection('commerce');
+        $messages = app(Messages::class);
+        $neighbor = $messages->create(['name' => 'Neighbor fixture', 'email' => ''], 'Preserved neighbor body', (string) Str::uuid());
+        $neighborOrder = $this->order('paid');
+        $tablesBefore = $db->getSchemaBuilder()->getTableListing();
+        $threadBefore = (array) $db->table('commerce_admin_threads')->where('id', $neighbor['id'])->first();
+        $messageBefore = (array) $db->table('commerce_admin_messages')->where('thread_id', $neighbor['id'])->first();
+        $orderBefore = (array) $db->table('commerce_orders')->where('id', $neighborOrder)->first();
+        $eventsBefore = $db->table('commerce_admin_events')->where('subject', $neighbor['id'])->get()->map(fn ($row) => (array) $row)->all();
+        $createNonce = "create' OR 1=1; --";
+        $replyNonce = 'reply"; DROP TABLE fixture; --';
+        $malformedId = "missing' OR '1'='1'; --";
+        $customer = ['name' => "Fixture d'O'Brien; DELETE FROM commerce_orders; --", 'email' => ''];
+        $body = "Question 'quoted' \"double quoted\"; DROP TABLE commerce_admin_messages; --\nSELECT * FROM commerce_orders;";
+        $reply = "Reply d'O'Brien; UPDATE commerce_admin_threads SET unread = 0; --";
+        $db->flushQueryLog();
+        $db->enableQueryLog();
+        try {
+            $ticket = $messages->create($customer, $body, $createNonce);
+            $this->assertTrue($messages->authorize($ticket['id'], $ticket['code']));
+            $this->assertFalse($messages->authorize($ticket['id'], "wrong' OR 1=1 --"));
+            $this->assertFalse($messages->authorize($malformedId, $neighbor['code']));
+            $this->assertTrue($messages->reply($ticket['id'], $reply, $replyNonce, true));
+            $this->assertFalse($messages->reply($ticket['id'], 'Replay must not replace the body', $replyNonce, true));
+            try {
+                $messages->reply($malformedId, 'Must not append to a neighboring thread', "invalid' OR 1=1 --", true);
+                $this->fail('A malformed thread identifier was accepted.');
+            } catch (NotFoundHttpException $exception) {
+                $this->assertSame(404, $exception->getStatusCode());
+            }
+            $queries = $db->getQueryLog();
+        } finally {
+            $db->disableQueryLog();
+            $db->flushQueryLog();
+        }
+
+        $this->assertNotEmpty($queries);
+        foreach ($queries as $query) {
+            $this->assertSame(substr_count($query['query'], '?'), count($query['bindings']));
+            foreach ([$createNonce, $replyNonce, $malformedId, $ticket['id'], $body, $reply, $customer['name']] as $input) {
+                $this->assertStringNotContainsString($input, $query['query']);
+            }
+        }
+        $bindings = collect($queries)->pluck('bindings')->flatten()->all();
+        foreach ([$createNonce, $replyNonce, $malformedId, $ticket['id']] as $input) {
+            $this->assertContains($input, $bindings);
+        }
+        foreach ([$body, $reply, $customer['name']] as $plaintext) {
+            $this->assertNotContains($plaintext, $bindings);
+        }
+
+        $storedBodies = $db->table('commerce_admin_messages')->where('thread_id', $ticket['id'])->orderBy('sequence')->pluck('body_encrypted')->all();
+        $this->assertCount(2, $storedBodies);
+        $this->assertSame([$body, $reply], array_map(fn ($encrypted) => Crypt::decryptString($encrypted), $storedBodies));
+        foreach ($storedBodies as $encrypted) {
+            $this->assertStringNotContainsString('DROP TABLE', $encrypted);
+            $this->assertStringNotContainsString("O'Brien", $encrypted);
+        }
+        $roundTrip = $messages->thread($ticket['id']);
+        $this->assertSame($customer, $roundTrip['customer']);
+        $this->assertSame([$body, $reply], $roundTrip['messages']->pluck('body')->all());
+        $this->assertSame($tablesBefore, $db->getSchemaBuilder()->getTableListing());
+        $this->assertSame($threadBefore, (array) $db->table('commerce_admin_threads')->where('id', $neighbor['id'])->first());
+        $this->assertSame($messageBefore, (array) $db->table('commerce_admin_messages')->where('thread_id', $neighbor['id'])->first());
+        $this->assertSame($orderBefore, (array) $db->table('commerce_orders')->where('id', $neighborOrder)->first());
+        $this->assertSame($eventsBefore, $db->table('commerce_admin_events')->where('subject', $neighbor['id'])->get()->map(fn ($row) => (array) $row)->all());
+        $this->assertSame(2, $db->table('commerce_admin_threads')->count());
+        $this->assertSame(3, $db->table('commerce_admin_messages')->count());
+        $this->assertSame(1, $db->table('commerce_orders')->count());
+        Mail::assertNothingSent();
+        Mail::assertNothingQueued();
+        Http::assertNothingSent();
     }
 
     public function test_marking_read_returns_to_the_screen_even_after_a_notification_request(): void
