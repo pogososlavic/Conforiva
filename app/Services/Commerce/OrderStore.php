@@ -128,11 +128,21 @@ final class OrderStore
             if ($order->status !== 'pending_payment_details') {
                 return $order;
             }
-            $deadline = app(BankTransfer::class)->deadline($order);
+            $bank = app(BankTransfer::class);
+            $deadline = $bank->deadline($order);
             if (now()->gte($deadline)) {
                 throw new RuntimeException('Reservation expired.');
             }
-            $db->table('commerce_orders')->where('id', $id)->update(['status' => 'pending_payment', 'updated_at' => now(),
+            $customer = json_decode(Crypt::decryptString($order->customer_encrypted), true, 32, JSON_THROW_ON_ERROR);
+            if ($order->stripe_session_id !== null || ($customer['card_attempted'] ?? false)) {
+                throw new RuntimeException('Legacy card reconciliation required.');
+            }
+            $details = $bank->details() ?? throw new RuntimeException('Bank transfer unavailable.');
+            $customer['bank_transfer'] = ['details' => $details, 'deadline' => $deadline->toIso8601String()];
+            // Store the instructions and status together so a failure cannot orphan reserved inventory.
+            $db->table('commerce_orders')->where('id', $id)->update([
+                'status' => 'pending_bank_transfer', 'checkout_url' => null,
+                'customer_encrypted' => Crypt::encryptString(json_encode($customer, JSON_THROW_ON_ERROR)), 'updated_at' => now(),
             ]);
 
             return $db->table('commerce_orders')->where('id', $id)->firstOrFail();
@@ -143,7 +153,7 @@ final class OrderStore
     {
         $db = $this->connection();
 
-        return $db->transaction(function () use ($db, $id, $details, $source) {
+        return $db->transaction(function () use ($db, $id, $details) {
             $order = $db->table('commerce_orders')->where('id', $id)->lockForUpdate()->firstOrFail();
             if ($order->status === 'pending_bank_transfer') {
                 return $order;

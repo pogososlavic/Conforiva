@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Commerce\OrderStore;
+use App\Services\PrivateLocalFiles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use Throwable;
@@ -16,14 +17,7 @@ final class ConfirmBankTransfer extends Command
     public function handle(OrderStore $orders): int
     {
         try {
-            $path = $this->argument('receipt');
-            $parent = storage_path('app/private/commerce/receipts');
-            if (! is_dir($parent) || ! is_string($path) || ! str_starts_with($path, '/') || is_link($path)
-                || realpath(dirname($path)) !== realpath($parent) || ! is_file($path) || filesize($path) > 8192
-                || (fileperms($path) & 0077) !== 0 || fileowner($path) !== posix_geteuid()) {
-                throw new \RuntimeException;
-            }
-            $receipt = json_decode(file_get_contents($path), true, 8, JSON_THROW_ON_ERROR);
+            $receipt = json_decode($this->receiptBytes($this->argument('receipt')), true, 8, JSON_THROW_ON_ERROR);
             if (count($receipt) !== 5 || ! Str::isUuid($receipt['order_id'] ?? '') || ! is_int($receipt['amount_cents'] ?? null)
                 || ($receipt['currency'] ?? '') !== 'EUR' || ($receipt['merchant_verified'] ?? false) !== true
                 || ! is_string($receipt['bank_reference'] ?? null) || trim($receipt['bank_reference']) === '') {
@@ -43,6 +37,42 @@ final class ConfirmBankTransfer extends Command
             $this->error('Bank receipt refused or unavailable. No private details displayed.');
 
             return self::FAILURE;
+        }
+    }
+
+    private function receiptBytes(mixed $requested): string
+    {
+        $relative = 'app/private/commerce/receipts';
+        $parent = PrivateLocalFiles::path(storage_path(), $relative);
+        if (! is_string($requested) || ! str_starts_with($requested, '/')
+            || ! in_array(dirname($requested), [storage_path($relative), $parent], true)) {
+            throw new \RuntimeException;
+        }
+        $path = PrivateLocalFiles::path($parent, basename($requested));
+        PrivateLocalFiles::requireMode($parent, 0700, true);
+        PrivateLocalFiles::requireMode($path, 0600);
+        $expected = lstat($path);
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            throw new \RuntimeException;
+        }
+        try {
+            $stat = fstat($handle);
+            // Inspect the opened file, including its identity and link count, before reading any bytes.
+            if ($expected === false || $stat === false || $stat['dev'] !== $expected['dev'] || $stat['ino'] !== $expected['ino']
+                || ($stat['mode'] & 0170000) !== 0100000 || ($stat['mode'] & 0777) !== 0600
+                || $stat['uid'] !== posix_geteuid() || $stat['nlink'] !== 1 || $stat['size'] > 8192
+                || PrivateLocalFiles::path(storage_path(), $relative.'/'.basename($requested)) !== $path) {
+                throw new \RuntimeException;
+            }
+            $bytes = stream_get_contents($handle, 8193);
+            if ($bytes === false || strlen($bytes) > 8192) {
+                throw new \RuntimeException;
+            }
+
+            return $bytes;
+        } finally {
+            fclose($handle);
         }
     }
 }

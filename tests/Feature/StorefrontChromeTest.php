@@ -113,8 +113,24 @@ class StorefrontChromeTest extends TestCase
                 }
             }
             $this->assertSame(1, $xpath->query('//footer//a[contains(@href,"/'.$locale.'/cookies")]')->length);
-            $this->assertSame(2, $xpath->query('//ul[@class="footer-payment-methods"]/li')->length);
-            $this->assertSame(__('chrome.payment_planned', [], $locale), $xpath->query('//*[@class="footer-payment-label"]')->item(0)->textContent);
+            $commerce = $xpath->query('.//section[@class="footer-commerce"]', $footer)->item(0);
+            $this->assertNotNull($commerce);
+            $label = $xpath->query('.//span[@class="footer-transfer-logo"]/span', $commerce);
+            $this->assertSame(1, $label->length);
+            $this->assertSame(__('chrome.instant_transfer', [], $locale), $label->item(0)->textContent);
+            $logo = $xpath->query('.//span[@class="footer-transfer-logo"]/img', $commerce)->item(0);
+            $this->assertNotNull($logo);
+            $this->assertSame('/media/payments/instant-transfer.svg', parse_url($logo->getAttribute('src'), PHP_URL_PATH));
+            $this->assertSame('', $logo->getAttribute('alt'));
+            $this->assertStringContainsString(__('commerce.shipping_free', [], $locale), $commerce->textContent);
+            $this->assertStringContainsString(__('commerce.delivery_estimate', [], $locale), $commerce->textContent);
+            $commerceLinks = $xpath->query('.//ul[@class="footer-commerce-links"]/li/a', $commerce);
+            $this->assertCount(2, $commerceLinks);
+            foreach (['paiement', 'livraison'] as $index => $page) {
+                $link = $commerceLinks->item($index);
+                $this->assertSame('/'.$locale.'/'.$page, $this->localPath($link->getAttribute('href'), $locale));
+                $this->assertSame(__('pages.entries.'.$page.'.title', [], $locale).' →', trim($link->textContent));
+            }
             $this->assertSame(0, $xpath->query('//footer//form | //footer//input')->length);
         }
     }

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Services\Catalogue;
 use App\Services\ContactChannels;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -84,14 +86,29 @@ class ContactButtonsTest extends TestCase
 
     public function test_configured_contact_is_translated_and_available_in_the_page_and_footer(): void
     {
-        config(['contact.phone' => '+33123456789']);
+        config(['contact.phone' => '+33123456789', 'contact.email' => 'support@example.test']);
         foreach (['fr', 'en', 'de'] as $locale) {
             $response = $this->get('/'.$locale.'/contact')->assertOk()
                 ->assertSee(__('contact.intro', [], $locale))
                 ->assertSee(__('contact.instructions', [], $locale))
                 ->assertDontSee(__('pages.pending', [], $locale));
-            $this->assertSame(3, substr_count($response->getContent(), 'href="https://wa.me/33123456789"'));
-            $this->assertSame(2, substr_count($response->getContent(), 'href="sms:+33123456789"'));
+            $document = new DOMDocument;
+            @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+            $xpath = new DOMXPath($document);
+            $links = $xpath->query('//a[@href="https://wa.me/33123456789"]');
+            $this->assertCount(5, $links);
+            foreach (['//nav[@class="utility-navigation"]', '//main//dl[@class="company-details"]', '//main//div[@class="contact-actions"]', '//footer', '//a[@class="whatsapp-chat"]'] as $location) {
+                $this->assertSame(1, $xpath->query('('.$location.')/descendant-or-self::a[@href="https://wa.me/33123456789"]')->length);
+            }
+            foreach ($links as $link) {
+                $this->assertSame('_blank', $link->getAttribute('target'));
+                $this->assertSame('noopener noreferrer', $link->getAttribute('rel'));
+                $this->assertSame('no-referrer', $link->getAttribute('referrerpolicy'));
+                $this->assertStringStartsWith(__('contact.chat_label', [], $locale), $link->getAttribute('aria-label'));
+            }
+            $this->assertSame(1, $xpath->query('//main//dl[@class="company-details"]//a[@href="mailto:support@example.test"]')->length);
+            $this->assertSame(1, $xpath->query('//footer//a[@href="mailto:support@example.test"]')->length);
+            $response->assertDontSee('sms:', false)->assertDontSee('?text=', false)->assertDontSee('?body=', false);
         }
     }
 }

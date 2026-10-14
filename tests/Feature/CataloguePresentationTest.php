@@ -257,15 +257,34 @@ class CataloguePresentationTest extends TestCase
         $this->assertSame($archiveHash, hash_file('sha256', $this->fixture.'/index.json'));
     }
 
-    public function test_missing_content_and_empty_category_do_not_create_section_shortcuts_or_other_category_recommendations(): void
+    public function test_missing_source_description_uses_known_facts_without_inventing_other_sections_or_recommendations(): void
     {
+        $sourceHash = hash_file('sha256', $this->fixture.'/products/presentation-8.json');
         foreach (['fr', 'en', 'de'] as $locale) {
             $response = $this->get('/'.$locale.'/produit/presentation-8')->assertOk()->assertSee(__('catalogue.related_empty', [], $locale));
+            $name = match ($locale) {
+                'en' => 'English product 8', 'de' => 'Deutsches Produkt 8', default => 'Produit français 8',
+            };
+            $referenceLabel = match ($locale) {
+                'en' => 'Catalogue reference: ', 'de' => 'Katalogreferenz: ', default => 'Référence catalogue : ',
+            };
+            $description = $name.'. '.$referenceLabel.'P-8.';
+            $product = $response->viewData('product');
+            $this->assertSame($description, $product['description']);
+            $this->assertSame('trained_algorithmic_media', $product['description_source']);
+            $this->assertSame([], $product['specifications']);
+            $this->assertFalse($product['has_variants']);
             $this->assertCount(0, $response->viewData('relatedProducts'));
             $xpath = $this->xpath($response->getContent());
-            $this->assertSame(0, $xpath->query('//nav[@class="product-section-navigation"]|//section[@id="related-products"]//article')->length);
-            $this->assertSame(0, $xpath->query('//*[@id="product-description"]|//*[@id="product-variants"]')->length);
+            $navigation = $xpath->query('//nav[@class="product-section-navigation"]/a');
+            $this->assertSame(1, $navigation->length);
+            $this->assertSame('#product-description', $navigation->item(0)->getAttribute('href'));
+            $this->assertSame(1, $xpath->query('//*[@id="product-description"]')->length);
+            $this->assertSame($description, $xpath->query('//*[@id="product-description"]/p')->item(0)->textContent);
+            $this->assertSame(0, $xpath->query('//section[@id="related-products"]//article | //*[@id="product-variants"] | //nav[@class="product-section-navigation"]/a[@href="#product-specifications" or @href="#product-variants" or @href="#related-products"]')->length);
+            $response->assertSee(__('catalogue.specifications_missing', [], $locale));
         }
+        $this->assertSame($sourceHash, hash_file('sha256', $this->fixture.'/products/presentation-8.json'));
     }
 
     public function test_incomplete_related_translation_is_explicit_and_never_mixes_french_recommendations(): void

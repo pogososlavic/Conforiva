@@ -111,3 +111,49 @@ Les trois commandes Node/Python de la section 4 restent identiques. Commande PHP
 ```sh
 APP_ENV=testing APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= php vendor/bin/phpunit --filter '(SecurityHeadersTest|AdminManagementTest|AdminDashboardTest|CommerceTest|ReturnRequestsTest|GoogleSeoMerchantTest|CommercialDocumentsTest)'
 ```
+
+## 7. Revue élargie et corrections du 14 octobre 2026
+
+Le nouveau rapport utilisateur `669c546e6525` reprend les mêmes 67 alertes, quatre détaillées et 63 masquées. La demande de correction complète a conduit à trois revues indépendantes supplémentaires : scripts historiques restant hors du premier durcissement, surface de déploiement/stockage/journaux, et transitions commande/virement/stock. Les constats ci-dessous proviennent de ces flux vérifiés ; leurs emplacements ne peuvent pas être attribués aux 63 alertes masquées.
+
+### Constats corrigés avec reproduction sur fixtures
+
+| Référence | Observation et qualification | Correction et preuve |
+| --- | --- | --- |
+| SEC-004 — Diagnostics de devis automatiques | **Faible, confidentialité des journaux privés.** `AutomaticOrderQuote` conservait un extrait de message et le code arbitraire d'exception. Les filtres e-mail/mot de passe laissaient des noms, adresses, fragments bancaires ou codes contenant des données. Deux fixtures reproduisent la conservation de ces valeurs ; aucune fuite publique ou effective n'est établie. | Message et code arbitraire supprimés ; seuls référence d'ordre hachée, étape fixe et type d'exception sont enregistrés. Deux tests / 26 assertions passent et vérifient aussi le maintien de l'état de devis bloqué, sans envoi. |
+| SEC-005 — Temporaire d'installation d'optimisation | **Faible, écriture locale hors cible.** `pending.exists()` ignorait un lien symbolique cassé ; `shutil.copy2()` créait sa destination avant le refus ultérieur. Le test avant correction reproduit cette écriture uniquement dans un dossier temporaire. Précondition : possibilité de placer ce fichier dans le répertoire local. | Création exclusive `O_EXCL/O_NOFOLLOW`, permissions privées dès ouverture, contrôles propriétaire/type/liens/ancêtres, empreintes et identité de l'inode avant remplacement. Douze tests passent : cible extérieure intacte, collision et substitutions refusées, permissions finales conservées. |
+| SEC-006 — Installateur commerce local | **Faible, risque opérationnel.** Une configuration `production` pouvait atteindre le registre et les mutations XAMPP/configuration avant le refus de la commande PHP. Reproduction avec effets simulés. Les commandes SQL directes restent locales ; aucune écriture distante démontrée. | Gardes locales avant application/reprises/vérification et commandes sensibles ; environnement enfant réduit. Copies, sauvegardes et preuves privées dès création, JSON de reprise contrôlés, noms de tables validés. Seize tests passent ; production/URL publique/cache refusés avant effet. Le CLI avait déjà une umask privée : ses anciens `chmod` tardifs ne constituent pas une nouvelle fuite démontrée. |
+| SEC-007 — Journaux de démarrage | **Faible, intégrité locale.** Le journal ouvert en append suivait un lien symbolique ou physique et pouvait recevoir une sortie dans un autre fichier. Reproduit sur deux fichiers fictifs ; le répertoire runtime privé réduit la menace et aucun accès Web n'est établi. | Ouverture `O_NOFOLLOW/O_NONBLOCK`, contrôle par descripteur du type, propriétaire, lien unique et mode `0600`, avant enfant. Environnement réduit et timeouts. Refus des liens/FIFO sans écriture ni démarrage. |
+| FONC-002 — Disponibilité locale | **Défaut fonctionnel, portée locale.** Le contrôle de disponibilité suivait une redirection et acceptait une réponse `200` d'une origine externe comme état prêt. Reproduit avec un double HTTP, sans réseau. | Redirections refusées ; origine exacte `http://127.0.0.1:8080` et HTTP `200` requis. Les treize tests du lanceur couvrent ce point et SEC-007. |
+| FONC-003 — Activation du virement différé | **Risque de disponibilité du stock.** Le statut intermédiaire `pending_payment` était engagé avant le RIB. Une erreur de conversion pouvait laisser cette réservation hors expiration. Six des huit nouveaux cas échouaient avant correction sur SQLite mémoire. Aucun paiement frauduleux démontré. | Statut `pending_bank_transfer` et RIB chiffré engagés ensemble sous verrou dans une seule transaction. Une erreur de lecture/chiffrement/écriture préserve l'état différé et son expiration ; 72 heures initiales, idempotence et refus des anciennes tentatives carte conservés. Huit cas / 105 assertions passent ; suite Commerce : 39 tests / 822 assertions. |
+
+**Durcissement préventif des reçus CLI :** `ConfirmBankTransfer` refuse désormais les liens d'ancêtres, liens physiques, alias/traversées et dossiers/fichiers non privés avant SQL. Le chemin canonique, propriétaire, mode `0700/0600`, identité et lien unique sont contrôlés ; lecture bornée à 8 192 octets. Sept fixtures autrefois acceptées en prévisualisation ont été reproduites ; les 18 tests / 92 assertions passent après correction. La validation de la réception par HOMYA, le montant exact, l'idempotence et le règlement du stock restent inchangés. Cette défense locale supplémentaire n'établit pas une possibilité de paiement par un visiteur Web.
+
+### Relecture et résultat natif du scanner
+
+Les changements ont reçu une relecture indépendante : aucune régression bloquante identifiée dans les flux examinés. Les protections serveur existantes, les requêtes paramétrées, la propriété des commandes et le traitement privé des preuves sont préservés. La présence de `mod_rewrite`, les permissions/configurations effectivement déployées et la concurrence réelle MariaDB ne sont pas prouvées par ces fixtures.
+
+Un scan standard **hors ligne**, `scan . --offline --output json`, a été exécuté sans push cloud, achat ni correctif automatique. Le résultat privé `34a367a34d7043a5b38d0c8527734c24` annonce encore 67 alertes / score 0, avec `partial_results=true`, quatre descriptions et 63 masquées. Les quatre identifiants visibles sont :
+
+- `e6bac1eda081` : `Messages.php:97`, SQL — paramètres liés vérifiés.
+- `42689eefce9a` : `edit.blade.php:21`, SQL — aucun SQL dans la vue.
+- `127208566da0` : `install_admin_management.py:46`, LLM/shell — liste d'arguments, aucun LLM/shell.
+- `b9e489dbe4f3` : `install_commerce_preview.py:33`, même qualification.
+
+Leurs qualifications restent celles de la section 6. Aucune exclusion globale, waiver ou suppression de règle n'a été appliquée. Le résultat natif inchangé ne mesure pas la correction des défauts indépendants ci-dessus. **Les 63 alertes sans emplacement restent non qualifiées individuellement** ; un rapport détaillé reste nécessaire pour affirmer le traitement de chacune.
+
+### Vérification complète et antériorité des attentes d'interface
+
+La première suite complète a rencontré les sockets Unix fictifs interdits par le bac à sable ; sa réexécution autorisée avec ces sockets a parcouru 446 tests, dont 442 réussis, avec quatre échecs d'interface. Une vérification isolée des quatre classes de tests et des classes applicatives concernées dans leur version `edde03e` reproduit exactement ces quatre échecs : ils sont antérieurs aux corrections présentes.
+
+Les fixtures/attentes portent sur la description factuelle de secours, les contacts configurables et les liens/mentions de virement du pied de page. Leur actualisation conserve les contrôles de destination, traduction et échappement ; aucun contenu de page, coordonnée, prix ou règle commerciale n'est modifié pour faire passer un test. Les preuves locales sont conservées sous `output/qa-security-20261014/` ; le JSON natif du scanner est privé et ignoré par Git.
+
+**Résultat final : 534 tests réussis**, soit la suite PHP complète de **446 tests / 12 577 assertions**, **73 tests Python** (28 gardes précédentes, 4 wrappers navigateur, 16 installateur commerce, 12 optimisation, 13 démarrage) et **15 tests Node**. Les quatre classes d'interface actualisées passent aussi séparément : 27 tests / 4 181 assertions. Pint, syntaxe de dix fichiers PHP et six fichiers Python, et `git diff --check` passent. Les tests supplémentaires reposent sur SQLite mémoire, sockets Unix fictifs, fichiers temporaires privés et doubles de processus/HTTP/e-mail ; aucun installateur, démarrage de service, migration MariaDB ou envoi réel n'a été exécuté.
+
+Commande PHP finale, avec clé artificielle et rapport JUnit local :
+
+```sh
+APP_ENV=testing APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= php -d memory_limit=512M vendor/bin/phpunit --log-junit output/qa-security-20261014/phpunit-final.xml
+```
+
+Les nouvelles suites Python se reproduisent avec `python3 -m unittest discover -s scripts -p test_install_commerce_local.py`, puis les motifs `test_install_local_optimization_security.py` et `test_start_homya_local.py`. Les autres commandes de la section 4 restent valables. Le commit/push livre les correctifs et leurs tests ; il ne remplace pas une inspection de la configuration effective Hostinger ni une identification des 63 alertes masquées.

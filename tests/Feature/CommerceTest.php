@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\Admin\BankDetailsSettings;
 use App\Services\Catalogue;
 use App\Services\Commerce\BankTransfer;
 use App\Services\Commerce\Cart;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CommerceTest extends TestCase
@@ -43,6 +45,10 @@ class CommerceTest extends TestCase
         $catalogue->shouldReceive('products')->andReturnUsing(fn () => collect($this->products));
         $catalogue->shouldReceive('sourceUnavailable', 'translationUnavailable')->andReturn(false);
         $this->app->instance(Catalogue::class, $catalogue);
+        // Commerce fixtures use synthetic settings; never read the workstation's private bank file.
+        $bankSettings = Mockery::mock();
+        $bankSettings->shouldReceive('current')->andReturnUsing(fn () => config('commerce.bank'));
+        $this->app->instance(BankDetailsSettings::class, $bankSettings);
         Http::preventStrayRequests();
     }
 
@@ -492,6 +498,215 @@ class CommerceTest extends TestCase
         $this->assertSame($next->created_at, $updated->created_at);
         $this->assertSame(app(BankTransfer::class)->deadline($next)->toIso8601String(), app(BankTransfer::class)->snapshot($updated)['deadline']);
         $this->assertSame(2, $orders->connection()->table('commerce_orders')->count());
+        $this->travelBack();
+    }
+
+    public static function unavailableDeferredBankDetails(): array
+    {
+        return ['details removed' => [false], 'settings read failed' => [true]];
+    }
+
+    #[DataProvider('unavailableDeferredBankDetails')]
+    public function test_deferred_bank_activation_failure_preserves_reservation_expiry(bool $readFailure): void
+    {
+        $orders = $this->database();
+        $this->enableDeferred();
+        $this->post('/fr/commande', $this->checkout(['payment_method' => 'deferred']))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $this->enable();
+        $details = config('commerce.bank');
+        $settings = Mockery::mock();
+        $calls = 0;
+        $settings->shouldReceive('current')->twice()->andReturnUsing(function () use (&$calls, $details, $readFailure) {
+            if (++$calls === 1) {
+                return $details;
+            }
+            if ($readFailure) {
+                throw new \RuntimeException('Fixture bank settings read failure.');
+            }
+
+            return array_replace($details, ['enabled' => false]);
+        });
+        $this->app->instance(BankDetailsSettings::class, $settings);
+        try {
+            // Reproduce the activation followed by conversion used by both checkout entry points.
+            app(BankTransfer::class)->switch($orders->activateDeferredPayment($order->id), $orders);
+            $this->fail('Unavailable bank details must stop deferred activation.');
+        } catch (\RuntimeException) {
+            $updated = $orders->owned($order->id, $order->owner_hash);
+            $this->assertSame('pending_payment_details', $updated->status);
+            $this->assertSame($order->customer_encrypted, $updated->customer_encrypted);
+            $this->assertSame($order->created_at, $updated->created_at);
+            $this->assertSame($order->updated_at, $updated->updated_at);
+            $this->assertSame(0, $orders->connection()->transactionLevel());
+            $this->assertSame(2, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+            $this->assertNull(app(BankTransfer::class)->snapshot($updated));
+        }
+        $this->travelTo(app(BankTransfer::class)->deadline($order));
+        $this->assertSame(1, $orders->expireBankTransfers());
+        $this->assertSame(0, $orders->expireBankTransfers());
+        $this->assertSame('expired', $orders->owned($order->id, $order->owner_hash)->status);
+        $this->assertSame(1000, (int) $orders->connection()->table('commerce_inventory')->where('slug', 'test-unit')->value('quantity'));
+        $this->assertSame(0, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->assertSame(0, $orders->connection()->table('commerce_payment_events')->count());
+        $this->travelBack();
+    }
+
+    public function test_deferred_bank_activation_encryption_failure_preserves_original_order(): void
+    {
+        $orders = $this->database();
+        $this->enableDeferred();
+        $this->post('/fr/commande', $this->checkout(['payment_method' => 'deferred']))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $this->enable();
+        $settings = Mockery::mock();
+        $settings->shouldReceive('current')->andReturn(config('commerce.bank'));
+        $this->app->instance(BankDetailsSettings::class, $settings);
+        $encrypter = Crypt::getFacadeRoot();
+        $failedEncrypter = Mockery::mock($encrypter);
+        $failedEncrypter->shouldReceive('encryptString')->once()->andThrow(new \RuntimeException('Fixture encryption failure.'));
+        Crypt::swap($failedEncrypter);
+        try {
+            app(BankTransfer::class)->switch($orders->activateDeferredPayment($order->id), $orders);
+            $this->fail('Encryption failure must stop deferred activation.');
+        } catch (\RuntimeException) {
+            // The complete bank transition must be rolled back, including its status.
+        } finally {
+            Crypt::swap($encrypter);
+        }
+        $updated = $orders->owned($order->id, $order->owner_hash);
+        $this->assertSame('pending_payment_details', $updated->status);
+        $this->assertSame($order->customer_encrypted, $updated->customer_encrypted);
+        $this->assertSame($order->updated_at, $updated->updated_at);
+        $this->assertNull(app(BankTransfer::class)->snapshot($updated));
+        $this->assertSame(0, $orders->connection()->transactionLevel());
+        $this->assertSame(2, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->travelTo(app(BankTransfer::class)->deadline($order));
+        $this->assertSame(1, $orders->expireBankTransfers());
+        $this->assertSame(0, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->travelBack();
+    }
+
+    public function test_deferred_bank_activation_write_failure_rolls_back_status_and_snapshot(): void
+    {
+        $orders = $this->database();
+        $this->enableDeferred();
+        $this->post('/fr/commande', $this->checkout(['payment_method' => 'deferred']))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $this->enable();
+        $failed = false;
+        $orders->connection()->listen(function ($query) use (&$failed) {
+            if (! $failed && str_starts_with($query->sql, 'update "commerce_orders"')) {
+                $failed = true;
+                // Fail after SQLite has executed the write, proving that the transaction rolls it back.
+                throw new \RuntimeException('Fixture order write failure.');
+            }
+        });
+        try {
+            $orders->activateDeferredPayment($order->id);
+            $this->fail('Write failure must stop deferred activation.');
+        } catch (\RuntimeException) {
+            $this->assertTrue($failed);
+        }
+        $updated = $orders->owned($order->id, $order->owner_hash);
+        $this->assertSame('pending_payment_details', $updated->status);
+        $this->assertSame($order->customer_encrypted, $updated->customer_encrypted);
+        $this->assertSame($order->updated_at, $updated->updated_at);
+        $this->assertNull(app(BankTransfer::class)->snapshot($updated));
+        $this->assertSame(0, $orders->connection()->transactionLevel());
+        $this->assertSame(2, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->travelTo(app(BankTransfer::class)->deadline($order));
+        $this->assertSame(1, $orders->expireBankTransfers());
+        $this->assertSame(0, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->travelBack();
+    }
+
+    public function test_deferred_bank_activation_commits_snapshot_once_and_keeps_original_deadline(): void
+    {
+        $orders = $this->database();
+        $this->enableDeferred();
+        $this->post('/fr/commande', $this->checkout(['payment_method' => 'deferred']))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $this->enable();
+        $this->travelTo(now()->addHours(24));
+        $activated = $orders->activateDeferredPayment($order->id);
+        $snapshot = app(BankTransfer::class)->snapshot($activated);
+        $this->assertSame('pending_bank_transfer', $activated->status);
+        $this->assertSame('DE36000000000000000000', $snapshot['details']['iban']);
+        $this->assertSame(app(BankTransfer::class)->deadline($order)->toIso8601String(), $snapshot['deadline']);
+        $this->assertSame($order->created_at, $activated->created_at);
+        $this->assertNull($activated->checkout_url);
+        $this->assertNull($activated->paid_at);
+        $this->assertNull($activated->stripe_session_id);
+        config(['commerce.bank.beneficiary' => 'Changed fixture beneficiary']);
+        $this->travelTo(now()->addHours(2));
+        $retried = $orders->activateDeferredPayment($order->id);
+        $this->assertSame($activated->customer_encrypted, $retried->customer_encrypted);
+        $this->assertSame($activated->updated_at, $retried->updated_at);
+        $this->assertSame($snapshot, app(BankTransfer::class)->snapshot($retried));
+        $this->assertSame(2, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->assertSame(0, $orders->connection()->table('commerce_payment_events')->count());
+        $this->travelTo(app(BankTransfer::class)->deadline($order));
+        $this->assertSame(1, $orders->expireBankTransfers());
+        $this->assertSame(0, $orders->expireBankTransfers());
+        $this->assertSame('bank_transfer_expired', $orders->owned($order->id, $order->owner_hash)->status);
+        $this->assertSame(0, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->travelBack();
+    }
+
+    public static function legacyDeferredPaymentAttempts(): array
+    {
+        return ['provider session exists' => ['legacy-fixture-only', false], 'card attempt recorded' => [null, true]];
+    }
+
+    #[DataProvider('legacyDeferredPaymentAttempts')]
+    public function test_deferred_bank_activation_never_converts_previous_card_attempts(?string $sessionId, bool $cardAttempted): void
+    {
+        $orders = $this->database();
+        $this->enableDeferred();
+        $this->post('/fr/commande', $this->checkout(['payment_method' => 'deferred']))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $customer = json_decode(Crypt::decryptString($order->customer_encrypted), true, 32, JSON_THROW_ON_ERROR);
+        $customer['card_attempted'] = $cardAttempted;
+        $encrypted = Crypt::encryptString(json_encode($customer, JSON_THROW_ON_ERROR));
+        $orders->connection()->table('commerce_orders')->where('id', $order->id)
+            ->update(['stripe_session_id' => $sessionId, 'customer_encrypted' => $encrypted]);
+        $this->enable();
+        try {
+            $orders->activateDeferredPayment($order->id);
+            $this->fail('Existing card attempts require reconciliation.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Legacy card reconciliation required.', $exception->getMessage());
+        }
+        $updated = $orders->owned($order->id, $order->owner_hash);
+        $this->assertSame('pending_payment_details', $updated->status);
+        $this->assertSame($encrypted, $updated->customer_encrypted);
+        $this->assertSame($sessionId, $updated->stripe_session_id);
+        $this->assertNull(app(BankTransfer::class)->snapshot($updated));
+        $this->assertSame(2, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+    }
+
+    public function test_deferred_bank_activation_requires_readiness_and_does_not_reopen_expired_orders(): void
+    {
+        $orders = $this->database();
+        $this->enableDeferred();
+        $this->post('/fr/commande', $this->checkout(['payment_method' => 'deferred']))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        try {
+            $orders->activateDeferredPayment($order->id);
+            $this->fail('Missing readiness must stop deferred activation.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Payment instructions unavailable.', $exception->getMessage());
+        }
+        $this->assertSame('pending_payment_details', $orders->owned($order->id, $order->owner_hash)->status);
+        $this->enable();
+        $this->travelTo(app(BankTransfer::class)->deadline($order));
+        $expired = $orders->activateDeferredPayment($order->id);
+        $this->assertSame('expired', $expired->status);
+        $this->assertSame($order->customer_encrypted, $expired->customer_encrypted);
+        $this->assertNull(app(BankTransfer::class)->snapshot($expired));
+        $this->assertSame(0, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
+        $this->assertSame(0, $orders->expireBankTransfers());
         $this->travelBack();
     }
 

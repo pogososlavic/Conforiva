@@ -175,14 +175,12 @@ final class AutomaticOrderQuote
             $row = $db->table('commerce_order_quotes')->where('order_id', $order->id)->first();
             $sending = $row && $row->status === 'sending';
             $this->block($db, $order->id, $sending ? 'email_result_unknown' : 'quote_generation_failed', $sending ? 'unknown' : 'blocked');
-            $safeMessage = preg_replace('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', '[email]', $error->getMessage()) ?? '';
-            $safeMessage = preg_replace('/\b(password|pass|username|user|token)\s*[:=]\s*\S+/i', '$1=[redacted]', $safeMessage) ?? '';
+            // Provider messages and arbitrary exception codes may contain customer
+            // or transport secrets; retain only structural diagnostics.
             Log::error('HOMYA_ORDER_QUOTE_FAILED', [
                 'order_reference' => substr(hash('sha256', (string) $order->id), 0, 16),
                 'stage' => $stage,
                 'error_type' => get_class($error),
-                'error_code' => $error->getCode(),
-                'error_summary' => mb_substr($safeMessage, 0, 240),
             ]);
         }
     }

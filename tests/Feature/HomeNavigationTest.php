@@ -11,6 +11,8 @@ class HomeNavigationTest extends TestCase
 {
     public function test_home_navigation_has_real_destinations_in_every_language_without_database(): void
     {
+        // Contact destinations are synthetic and inspected without following them.
+        config(['contact.phone' => '+33123456789', 'contact.email' => 'support@example.test']);
         DB::shouldReceive('connection')->never();
 
         foreach (['fr', 'en', 'de'] as $locale) {
@@ -26,6 +28,24 @@ class HomeNavigationTest extends TestCase
 
             foreach ($xpath->query('//a[@href]') as $link) {
                 $url = parse_url($link->getAttribute('href'));
+                $this->assertIsArray($url);
+                if (($url['scheme'] ?? null) === 'mailto') {
+                    $this->assertSame(['scheme' => 'mailto', 'path' => 'support@example.test'], $url);
+
+                    continue;
+                }
+                if (($url['host'] ?? null) === 'wa.me') {
+                    $this->assertSame('https://wa.me/33123456789', $link->getAttribute('href'));
+                    $this->assertSame('_blank', $link->getAttribute('target'));
+                    $this->assertSame('noopener noreferrer', $link->getAttribute('rel'));
+                    $this->assertSame('no-referrer', $link->getAttribute('referrerpolicy'));
+
+                    continue;
+                }
+                if (isset($url['scheme'])) {
+                    $this->assertContains($url['scheme'], ['http', 'https']);
+                }
+                $this->assertSame(parse_url(config('app.url'), PHP_URL_HOST), $url['host'] ?? parse_url(config('app.url'), PHP_URL_HOST));
                 if (isset($url['fragment'])) {
                     $destination = $xpath;
                     if (isset($url['path']) && $url['path'] !== '/'.$locale) {
@@ -40,6 +60,8 @@ class HomeNavigationTest extends TestCase
                     $this->assertMatchesRegularExpression('~^/(fr|en|de)(/catalogue|/promotions|/retours/declaration|/produit/[a-z0-9-]+|/(a-propos|provenance|conseiller|contact|livraison|retractation|paiement|suivi|panier|avis|mentions-legales|cgv|confidentialite|cookies))?$~', $url['path']);
                 }
             }
+            $this->assertGreaterThan(0, $xpath->query('//a[@href="mailto:support@example.test"]')->length);
+            $this->assertGreaterThan(0, $xpath->query('//a[@href="https://wa.me/33123456789"]')->length);
 
             $languageLinks = $xpath->query('//nav[contains(@class, "languages")]/a');
             $this->assertSame(3, $languageLinks->length);
