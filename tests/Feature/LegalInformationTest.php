@@ -204,11 +204,17 @@ class LegalInformationTest extends TestCase
         }
     }
 
-    public function test_delivery_period_starts_at_payment_without_inventing_the_type_of_days(): void
+    public function test_delivery_period_uses_the_merchant_confirmed_business_days_and_dispatch_origin(): void
     {
-        foreach (['fr' => ['à compter du paiement', 'jours ouvrés'], 'en' => ['from payment', 'working days'], 'de' => ['ab Zahlung', 'Werktage']] as $locale => [$start, $days]) {
+        $confirmed = [
+            'fr' => ['à compter du paiement confirmé', 'jours ouvrés', 'depuis la France', '1 à 2', '2 à 5'],
+            'en' => ['after payment is confirmed', 'business days', 'dispatched from France', '1 to 2', '2 to 5'],
+            'de' => ['nach bestätigtem Zahlungseingang', 'Arbeitstag', 'aus Frankreich', '1 bis 2', '2 bis 5'],
+        ];
+        foreach ($confirmed as $locale => [$start, $days, $origin, $handling, $transit]) {
             foreach (['livraison', 'cgv'] as $page) {
-                $this->get('/'.$locale.'/'.$page)->assertOk()->assertSee($start)->assertDontSee($days);
+                $this->get('/'.$locale.'/'.$page)->assertOk()->assertSee($start)->assertSee($days)
+                    ->assertSee($origin)->assertSee($handling)->assertSee($transit)->assertSee('Europe/Paris');
             }
         }
     }

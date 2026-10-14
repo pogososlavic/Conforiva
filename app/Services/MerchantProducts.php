@@ -4,21 +4,52 @@ namespace App\Services;
 
 use App\Services\Commerce\CheckoutReadiness;
 use App\Services\Commerce\OrderStore;
+use Illuminate\Support\Collection;
 use Throwable;
 use XMLWriter;
 
 final class MerchantProducts
 {
+    private const VARIANT_ATTRIBUTE_LIMITS = ['color' => 100, 'material' => 200, 'pattern' => 100, 'size' => 100];
+
+    private const EU_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR',
+        'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
+
     public function __construct(private Seo $seo, private Catalogue $catalogue) {}
 
     public function ready(): bool
     {
-        $readiness = app(CheckoutReadiness::class);
+        foreach ($this->readinessChecks() as $ready) {
+            if ($ready !== true) {
+                return false;
+            }
+        }
 
-        return $this->seo->enabled() && config('merchant.enabled') === true
-            && config('commerce.inventory_enabled') === true && config('commerce.legal_ready') === true
-            && rtrim((string) config('app.url'), '/') === $this->seo->origin()
-            && ($readiness->bankReady() || $readiness->cardReady());
+        return true;
+    }
+
+    /** Safe gate results; null means deliberately not evaluated by an offline audit. */
+    public function readinessChecks(bool $checkPayment = true): array
+    {
+        $paymentReady = null;
+        if ($checkPayment) {
+            try {
+                $readiness = app(CheckoutReadiness::class);
+                $paymentReady = $readiness->bankReady() || $readiness->cardReady();
+            } catch (Throwable) {
+                // Unreadable private payment settings close the feed without leaking their contents.
+                $paymentReady = false;
+            }
+        }
+
+        return [
+            'seo_indexing' => $this->seo->enabled(),
+            'merchant_feed_enabled' => config('merchant.enabled') === true,
+            'inventory_enabled' => config('commerce.inventory_enabled') === true,
+            'legal_ready' => config('commerce.legal_ready') === true,
+            'canonical_origin_matches' => rtrim((string) config('app.url'), '/') === $this->seo->origin(),
+            'checkout_payment_ready' => $paymentReady,
+        ];
     }
 
     public function reviews(): array
@@ -97,6 +128,16 @@ final class MerchantProducts
         if (isset($review['eprel_code']) && self::eprelCode($review['eprel_code']) === null) {
             $problems[] = 'eprel_code_invalid';
         }
+        if (! ($product['has_variants'] ?? false)
+            && array_intersect(config('merchant.target_countries', []), self::EU_COUNTRIES) !== []) {
+            // Obligation is a reviewed product fact, never inferred from a broad store category.
+            if (! is_bool($review['energy_label_required'] ?? null)) {
+                $problems[] = 'energy_label_review_required';
+            } elseif ($review['energy_label_required'] && self::eprelCode($review['eprel_code'] ?? null) === null
+                && ! $this->googleEnergyLookupAllowed($product, $review)) {
+                $problems[] = 'eprel_code_required';
+            }
+        }
         if ($product['has_variants'] ?? true) {
             $variants = $this->variantProducts($product, $review, $locale);
             if (! $variants) {
@@ -105,8 +146,11 @@ final class MerchantProducts
             $attributeKeys = null;
             $combinations = [];
             foreach ($variants as [$variant, $variantReview]) {
-                if ($this->problems($variant, $variantReview, $locale)) {
+                $variantProblems = $this->problems($variant, $variantReview, $locale);
+                if ($variantProblems) {
                     $problems[] = 'variant_review_required';
+                    // Keep actionable attribute/certification causes visible to the private audit.
+                    $problems = array_merge($problems, $variantProblems);
                 }
                 $attributes = $variant['variant_attributes'];
                 ksort($attributes);
@@ -124,7 +168,17 @@ final class MerchantProducts
         if (isset($product['variant_id']) && empty($product['variant_attributes'])) {
             $problems[] = 'variant_attributes_required';
         }
-        if (! empty($product['issues'])) {
+        foreach (self::VARIANT_ATTRIBUTE_LIMITS as $attribute => $limit) {
+            $value = $product['variant_attributes'][$attribute] ?? null;
+            if (is_string($value) && mb_strlen($value) > $limit) {
+                $problems[] = 'variant_'.$attribute.'_too_long';
+            }
+        }
+        $issues = $product['issues'] ?? [];
+        if (($review['essential_details_verified'] ?? null) === true) {
+            $issues = array_diff($issues, ['missing_specifications']);
+        }
+        if ($issues !== []) {
             $problems[] = 'catalogue_issues_require_review';
         }
         if (! ($product['has_variants'] ?? false)) {
@@ -153,7 +207,39 @@ final class MerchantProducts
             }
         }
 
-        return array_unique($problems);
+        return array_values(array_unique($problems));
+    }
+
+    /** Missing structured specifications remain visible after an explicit essential-details review. */
+    public function warnings(array $product, array $review): array
+    {
+        $warnings = [];
+        if (($review['essential_details_verified'] ?? null) === true
+            && in_array('missing_specifications', $product['issues'] ?? [], true)) {
+            $warnings[] = 'missing_specifications';
+        }
+        if (! ($product['has_variants'] ?? false) && ($review['energy_label_required'] ?? null) === true
+            && array_intersect(config('merchant.target_countries', []), self::EU_COUNTRIES) !== []
+            && $this->googleEnergyLookupAllowed($product, $review)) {
+            $warnings[] = 'eprel_google_lookup_pending';
+        }
+
+        return $warnings;
+    }
+
+    private function googleEnergyLookupAllowed(array $product, array $review): bool
+    {
+        if (($review['allow_google_energy_lookup'] ?? null) !== true || ($review['approved'] ?? null) !== true
+            || ($review['eprel_code'] ?? null) !== null) {
+            return false;
+        }
+        // Google may resolve EPREL from reviewed manufacturer identifiers; a match is not guaranteed.
+        $mpn = $review['mpn'] ?? null;
+        $brand = $product['brand'] ?? null;
+
+        return self::validGtin($review['gtin'] ?? null)
+            || (is_string($mpn) && trim($mpn) !== '' && mb_strlen($mpn) <= 70
+                && is_string($brand) && trim($brand) !== '' && mb_strlen($brand) <= 70);
     }
 
     /** Shared parent price/inventory (DECISION-061); separate identities, images and factual reviews. */
@@ -177,10 +263,11 @@ final class MerchantProducts
             $variant['name'] = rtrim(mb_substr($product['name'], 0, max(1, 150 - mb_strlen($suffix)))).$suffix;
             $variant['title_source'] = 'trained_algorithmic_media';
             $variant['variant_attributes'] = [];
-            foreach (['color', 'material', 'pattern', 'size'] as $attribute) {
+            foreach (self::VARIANT_ATTRIBUTE_LIMITS as $attribute => $limit) {
                 $value = $variantReview['attributes'][$locale][$attribute] ?? null;
-                if (is_string($value) && trim($value) !== '' && mb_strlen($value) <= 200
+                if (is_string($value) && trim($value) !== ''
                     && ! preg_match('/[\x00-\x1F]/', $value)) {
+                    // Preserve an overlong value so problems() reports it instead of silently dropping it.
                     $variant['variant_attributes'][$attribute] = $value;
                 }
             }
@@ -246,10 +333,7 @@ final class MerchantProducts
             throw new \RuntimeException('Catalogue unavailable.');
         }
         $reviews = $this->reviews();
-        // One read-only inventory query; exporting a feed never expires or writes orders.
-        $inventory = app(OrderStore::class)->connection()->table('commerce_inventory')
-            ->select(['slug', 'reference', 'sale_enabled', 'approved_price_cents', 'validated_at', 'quantity', 'reserved'])
-            ->get()->keyBy('slug');
+        $inventory = $this->inventoryRows();
         $items = [];
         foreach ($summaries as $summary) {
             $slug = $summary['slug'];
@@ -261,9 +345,7 @@ final class MerchantProducts
                 continue;
             }
             $stock = $inventory->get($slug);
-            if (! $stock || ! $stock->sale_enabled || $stock->validated_at === null
-                || $stock->reference !== $product['reference'] || (int) $stock->approved_price_cents !== $product['price_cents']
-                || (int) $stock->quantity < (int) $stock->reserved) {
+            if ($this->inventoryProblems($product, $stock) !== []) {
                 continue;
             }
             if ($product['has_variants']) {
@@ -279,6 +361,40 @@ final class MerchantProducts
         }
 
         return $items;
+    }
+
+    /** One read-only query shared by the export and private audit; no order expiry or writes. */
+    public function inventoryRows(): Collection
+    {
+        return app(OrderStore::class)->connection()->table('commerce_inventory')
+            ->select(['slug', 'reference', 'sale_enabled', 'approved_price_cents', 'validated_at', 'quantity', 'reserved'])
+            ->get()->keyBy('slug');
+    }
+
+    public function inventoryProblems(array $product, ?object $stock): array
+    {
+        if ($stock === null) {
+            return ['inventory_missing'];
+        }
+        $problems = [];
+        if (! ($stock->sale_enabled ?? false)) {
+            $problems[] = 'inventory_sale_disabled';
+        }
+        if (($stock->validated_at ?? null) === null) {
+            $problems[] = 'inventory_not_validated';
+        }
+        if (($stock->reference ?? null) !== ($product['reference'] ?? null)) {
+            $problems[] = 'inventory_reference_mismatch';
+        }
+        if ((int) ($stock->approved_price_cents ?? 0) !== ($product['price_cents'] ?? null)) {
+            $problems[] = 'inventory_price_mismatch';
+        }
+        if ((int) ($stock->quantity ?? 0) < 0 || (int) ($stock->reserved ?? 0) < 0
+            || (int) ($stock->quantity ?? 0) < (int) ($stock->reserved ?? 0)) {
+            $problems[] = 'inventory_reservations_invalid';
+        }
+
+        return $problems;
     }
 
     public function xml(array $items, string $locale): string

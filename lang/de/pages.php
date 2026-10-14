@@ -13,7 +13,7 @@ return [
         'a-propos' => [
             'title' => 'Über HOMYA',
             'intro' => 'Alles für Ihr Zuhause.',
-            'paragraphs' => ['HOMYA ist ein unabhängiger Händler für Öfen und Holzheizungen, Kühlschränke, Waschmaschinen, Küchenmaschinen und Möbel.', 'Neue Geräte in versiegelter Verpackung, Lieferung in 3 bis 7 Tagen durch unseren eigenen Transportdienst, mit 2 Jahren gesetzlicher Gewährleistung und einer Rechnung auf Ihren Namen.'],
+            'paragraphs' => ['HOMYA ist ein unabhängiger Händler für Öfen und Holzheizungen, Kühlschränke, Waschmaschinen, Küchenmaschinen und Möbel.', 'Neue Geräte in versiegelter Verpackung, Lieferung durch unseren eigenen Transportdienst in 3 bis 7 Arbeitstagen nach bestätigtem Zahlungseingang, mit 2 Jahren gesetzlicher Gewährleistung und einer Rechnung auf Ihren Namen.'],
             'pending' => false,
         ],
         'provenance' => [
@@ -37,7 +37,7 @@ return [
         'livraison' => [
             'title' => 'Lieferung',
             'intro' => 'Kostenlose Lieferung in Frankreich, Belgien und Deutschland.',
-            'paragraphs' => ['Ihre Geräte werden innerhalb von 3 bis 7 Tagen ab Zahlung durch unseren eigenen Transporteur geliefert.', 'Die Lieferung ist in Frankreich, Belgien und Deutschland kostenlos.', 'Für Möbel und sperrige Geräte teilen Sie bitte die Zugangsbedingungen mit, um die Lieferung mit HOMYA abzustimmen.', 'Rücksendungen sind bei einem innerhalb von 14 Tagen nach Erhalt erklärten Widerruf kostenlos. Adresse und Ablauf finden Sie unter Rückgabe & Widerruf.'],
+            'paragraphs' => ['Ihre Geräte werden durch unseren eigenen Transporteur innerhalb von 3 bis 7 Arbeitstagen nach bestätigtem Zahlungseingang geliefert.', 'Die Bestellungen werden aus Frankreich versandt. Die Gesamtlieferzeit umfasst 1 bis 2 Arbeitstage für die Vorbereitung nach bestätigtem Zahlungseingang, anschließend 2 bis 5 Arbeitstage für den Transport.', 'Arbeitstage sind Montag bis Freitag. Annahmeschluss ist um 14 Uhr Pariser Zeit (Europe/Paris).', 'Die Lieferung ist in Frankreich, Belgien und Deutschland kostenlos.', 'Für Möbel und sperrige Geräte teilen Sie bitte die Zugangsbedingungen mit, um die Lieferung mit HOMYA abzustimmen.', 'Rücksendungen sind bei einem innerhalb von 14 Tagen nach Erhalt erklärten Widerruf kostenlos. Adresse und Ablauf finden Sie unter Rückgabe & Widerruf.'],
             'pending' => false,
         ],
         'retractation' => $legalPages['entries']['retractation'],

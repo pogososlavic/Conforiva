@@ -143,7 +143,7 @@ return [
     'tax_included' => 'Preis inklusive Steuern',
     'free_returns' => 'Kostenlose Rückgabe innerhalb von 14 Tagen',
     'return_conditions' => 'Rückgabebedingungen und Ablauf ansehen.',
-    'delivery_estimate' => 'Lieferung in 3–7 Tagen ab Zahlung.',
+    'delivery_estimate' => 'Lieferung in 3–7 Arbeitstagen nach bestätigtem Zahlungseingang.',
     'payment_information' => 'Informationen zu den Zahlungsarten',
     'cart_reservation_notice' => 'Artikel im Warenkorb sind nicht reserviert. Der Bestand wird bei Bestellbestätigung geprüft.',
     'review_cart' => 'Prüfen Sie die markierten Artikel und Mengen vor dem Fortfahren.',

@@ -6,6 +6,7 @@ use App\Http\Controllers\InformationController;
 use App\Http\Middleware\ProductionGuard;
 use App\Http\Middleware\StorefrontActivity;
 use App\Services\Catalogue;
+use App\Services\Commerce\CheckoutReadiness;
 use App\Services\MerchantProducts;
 use App\Services\Seo;
 use DOMDocument;
@@ -61,7 +62,7 @@ class GoogleSeoMerchantTest extends TestCase
     {
         return ['approved' => true, 'fingerprints' => ['fr' => MerchantProducts::fingerprint($product)],
             'gtin' => '4006381333931', 'mpn' => 'MANUFACTURER-FIXTURE',
-            'title_source' => 'default', 'description_source' => 'default'];
+            'title_source' => 'default', 'description_source' => 'default', 'energy_label_required' => false];
     }
 
     private function request(string $name, array $parameters = [], string $query = ''): Request
@@ -473,7 +474,7 @@ class GoogleSeoMerchantTest extends TestCase
         $this->get('https://homya-store.com/google/merchant/fr.xml')->assertNotFound();
     }
 
-    public function test_eprel_certification_is_optional_and_accepts_only_a_reviewed_registry_id(): void
+    public function test_eprel_certification_accepts_only_a_reviewed_registry_id(): void
     {
         $merchant = app(MerchantProducts::class);
         $product = $this->product();
@@ -498,6 +499,177 @@ class GoogleSeoMerchantTest extends TestCase
             $invalidCertification = $review + ['eprel_code' => $code];
             $this->assertContains('eprel_code_invalid', $merchant->problems($product, $invalidCertification, 'fr'));
             $this->assertStringNotContainsString('g:certification', $merchant->xml([[$product, $invalidCertification, true]], 'fr'));
+        }
+    }
+
+    public function test_eu_energy_label_obligation_requires_an_explicit_product_review(): void
+    {
+        $merchant = app(MerchantProducts::class);
+        $product = $this->product();
+        $review = $this->review($product);
+        unset($review['energy_label_required']);
+        foreach (['FR', 'BE', 'DE', 'IT'] as $country) {
+            config(['merchant.target_countries' => [$country]]);
+            foreach ([$review, $review + ['energy_label_required' => null], $review + ['energy_label_required' => 'false']] as $unknown) {
+                $this->assertContains('energy_label_review_required', $merchant->problems($product, $unknown, 'fr'));
+            }
+            $this->assertSame([], $merchant->problems($product, $review + ['energy_label_required' => false], 'fr'));
+            $this->assertContains('eprel_code_required', $merchant->problems($product, $review + ['energy_label_required' => true], 'fr'));
+            $this->assertSame([], $merchant->problems($product, $review + ['energy_label_required' => true, 'eprel_code' => '123456'], 'fr'));
+            $invalid = $merchant->problems($product, $review + ['energy_label_required' => true, 'eprel_code' => 'invalid'], 'fr');
+            $this->assertContains('eprel_code_required', $invalid);
+            $this->assertContains('eprel_code_invalid', $invalid);
+        }
+        // This gate handles EU certification only; a non-EU destination needs a separate country review.
+        config(['merchant.target_countries' => ['US']]);
+        $this->assertSame([], $merchant->problems($product, $review, 'fr'));
+        $this->assertContains('eprel_code_invalid', $merchant->problems($product, $review + ['eprel_code' => 'invalid'], 'fr'));
+    }
+
+    public function test_missing_specifications_can_only_be_downgraded_by_an_explicit_essential_details_review(): void
+    {
+        $merchant = app(MerchantProducts::class);
+        $product = array_replace($this->product(), ['issues' => ['missing_specifications']]);
+        $review = $this->review($product);
+        foreach ([$review, $review + ['essential_details_verified' => false], $review + ['essential_details_verified' => 'true']] as $unverified) {
+            $this->assertContains('catalogue_issues_require_review', $merchant->problems($product, $unverified, 'fr'));
+            $this->assertSame([], $merchant->warnings($product, $unverified));
+        }
+        $verified = $review + ['essential_details_verified' => true];
+        $this->assertSame([], $merchant->problems($product, $verified, 'fr'));
+        $this->assertSame(['missing_specifications'], $merchant->warnings($product, $verified));
+
+        $contradiction = array_replace($product, ['issues' => ['missing_specifications', 'contradictory_capacity']]);
+        $review = $this->review($contradiction) + ['essential_details_verified' => true];
+        $this->assertContains('catalogue_issues_require_review', $merchant->problems($contradiction, $review, 'fr'));
+        $this->assertSame(['missing_specifications'], $merchant->warnings($contradiction, $review));
+    }
+
+    public function test_google_energy_lookup_requires_explicit_opt_in_and_reviewed_manufacturer_identifiers(): void
+    {
+        $merchant = app(MerchantProducts::class);
+        $product = $this->product();
+        $review = array_replace($this->review($product), ['energy_label_required' => true]);
+        foreach ([$review, $review + ['allow_google_energy_lookup' => false],
+            $review + ['allow_google_energy_lookup' => 'true']] as $notAllowed) {
+            $this->assertContains('eprel_code_required', $merchant->problems($product, $notAllowed, 'fr'));
+            $this->assertSame([], $merchant->warnings($product, $notAllowed));
+        }
+        $allowed = $review + ['allow_google_energy_lookup' => true];
+        foreach ([$allowed, array_replace($allowed, ['gtin' => null]), array_replace($allowed, ['mpn' => null])] as $identified) {
+            $this->assertSame([], $merchant->problems($product, $identified, 'fr'));
+            $this->assertSame(['eprel_google_lookup_pending'], $merchant->warnings($product, $identified));
+            $this->assertStringNotContainsString('g:certification', $merchant->xml([[$product, $identified, true]], 'fr'));
+        }
+        $unidentified = array_replace($allowed, ['gtin' => null, 'mpn' => null, 'identifier_exists' => false]);
+        $this->assertContains('eprel_code_required', $merchant->problems($product, $unidentified, 'fr'));
+        $this->assertSame([], $merchant->warnings($product, $unidentified));
+        $withoutBrand = array_replace($product, ['brand' => '']);
+        $mpnOnly = array_replace($allowed, ['gtin' => null, 'fingerprints' => ['fr' => MerchantProducts::fingerprint($withoutBrand)]]);
+        $this->assertContains('eprel_code_required', $merchant->problems($withoutBrand, $mpnOnly, 'fr'));
+        $this->assertSame([], $merchant->warnings($withoutBrand, $mpnOnly));
+
+        $invalidCode = $allowed + ['eprel_code' => 'invalid'];
+        $this->assertContains('eprel_code_invalid', $merchant->problems($product, $invalidCode, 'fr'));
+        $this->assertContains('eprel_code_required', $merchant->problems($product, $invalidCode, 'fr'));
+        $this->assertSame([], $merchant->warnings($product, $invalidCode));
+        $provided = $allowed + ['eprel_code' => '123456'];
+        $this->assertSame([], $merchant->problems($product, $provided, 'fr'));
+        $this->assertSame([], $merchant->warnings($product, $provided));
+        $unapproved = array_replace($allowed, ['approved' => false]);
+        $this->assertContains('eprel_code_required', $merchant->problems($product, $unapproved, 'fr'));
+        $this->assertSame([], $merchant->warnings($product, $unapproved));
+    }
+
+    public function test_variant_attribute_limits_are_reported_without_silently_discarding_values(): void
+    {
+        $merchant = app(MerchantProducts::class);
+        $product = array_replace($this->product(), ['has_variants' => true, 'variants' => [['title' => 'Fixture finish']]]);
+        $review = $this->review($product);
+        $review['variants']['v1'] = ['approved' => true, 'identifier_exists' => false,
+            'energy_label_required' => false, 'title_source' => 'trained_algorithmic_media', 'description_source' => 'default',
+            'image_verified' => true, 'option_titles' => ['fr' => 'Fixture finish'],
+            'images' => [$product['images'][0]['local_url']]];
+        foreach (['color' => 100, 'material' => 200, 'pattern' => 100, 'size' => 100] as $attribute => $limit) {
+            foreach ([$limit, $limit + 1] as $length) {
+                $value = str_repeat('é', $length);
+                $review['variants']['v1']['attributes']['fr'] = [$attribute => $value];
+                [[$variant]] = $merchant->variantProducts($product, $review, 'fr');
+                $this->assertSame($value, $variant['variant_attributes'][$attribute]);
+                $review['variants']['v1']['fingerprints']['fr'] = MerchantProducts::fingerprint($variant);
+                $problems = $merchant->problems($product, $review, 'fr');
+                if ($length === $limit) {
+                    $this->assertSame([], $problems, $attribute);
+                } else {
+                    $this->assertContains('variant_'.$attribute.'_too_long', $problems);
+                    $this->assertContains('variant_review_required', $problems);
+                }
+            }
+        }
+        $review['variants']['v1']['attributes']['fr'] = ['color' => 'Fixture color'];
+        unset($review['variants']['v1']['energy_label_required']);
+        [[$variant]] = $merchant->variantProducts($product, $review, 'fr');
+        $review['variants']['v1']['fingerprints']['fr'] = MerchantProducts::fingerprint($variant);
+        $this->assertContains('energy_label_review_required', $merchant->problems($product, $review, 'fr'));
+    }
+
+    public function test_inventory_eligibility_is_shared_read_only_and_allows_true_out_of_stock_entries(): void
+    {
+        $merchant = app(MerchantProducts::class);
+        $product = $this->product();
+        $stock = (object) ['reference' => $product['reference'], 'approved_price_cents' => (string) $product['price_cents'],
+            'sale_enabled' => 1, 'validated_at' => '2026-10-14 00:00:00', 'quantity' => '2', 'reserved' => '2'];
+        $this->assertSame([], $merchant->inventoryProblems($product, $stock));
+        $this->assertSame(['inventory_missing'], $merchant->inventoryProblems($product, null));
+        foreach (['sale_enabled' => [0, 'inventory_sale_disabled'], 'validated_at' => [null, 'inventory_not_validated'],
+            'reference' => ['CHANGED', 'inventory_reference_mismatch'],
+            'approved_price_cents' => [123, 'inventory_price_mismatch'], 'quantity' => [1, 'inventory_reservations_invalid'],
+            'reserved' => [-1, 'inventory_reservations_invalid']] as $property => [$value, $problem]) {
+            $invalid = clone $stock;
+            $invalid->{$property} = $value;
+            $this->assertSame([$problem], $merchant->inventoryProblems($product, $invalid));
+        }
+    }
+
+    public function test_private_readiness_checks_return_only_boolean_gate_results(): void
+    {
+        $merchant = app(MerchantProducts::class);
+        $checks = $merchant->readinessChecks();
+        $this->assertSame(['seo_indexing', 'merchant_feed_enabled', 'inventory_enabled', 'legal_ready',
+            'canonical_origin_matches', 'checkout_payment_ready'], array_keys($checks));
+        foreach ($checks as $value) {
+            $this->assertIsBool($value);
+        }
+        $this->assertFalse($checks['merchant_feed_enabled']);
+        $this->assertFalse($checks['checkout_payment_ready']);
+        $this->assertSame(! in_array(false, $checks, true), $merchant->ready());
+        $this->production();
+        config(['merchant.enabled' => true, 'commerce.inventory_enabled' => true, 'commerce.legal_ready' => true,
+            'app.url' => 'https://other-store.com']);
+        $checks = $merchant->readinessChecks();
+        $this->assertTrue($checks['seo_indexing']);
+        $this->assertTrue($checks['merchant_feed_enabled']);
+        $this->assertTrue($checks['inventory_enabled']);
+        $this->assertTrue($checks['legal_ready']);
+        $this->assertFalse($checks['canonical_origin_matches']);
+        $this->assertFalse($merchant->ready());
+    }
+
+    public function test_offline_readiness_does_not_resolve_checkout_or_private_payment_settings(): void
+    {
+        $this->production();
+        config(['merchant.enabled' => true, 'commerce.enabled' => true,
+            'commerce.inventory_enabled' => true, 'commerce.legal_ready' => true]);
+        $checkoutResolutions = 0;
+        $this->app->bind(CheckoutReadiness::class, function () use (&$checkoutResolutions) {
+            $checkoutResolutions++;
+            throw new \RuntimeException('An offline audit must not resolve checkout readiness.');
+        });
+        $checks = app(MerchantProducts::class)->readinessChecks(false);
+        $this->assertSame(0, $checkoutResolutions);
+        $this->assertNull($checks['checkout_payment_ready']);
+        foreach (array_diff_key($checks, ['checkout_payment_ready' => true]) as $value) {
+            $this->assertTrue($value);
         }
     }
 }

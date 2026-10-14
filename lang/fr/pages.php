@@ -13,7 +13,7 @@ return [
         'a-propos' => [
             'title' => 'À propos de HOMYA',
             'intro' => 'La maison, tout simplement.',
-            'paragraphs' => ['HOMYA, revendeur indépendant de poêles et chauffage au bois, réfrigérateurs, lave-linge, robots de cuisine et mobilier.', 'Appareils neufs sous scellé, livrés en 3 à 7 jours par notre propre transporteur, garantie légale de conformité de 2 ans et facture à votre nom.'],
+            'paragraphs' => ['HOMYA, revendeur indépendant de poêles et chauffage au bois, réfrigérateurs, lave-linge, robots de cuisine et mobilier.', 'Appareils neufs sous scellé, livrés par notre propre transporteur en 3 à 7 jours ouvrés à compter du paiement confirmé, garantie légale de conformité de 2 ans et facture à votre nom.'],
             'pending' => false,
         ],
         'provenance' => [
@@ -37,7 +37,7 @@ return [
         'livraison' => [
             'title' => 'Livraison',
             'intro' => 'Livraison gratuite en France, en Belgique et en Allemagne.',
-            'paragraphs' => ['Vos appareils sont livrés en 3 à 7 jours à compter du paiement par notre propre transporteur.', 'La livraison est gratuite en France, en Belgique et en Allemagne.', 'Pour les meubles et appareils volumineux, indiquez les conditions d’accès afin d’organiser la livraison avec HOMYA.', 'Les retours sont gratuits pour les rétractations notifiées dans les 14 jours après réception. Consultez Retours & rétractation pour l’adresse et l’organisation du retour.'],
+            'paragraphs' => ['Vos appareils sont livrés par notre propre transporteur en 3 à 7 jours ouvrés à compter du paiement confirmé.', 'Les commandes sont expédiées depuis la France. Le délai global de livraison comprend 1 à 2 jours ouvrés de préparation après confirmation du paiement, puis 2 à 5 jours ouvrés de transport.', 'Les jours ouvrés sont du lundi au vendredi. L’heure limite de prise en compte est 14 h, heure de Paris (Europe/Paris).', 'La livraison est gratuite en France, en Belgique et en Allemagne.', 'Pour les meubles et appareils volumineux, indiquez les conditions d’accès afin d’organiser la livraison avec HOMYA.', 'Les retours sont gratuits pour les rétractations notifiées dans les 14 jours après réception. Consultez Retours & rétractation pour l’adresse et l’organisation du retour.'],
             'pending' => false,
         ],
         'retractation' => $legalPages['entries']['retractation'],

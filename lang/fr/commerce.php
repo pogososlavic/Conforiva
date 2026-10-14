@@ -143,7 +143,7 @@ return [
     'tax_included' => 'Prix TTC',
     'free_returns' => 'Retours gratuits sous 14 jours',
     'return_conditions' => 'Consultez les conditions et la procédure de retour.',
-    'delivery_estimate' => 'Livraison en 3 à 7 jours à compter du paiement.',
+    'delivery_estimate' => 'Livraison en 3 à 7 jours ouvrés à compter du paiement confirmé.',
     'payment_information' => 'Informations sur les moyens de paiement',
     'cart_reservation_notice' => 'L’ajout au panier ne réserve pas les articles. Le stock est vérifié lors de la validation de la commande.',
     'review_cart' => 'Vérifiez les articles et les quantités signalés avant de continuer.',

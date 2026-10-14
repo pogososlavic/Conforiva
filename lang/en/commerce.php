@@ -143,7 +143,7 @@ return [
     'tax_included' => 'Price including tax',
     'free_returns' => 'Free returns within 14 days',
     'return_conditions' => 'See the return conditions and procedure.',
-    'delivery_estimate' => 'Delivery in 3–7 days from payment.',
+    'delivery_estimate' => 'Delivery in 3–7 business days after payment is confirmed.',
     'payment_information' => 'Payment method information',
     'cart_reservation_notice' => 'Adding items to your basket does not reserve them. Stock is checked when you confirm your order.',
     'review_cart' => 'Check the highlighted items and quantities before continuing.',

@@ -13,7 +13,7 @@ return [
         'a-propos' => [
             'title' => 'About HOMYA',
             'intro' => 'Home, made simple.',
-            'paragraphs' => ['HOMYA is an independent retailer of stoves and wood heating equipment, refrigerators, washing machines, food processors and furniture.', 'New appliances in sealed packaging, delivered in 3 to 7 days by our own carrier, with a 2-year legal guarantee of conformity and an invoice in your name.'],
+            'paragraphs' => ['HOMYA is an independent retailer of stoves and wood heating equipment, refrigerators, washing machines, food processors and furniture.', 'New appliances in sealed packaging, delivered by our own carrier in 3 to 7 business days after payment is confirmed, with a 2-year legal guarantee of conformity and an invoice in your name.'],
             'pending' => false,
         ],
         'provenance' => [
@@ -37,7 +37,7 @@ return [
         'livraison' => [
             'title' => 'Delivery',
             'intro' => 'Free delivery in France, Belgium and Germany.',
-            'paragraphs' => ['Your appliances are delivered in 3 to 7 days from payment by our own carrier.', 'Delivery is free in France, Belgium and Germany.', 'For furniture and bulky appliances, share access details to arrange delivery with HOMYA.', 'Returns are free for withdrawal notified within 14 days of receipt. See Returns & withdrawal for the address and return arrangements.'],
+            'paragraphs' => ['Your appliances are delivered by our own carrier in 3 to 7 business days after payment is confirmed.', 'Orders are dispatched from France. The overall delivery period includes 1 to 2 business days for preparation after payment confirmation, followed by 2 to 5 business days for transport.', 'Business days are Monday to Friday. The cut-off time is 2 p.m., Paris time (Europe/Paris).', 'Delivery is free in France, Belgium and Germany.', 'For furniture and bulky appliances, share access details to arrange delivery with HOMYA.', 'Returns are free for withdrawal notified within 14 days of receipt. See Returns & withdrawal for the address and return arrangements.'],
             'pending' => false,
         ],
         'retractation' => $legalPages['entries']['retractation'],
