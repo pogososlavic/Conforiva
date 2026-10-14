@@ -69,7 +69,7 @@ Route::prefix('admin')->middleware(AdminBoundary::class)->group(function () {
     });
 });
 
-Route::redirect('/', '/fr', 301);
+Route::redirect('/', '/fr', 301)->name('home.redirect');
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'index'])->name('seo.sitemap');
 Route::get('/sitemaps/{locale}/pages.xml', [SeoController::class, 'pages'])->whereIn('locale', config('homya.locales'))->name('seo.pages');

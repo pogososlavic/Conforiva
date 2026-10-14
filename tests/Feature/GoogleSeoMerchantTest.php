@@ -69,6 +69,7 @@ class GoogleSeoMerchantTest extends TestCase
         $path = match ($name) {
             'information' => '/{locale}/{page}',
             'product' => '/{locale}/produit/{slug}',
+            'promotions' => '/{locale}/promotions',
             default => '/{locale}/catalogue',
         };
         $route = (new Route(['GET'], $path, fn () => null))->name($name);
@@ -99,6 +100,22 @@ class GoogleSeoMerchantTest extends TestCase
         $xpath->registerNamespace('s', 'http://www.sitemaps.org/schemas/sitemap/0.9');
 
         return $xpath;
+    }
+
+    private function sitemapLocations(string $url, string $root = 'urlset'): array
+    {
+        $response = $this->get($url)->assertOk()
+            ->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
+        $document = new DOMDocument;
+        $this->assertTrue($document->loadXML($response->getContent()));
+        $this->assertSame($root, $document->documentElement->localName);
+        $this->assertSame('http://www.sitemaps.org/schemas/sitemap/0.9', $document->documentElement->namespaceURI);
+        $xpath = new DOMXPath($document);
+        $xpath->registerNamespace('s', 'http://www.sitemaps.org/schemas/sitemap/0.9');
+        $locations = array_map(fn ($node) => $node->textContent, iterator_to_array($xpath->query('//s:loc')));
+        $this->assertSame(count($locations), count(array_unique($locations)), $url.' must not contain duplicate URLs.');
+
+        return $locations;
     }
 
     public function test_production_sitemaps_can_be_inspected_before_indexing_is_enabled(): void
@@ -135,6 +152,23 @@ class GoogleSeoMerchantTest extends TestCase
         $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => 'fixture-product']),
             'Fixture title', 'Fixture description', ['available' => true]);
         $this->assertSame('noindex, nofollow', $metadata['robots']);
+    }
+
+    public function test_root_redirect_is_crawlable_only_when_public_production_indexing_is_open(): void
+    {
+        $this->production();
+        config(['seo.indexing_enabled' => true]);
+        $this->get('https://homya-store.com/')->assertStatus(301)->assertRedirect('/fr')
+            ->assertHeaderMissing('X-Robots-Tag');
+
+        config(['seo.indexing_enabled' => false]);
+        $this->get('https://homya-store.com/')->assertStatus(301)->assertRedirect('/fr')
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+
+        $this->app['env'] = 'local';
+        config(['seo.indexing_enabled' => true]);
+        $this->get('http://localhost/')->assertStatus(301)->assertRedirect('/fr')
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
     }
 
     public function test_sitemaps_stay_closed_outside_the_configured_safe_public_origin(): void
@@ -201,6 +235,152 @@ class GoogleSeoMerchantTest extends TestCase
         }
         $this->assertNotContains('https://homya-store.com/fr/suivi', $locations);
         $this->assertContains('https://homya-store.com/fr/catalogue?category=refrigerateurs', $locations);
+    }
+
+    public function test_pages_sitemap_contains_all_canonical_collection_pages_without_filters_or_private_urls(): void
+    {
+        $this->production();
+        config(['homya.catalogue_page_size' => 2]);
+        $products = [];
+        foreach (range(1, 7) as $number) {
+            $products[] = array_replace($this->product(), [
+                'slug' => 'fixture-product-'.$number,
+                'universe' => $number <= 5 ? 'appliances' : 'furniture',
+                'category' => match (true) {
+                    $number <= 3 => ['slug' => 'refrigerateurs', 'name' => 'Réfrigérateurs'],
+                    $number <= 5 => ['slug' => 'lave-vaisselle', 'name' => 'Lave-vaisselle'],
+                    default => ['slug' => 'canapes', 'name' => 'Canapés'],
+                },
+                'promotion' => $number <= 5 ? ['percent' => 15, 'price_cents' => 10000] : null,
+            ]);
+        }
+        $this->catalogue($products);
+        $origin = 'https://homya-store.com';
+        $locations = $this->sitemapLocations($origin.'/sitemaps/fr/pages.xml');
+        $expected = array_map(fn ($path) => $origin.'/fr/'.$path, [
+            'catalogue', 'catalogue?page=2', 'catalogue?page=3', 'catalogue?page=4',
+            'catalogue?universe=appliances', 'catalogue?universe=appliances&page=2', 'catalogue?universe=appliances&page=3',
+            'catalogue?universe=furniture',
+            'catalogue?category=refrigerateurs', 'catalogue?category=refrigerateurs&page=2',
+            'catalogue?category=lave-vaisselle', 'catalogue?category=canapes',
+            'promotions', 'promotions?page=2', 'promotions?page=3',
+        ]);
+        $collectionLocations = array_values(array_filter($locations,
+            fn ($url) => in_array(parse_url($url, PHP_URL_PATH), ['/fr/catalogue', '/fr/promotions'], true)));
+        $this->assertEqualsCanonicalizing($expected, $collectionLocations);
+        $this->assertContains($origin.'/fr', $locations);
+
+        app()->setLocale('fr');
+        $seo = app(Seo::class);
+        foreach ($expected as $url) {
+            $query = parse_url($url, PHP_URL_QUERY) ?? '';
+            parse_str($query, $filters);
+            $name = str_ends_with(parse_url($url, PHP_URL_PATH), '/promotions') ? 'promotions' : 'catalogue';
+            $metadata = $seo->page($this->request($name, ['locale' => 'fr'], $query === '' ? '' : '?'.$query),
+                'Fixture title', 'Fixture description', ['available' => true, 'filters' => $filters]);
+            $this->assertSame($url, $metadata['canonical'], $url);
+            $this->assertSame('index, follow, max-image-preview:large', $metadata['robots'], $url);
+        }
+        foreach ($locations as $url) {
+            $this->assertStringStartsWith($origin.'/fr', $url);
+            $this->assertNull(parse_url($url, PHP_URL_FRAGMENT));
+            $this->assertDoesNotMatchRegularExpression('~/(?:admin|panier|commande|suivi|assistance|retours)(?:/|$|\\?)~', $url);
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $query);
+            $this->assertSame([], array_diff(array_keys($query), ['universe', 'category', 'page']), $url);
+            $this->assertFalse(isset($query['category'], $query['universe']), $url);
+            if (isset($query['page'])) {
+                $this->assertGreaterThan(1, (int) $query['page'], $url);
+            }
+        }
+        foreach (['q' => 'fixture', 'brand' => 'Fixture manufacturer', 'condition' => 'new', 'min' => '10',
+            'max' => '200', 'sort' => 'name', 'variant' => 'one'] as $key => $value) {
+            $query = http_build_query([$key => $value]);
+            $metadata = $seo->page($this->request('catalogue', ['locale' => 'fr'], '?'.$query),
+                'Fixture title', 'Fixture description', ['available' => true, 'filters' => [$key => $value]]);
+            $this->assertNull($metadata['canonical'], $key);
+            $this->assertSame('noindex, follow', $metadata['robots'], $key);
+            $this->assertNotContains($origin.'/fr/catalogue?'.$query, $locations);
+        }
+        foreach (['q' => 'fixture', 'discount' => '15'] as $key => $value) {
+            $query = http_build_query([$key => $value]);
+            $metadata = $seo->page($this->request('promotions', ['locale' => 'fr'], '?'.$query),
+                'Fixture title', 'Fixture description', ['available' => true, 'filters' => [$key => $value]]);
+            $this->assertNull($metadata['canonical'], $key);
+            $this->assertNotContains($origin.'/fr/promotions?'.$query, $locations);
+        }
+        foreach (['catalogue', 'promotions'] as $name) {
+            $metadata = $seo->page($this->request($name, ['locale' => 'fr'], '?page=1'),
+                'Fixture title', 'Fixture description', ['available' => true, 'filters' => ['page' => 1]]);
+            $this->assertSame($origin.'/fr/'.$name, $metadata['canonical']);
+            $this->assertContains($metadata['canonical'], $locations);
+        }
+        $filters = ['universe' => 'appliances', 'category' => 'refrigerateurs', 'page' => 2];
+        $metadata = $seo->page($this->request('catalogue', ['locale' => 'fr'], '?'.http_build_query($filters)),
+            'Fixture title', 'Fixture description', ['available' => true, 'filters' => $filters]);
+        $this->assertSame($origin.'/fr/catalogue?category=refrigerateurs&page=2', $metadata['canonical']);
+        $this->assertContains($metadata['canonical'], $locations);
+        $this->get($origin.'/sitemaps/fr/pages.xml')->assertSee('category=refrigerateurs&amp;page=2', false);
+    }
+
+    public function test_sitemap_index_counts_products_per_locale_and_links_only_to_existing_chunks(): void
+    {
+        $this->production();
+        config(['seo.sitemap_chunk_size' => 2]);
+        $localizedProducts = [];
+        foreach (['fr' => 5, 'en' => 3, 'de' => 1] as $locale => $count) {
+            foreach (range(1, $count) as $number) {
+                $localizedProducts[$locale][] = array_replace($this->product(), [
+                    'slug' => $locale.'-fixture-product-'.$number,
+                    'promotion' => null,
+                    'has_variants' => $number === 1,
+                    'variants' => $number === 1 ? [['id' => 'one'], ['id' => 'two']] : [],
+                ]);
+            }
+        }
+        $catalogue = Mockery::mock(Catalogue::class);
+        $catalogue->shouldReceive('products')->andReturnUsing(fn () => collect($localizedProducts[app()->getLocale()]));
+        $catalogue->shouldReceive('sourceUnavailable')->andReturn(false);
+        $catalogue->shouldReceive('translationUnavailable')->andReturn(false);
+        $this->app->instance(Catalogue::class, $catalogue);
+        $origin = 'https://homya-store.com';
+        $locations = $this->sitemapLocations($origin.'/sitemap.xml', 'sitemapindex');
+        $expected = [];
+        foreach (['fr' => 3, 'en' => 2, 'de' => 1] as $locale => $chunks) {
+            $pagesUrl = $origin.'/sitemaps/'.$locale.'/pages.xml';
+            $expected[] = $pagesUrl;
+            $this->sitemapLocations($pagesUrl);
+            $productLocations = [];
+            foreach (range(1, $chunks) as $chunk) {
+                $url = $origin.'/sitemaps/'.$locale.'/products-'.$chunk.'.xml';
+                $expected[] = $url;
+                $child = $this->sitemapLocations($url);
+                $this->assertNotEmpty($child, $url);
+                $this->assertLessThanOrEqual(2, count($child), $url);
+                $productLocations = array_merge($productLocations, $child);
+            }
+            $this->assertEqualsCanonicalizing(array_map(fn ($product) => $origin.'/'.$locale.'/produit/'.$product['slug'],
+                $localizedProducts[$locale]), $productLocations);
+            $this->assertSame(count($productLocations), count(array_unique($productLocations)));
+            foreach ($productLocations as $url) {
+                $this->assertNull(parse_url($url, PHP_URL_QUERY), $url);
+            }
+            $this->get($origin.'/sitemaps/'.$locale.'/products-'.($chunks + 1).'.xml')->assertNotFound();
+        }
+        $this->assertEqualsCanonicalizing($expected, $locations);
+    }
+
+    public function test_sitemap_index_fails_when_a_later_locale_has_no_publishable_catalogue(): void
+    {
+        $this->production();
+        foreach (['empty', 'translation-unavailable'] as $failure) {
+            $catalogue = Mockery::mock(Catalogue::class);
+            $catalogue->shouldReceive('products')->andReturnUsing(fn () => app()->getLocale() === 'en' && $failure === 'empty' ? collect() : collect([$this->product() + ['promotion' => null]]));
+            $catalogue->shouldReceive('sourceUnavailable')->andReturn(false);
+            $catalogue->shouldReceive('translationUnavailable')->andReturnUsing(fn () => app()->getLocale() === 'en' && $failure === 'translation-unavailable');
+            $this->app->instance(Catalogue::class, $catalogue);
+            $this->get('https://homya-store.com/sitemap.xml')->assertStatus(503)
+                ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        }
     }
 
     public function test_contact_readiness_and_pending_content_are_resolved_consistently(): void

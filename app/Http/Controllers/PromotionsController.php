@@ -37,11 +37,12 @@ class PromotionsController extends Controller
             ->sort(static fn (array $a, array $b) => ($b['promotion']['price_cents'] <=> $a['promotion']['price_cents']) ?: strcmp($a['slug'], $b['slug']))
             ->values();
         $page = (int) ($filters['page'] ?? 1);
-        $last = max(1, (int) ceil($items->count() / 24));
+        $perPage = max(1, (int) config('homya.catalogue_page_size', 24));
+        $last = max(1, (int) ceil($items->count() / $perPage));
         if (! $invalid && $page > $last) {
             return redirect()->route('promotions', ['locale' => $locale] + array_merge($filters, ['page' => $last]));
         }
-        $products = new LengthAwarePaginator($items->forPage($page, 24)->values(), $items->count(), 24, $page, [
+        $products = new LengthAwarePaginator($items->forPage($page, $perPage)->values(), $items->count(), $perPage, $page, [
             'path' => route('promotions', ['locale' => $locale]), 'query' => $filters,
         ]);
 

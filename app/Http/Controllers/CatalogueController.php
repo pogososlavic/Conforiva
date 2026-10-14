@@ -78,11 +78,12 @@ class CatalogueController extends Controller
         }
         $items = $catalogue->filtered($filters);
         $page = (int) ($filters['page'] ?? 1);
-        $last = max(1, (int) ceil($items->count() / 24));
+        $perPage = max(1, (int) config('homya.catalogue_page_size', 24));
+        $last = max(1, (int) ceil($items->count() / $perPage));
         if (! $invalid && $page > $last) {
             return redirect()->route('catalogue', ['locale' => $locale] + array_merge($filters, ['page' => $last]));
         }
-        $products = new LengthAwarePaginator($items->forPage($page, 24)->values(), $items->count(), 24, $page, ['path' => route('catalogue', ['locale' => $locale]), 'query' => $filters]);
+        $products = new LengthAwarePaginator($items->forPage($page, $perPage)->values(), $items->count(), $perPage, $page, ['path' => route('catalogue', ['locale' => $locale]), 'query' => $filters]);
         $languageLinks = [];
         foreach (config('homya.locales') as $language) {
             $languageLinks[$language] = route('catalogue', ['locale' => $language] + ($invalid ? $formValues : $filters));

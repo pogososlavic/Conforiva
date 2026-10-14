@@ -1,5 +1,40 @@
 # HOMYA — connexion à Search Console et Merchant Center
 
+## Contrôle et corrections sitemap — 14 octobre 2026
+
+Le sitemap est généré par `app/Http/Controllers/SeoController.php`, déclaré dans `routes/web.php` et configuré dans `config/seo.php`. Il n'existe pas de fichier XML source à chercher dans `public/` : `/sitemap.xml` est un index dynamique, avec `/sitemaps/{fr,en,de}/pages.xml` et des blocs `/sitemaps/{fr,en,de}/products-N.xml` de 1 000 produits. Les produits publiés et leur langue viennent de la projection du catalogue.
+
+`public/robots.txt` est un repli fermé pour les environnements privés. La règle de `public/.htaccess` transmet `/robots.txt` à Laravel avant de tester l'existence d'un fichier. En production, lorsque l'indexation est ouverte sur l'origine exacte, le contrôleur sert :
+
+```text
+User-agent: *
+Allow: /
+
+Sitemap: https://homya.eu/sitemap.xml
+```
+
+### État public observé
+
+GET du 14 octobre à 21:26 UTC : robots 200 avec la référence ci-dessus ; sitemap 200 XML valide, 15 enfants ; accueils FR/EN/DE, contact, livraison et paiement indexables. Le rapport Search Console indique encore « Impossible de récupérer le sitemap », avec dernière lecture le 13 octobre. Le **test en ligne Google réel du 14 octobre à 21:30:45** sur l'URL exacte `https://homya.eu/sitemap.xml` confirme **Exploration autorisée : Oui**, **Récupération de page : Réussie**, **Indexation autorisée : Oui**. Cela confirme l'accès actuel depuis Google, pas le traitement complet du rapport des sitemaps ni l'indexation des pages. Aucune nouvelle soumission ni demande d'indexation du XML n'a été faite.
+
+Un problème distinct est constaté dans le test Google déjà présent sur `https://homya.eu/` à 21:17:30 : `noindex` détecté dans `X-Robots-Tag`, avec destination canonique `/fr`. Le middleware ajoutait cette directive à la redirection racine car sa route n'était pas reconnue comme publique. Le correctif local nomme cette route `home.redirect` et dispense uniquement cette redirection du repli `noindex` lorsque l'indexation est réellement ouverte sur l'origine de production autorisée. Local, préproduction, erreurs et pages privées gardent leurs protections.
+
+### Corrections locales vérifiées, à déployer
+
+- Sitemap de pages complété avec les paginations canoniques du catalogue, des univers, des catégories et des promotions actives. Page 1 sans paramètre ; autres pages avec `page=N`. Taille partagée de 24 produits par page dans `config/homya.php`, avec repli compatible avec un ancien cache de configuration.
+- Nombre de blocs de produits calculé pour chaque langue, afin de ne pas référencer un enfant absent lorsqu'un produit personnalisé n'est publié que dans certaines langues. Une source/langue indisponible renvoie 503.
+- Recherche, filtres, panier, commandes, administration et suivi exclus ; variantes regroupées sous la fiche canonique parent. Les pages d'information encore marquées préparatoires restent exclues ; cette correction ne les déclare pas finalisées.
+- Aperçu complet généré depuis l'archive fichiers locale, sans administration, base réelle, stock réel ni réseau : **610 pages et 3 709 produits par langue**, soit **12 957 URL uniques**, dans 15 enfants XML valides. Cet aperçu est une preuve locale ; le catalogue administré en production peut différer. Ne pas recopier cet instantané à la place des routes dynamiques.
+- **53 tests / 1 723 assertions** réussis : SEO/sitemap, catalogue, pagination, promotions et en-têtes. Syntaxe PHP, Pint et `git diff --check` vérifiés. Aucun `.env`, base, service XAMPP ou fichier distant modifié ; aucun déploiement ni push effectué.
+
+Preuves locales : `output/qa-sitemap-20261014/public-network-check.json`, `gsc-sitemap-live-success.jpg`, `preview/sitemap.xml`, `preview/robots-production.txt` et `preview/validation.json`.
+
+Après validation du déploiement : installer les six fichiers applicatifs concernés, renouveler les caches de configuration et de routes avec le PHP compatible de l'hébergement, contrôler la redirection racine et le sitemap/enfants, puis vérifier le rapport Sitemaps. Conserver l'URL stable HTTPS ; ne pas ajouter de variante de sitemap pour contourner un état ancien. Les fichiers concernés sont `SeoController.php`, `CatalogueController.php`, `PromotionsController.php`, `SecurityHeaders.php`, `config/homya.php` et `routes/web.php`.
+
+Sources officielles consultées le 14/10/2026 : [création et envoi des sitemaps](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap?hl=fr), [index de sitemaps](https://developers.google.com/search/docs/crawling-indexing/sitemaps/large-sitemaps?hl=fr), [rapport et dépannage Search Console](https://support.google.com/webmasters/answer/7451001?hl=fr). Un sitemap facilite la découverte ; il ne garantit pas l'indexation de toutes les URL.
+
+---
+
 Préparation du 13 octobre 2026. Domaine confirmé : **https://homya.eu**. Même compte Google pour les deux services. Livraison gratuite FR/BE/DE confirmée ; prix et stocks validés par HOMYA, données fabricant encore à compléter. Le commit SEO `8020cfc2` a été déployé par l'utilisateur. Après son autorisation explicite, l'ouverture de l'indexation et le renouvellement des caches ont été appliqués dans hPanel. Le correctif complémentaire de disponibilité du sitemap est inclus dans le dépôt pour le déploiement Git suivant. À la demande de résolution de l'erreur Search Console, un test actif Google et une nouvelle soumission du sitemap HTTPS ont ensuite été effectués ; le traitement du rapport reste à confirmer.
 
 ## 1. État vérifié et corrections

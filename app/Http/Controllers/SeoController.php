@@ -23,11 +23,11 @@ final class SeoController extends Controller
     public function index(Request $request, Catalogue $catalogue, Seo $seo)
     {
         abort_unless($seo->onConfiguredPublicOrigin($request), 404);
-        app()->setLocale('fr');
-        $products = $catalogue->products();
-        abort_if($catalogue->sourceUnavailable() || $catalogue->translationUnavailable() || $products->isEmpty(), 503);
         $xml = $this->xml('sitemapindex');
         foreach (config('homya.locales') as $locale) {
+            app()->setLocale($locale);
+            $products = $catalogue->products();
+            abort_if($catalogue->sourceUnavailable() || $catalogue->translationUnavailable() || $products->isEmpty(), 503);
             $xml->startElement('sitemap');
             $xml->writeElement('loc', $seo->url('seo.pages', ['locale' => $locale]));
             $xml->endElement();
@@ -47,15 +47,17 @@ final class SeoController extends Controller
         app()->setLocale($locale);
         $products = $catalogue->products();
         abort_if($catalogue->sourceUnavailable() || $catalogue->translationUnavailable() || $products->isEmpty(), 503);
-        $urls = [$seo->url('home', compact('locale')), $seo->url('catalogue', compact('locale'))];
-        if ($products->contains(fn ($product) => $product['promotion'] !== null)) {
-            $urls[] = $seo->url('promotions', compact('locale'));
+        $urls = [$seo->url('home', compact('locale'))];
+        $urls = array_merge($urls, $this->listingUrls($seo, 'catalogue', compact('locale'), $products->count()));
+        $promotions = $products->filter(fn ($product) => $product['promotion'] !== null);
+        if ($promotions->isNotEmpty()) {
+            $urls = array_merge($urls, $this->listingUrls($seo, 'promotions', compact('locale'), $promotions->count()));
         }
-        foreach ($products->pluck('universe')->filter()->unique() as $universe) {
-            $urls[] = $seo->url('catalogue', compact('locale', 'universe'));
+        foreach ($products->filter(fn ($product) => ! empty($product['universe']))->groupBy('universe') as $universe => $items) {
+            $urls = array_merge($urls, $this->listingUrls($seo, 'catalogue', compact('locale', 'universe'), $items->count()));
         }
-        foreach ($products->pluck('category.slug')->filter()->unique() as $category) {
-            $urls[] = $seo->url('catalogue', compact('locale', 'category'));
+        foreach ($products->filter(fn ($product) => ! empty($product['category']['slug']))->groupBy('category.slug') as $category => $items) {
+            $urls = array_merge($urls, $this->listingUrls($seo, 'catalogue', compact('locale', 'category'), $items->count()));
         }
         // Use the same eligibility as each page's canonical and robots metadata.
         foreach (InformationController::PAGES as $page) {
@@ -65,6 +67,18 @@ final class SeoController extends Controller
         }
 
         return $this->urls($urls);
+    }
+
+    private function listingUrls(Seo $seo, string $route, array $parameters, int $count): array
+    {
+        $urls = [];
+        $lastPage = (int) ceil($count / max(1, (int) config('homya.catalogue_page_size', 24)));
+        for ($page = 1; $page <= $lastPage; $page++) {
+            // Page one has no parameter; subsequent pages have their own canonical.
+            $urls[] = $seo->url($route, $parameters + ($page > 1 ? ['page' => $page] : []));
+        }
+
+        return $urls;
     }
 
     public function products(Request $request, Catalogue $catalogue, Seo $seo, string $locale, string $chunk)

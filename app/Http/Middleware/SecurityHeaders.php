@@ -29,8 +29,12 @@ class SecurityHeaders
         if ($robots !== null) {
             $response->headers->set('X-Robots-Tag', $robots);
         }
+        // The public root redirects to its canonical homepage; a noindex header
+        // on that redirect would conflict with the indexable destination.
+        $publicDiscovery = $request->routeIs('seo.*')
+            || ($request->routeIs('home.redirect') && $response->isRedirect());
         if ($response->getStatusCode() >= 400 || ! app(Seo::class)->onPublicOrigin($request)
-            || ($robots === null && ! $request->routeIs('seo.*'))) {
+            || ($robots === null && ! $publicDiscovery)) {
             $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         }
         $admin = $request->is('admin', 'admin/*');

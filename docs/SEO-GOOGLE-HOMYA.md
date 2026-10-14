@@ -1,5 +1,7 @@
 # HOMYA — SEO et préparation Google
 
+**Actualisation du 14 octobre 2026 :** robots public 200 avec référence sitemap ; sitemap 200 XML valide et récupération directe Google réussie. Le rapport Sitemaps conserve une erreur datée du 13 octobre. Pagination et blocs par langue complétés localement ; `noindex` de la redirection racine corrigé localement. Aperçu fichiers : 12 957 URL publiques ; 53 tests / 1 723 assertions réussis. Ces nouvelles corrections restent à déployer. Voir [le contrôle actuel](CONNEXION-GOOGLE-HOMYA.md).
+
 **Actualisation du 13 octobre 2026 :** domaine confirmé `https://homya.eu`, messagerie Hostinger, même compte Google prévu pour Search Console/Merchant, livraison gratuite FR/BE/DE maintenue. Les audits SQL actuels et les corrections supplémentaires sont décrits dans [la procédure de connexion Google](CONNEXION-GOOGLE-HOMYA.md). Le site public reste fermé à l'indexation au contrôle : robots `Disallow: /`, sitemap/flux 404. Les anciennes mentions « domaine manquant » et l'échec CLI non expliqué ci-dessous sont historiques. Les correctifs de cette phase sont dans HOMYA1, sans déploiement Hostinger.
 
 10 octobre 2026. Rapport du travail local et procédure de raccordement ; aucune approbation Google ni décision commerciale supplémentaire.

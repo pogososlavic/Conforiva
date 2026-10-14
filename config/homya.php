@@ -2,6 +2,7 @@
 
 return [
     'locales' => ['fr', 'en', 'de'],
+    'catalogue_page_size' => 24,
     'xampp_socket' => '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock',
     'xampp_datadir' => '/Applications/XAMPP/xamppfiles/var/mysql/',
     'xampp_version' => '10.4.28-MariaDB',
