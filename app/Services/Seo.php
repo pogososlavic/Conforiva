@@ -167,10 +167,12 @@ final class Seo
                     && ! ($product['has_variants'] ?? true) && is_int($product['price_cents'] ?? null)
                     && $product['price_cents'] > 0 && $product['price_cents'] <= config('commerce.max_total_cents')
                     && empty($product['issues']) && ($product['currency'] ?? null) === 'EUR'
-                    && ($context['available_stock'] ?? null) !== null && $images) {
+                    && $images) {
                     $node['offers'] = ['@type' => 'Offer', 'url' => $canonical,
-                        'price' => number_format($product['price_cents'] / 100, 2, '.', ''), 'priceCurrency' => 'EUR',
-                        'availability' => 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock')];
+                        'price' => number_format($product['price_cents'] / 100, 2, '.', ''), 'priceCurrency' => 'EUR'];
+                    if (is_int($context['available_stock'] ?? null) && $context['available_stock'] >= 0) {
+                        $node['offers']['availability'] = 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock');
+                    }
                     if ($condition = ['new' => 'NewCondition', 'used' => 'UsedCondition', 'refurbished' => 'RefurbishedCondition'][MerchantProducts::condition($product) ?? ''] ?? null) {
                         $node['offers']['itemCondition'] = 'https://schema.org/'.$condition;
                     }
@@ -193,10 +195,12 @@ final class Seo
                                     $child[$identifier] = $variantReview[$identifier];
                                 }
                             }
-                            if ($indexable && ($readiness->bankReady() || $readiness->cardReady()) && ($context['available_stock'] ?? null) !== null) {
+                            if ($indexable && ($readiness->bankReady() || $readiness->cardReady())) {
                                 $child['offers'] = ['@type' => 'Offer', 'url' => $variantUrl, 'priceCurrency' => 'EUR',
-                                    'price' => number_format($variant['price_cents'] / 100, 2, '.', ''),
-                                    'availability' => 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock')];
+                                    'price' => number_format($variant['price_cents'] / 100, 2, '.', '')];
+                                if (is_int($context['available_stock'] ?? null) && $context['available_stock'] >= 0) {
+                                    $child['offers']['availability'] = 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock');
+                                }
                                 $child['offers']['itemCondition'] = 'https://schema.org/'.(['new' => 'NewCondition', 'used' => 'UsedCondition', 'refurbished' => 'RefurbishedCondition'][MerchantProducts::condition($variant)]);
                             }
                             $node['hasVariant'][] = $child;

@@ -1,6 +1,6 @@
 # HOMYA — protection contre l’aspiration automatisée
 
-État de préparation au 15 octobre 2026 : correctifs et vérifications locales terminés. L’utilisateur a explicitement autorisé la publication sur Hostinger, le renouvellement des caches et les contrôles clients/HTTrack/Google/Merchant, avec le débit en observation. Le compte rendu d’exécution doit être complété après la publication effective.
+État au 15 octobre 2026 : correctifs publiés sur Hostinger, caches reconstruits et contrôles publics terminés après autorisation explicite. Le débit reste en **observation**. Les trois tâches hPanel temporaires ont été supprimées après confirmation ; seul le planificateur commercial `schedule:run` reste dans la liste Cron.
 
 ## Objectif et limites
 
@@ -16,9 +16,9 @@ Google et Merchant Center doivent accéder aux pages produit, images, robots, si
 - Tableau CDN sur sept jours : 115 réponses 429, sans attribution à l’application, au serveur ou au CDN. Ce nombre ne prouve pas une attaque. Ne pas ajouter une limitation stricte avant d’examiner le trafic et les adresses effectivement transmises à Laravel.
 - `Request::ip()` n’accorde actuellement aucune confiance aux en-têtes proxy fournis par un visiteur. Le transport réel des IP en production reste à vérifier ; aucune confiance globale aux proxys n’a été ajoutée.
 
-## Correctifs préparés
+## Correctifs publiés
 
-| Mesure | Portée et comportement prévu après publication |
+| Mesure | Portée et comportement |
 | --- | --- |
 | Refus des outils déclarés | Les deux `.htaccess` refusent HTTrack/WinHTTrack, WebCopier, WebZIP, Offline Explorer, Teleport Pro et SiteSucker. Le nom peut être usurpé ; ce refus est une première barrière. |
 | Fichiers sensibles | `FilesMatch` refuse secrets, clés, dumps et sauvegardes, y compris compressés, indépendamment de `mod_rewrite`. Les répertoires privés `storage/app`, `storage/framework`, `storage/logs` sont explicitement refusés par la réécriture. |
@@ -45,7 +45,7 @@ HOMYA_STOREFRONT_REQUESTS_PER_HOUR=1800
 
 `off` arrête les compteurs applicatifs ; les règles serveur restent distinctes. `enforce` n’est admissible qu’avec `CLIENT_IP_VERIFIED=true` et des listes Google valides et récentes. Sans ces conditions, la garde revient en observation. Si le cache ou son verrou est indisponible, la visite reste autorisée et un signal agrégé est produit. Ces choix préservent la disponibilité de la boutique mais limitent la protection en cas de panne.
 
-Commandes disponibles après publication, avec le PHP compatible du serveur :
+Commandes disponibles, avec le PHP compatible du serveur :
 
 ```sh
 php artisan security:refresh-google-crawlers
@@ -73,6 +73,22 @@ Contrôles locaux réalisés après autorisation : **43 tests Laravel / 2 133 as
 
 Apache isolé éphémère : **36/36 vérifications réussies**, racine dépôt et racine `public/`, refus HTTrack sur page et image, fichiers publics/Google déclarés/flux/sitemap accessibles, secrets et sauvegardes synthétiques refusés, ACME accessible. Le serveur de recette a été arrêté ; aucun service existant modifié. Preuve : `output/security-review-20261015/apache-isolated-results.json`.
 
-Syntaxe PHP et `git diff --check` réussis. Aucun test d’intrusion ou de charge exécuté. La publication et les contrôles publics restent à constater séparément. Capture de l’état initial hPanel : `output/security-review-20261015/hostinger-cdn-current-security.png`.
+Syntaxe PHP et `git diff --check` réussis. Aucun test d’intrusion ou de charge exécuté. La publication et les contrôles publics sont documentés dans la section d’exécution ci-dessous. Capture de l’état initial hPanel : `output/security-review-20261015/hostinger-cdn-current-security.png`.
 
 Sources officielles consultées le 15 octobre 2026 : [vérification des robots Google](https://developers.google.com/crawling/docs/crawlers-fetchers/verify-google-requests), [Hostinger CDN et moteurs de recherche](https://www.hostinger.com/support/hostinger-cdn-search-engine-crawlers-and-seo/), [IP visiteurs transmises par Hostinger](https://www.hostinger.com/support/hostinger-cdn-visitor-ip-addresses-in-logs-and-analytics/), [réponses 429 Hostinger](https://www.hostinger.com/support/hostinger-cdn-429-too-many-requests-errors/).
+
+## Exécution en production — 15 octobre 2026
+
+- Commit **6bf0258c0a67b9aefa9de5861cb51ad9136c47d8**, poussé sur `main`, affiché **Terminé / Actuel** dans Hostinger à **01:02 UTC**. Les seules modifications locales préexistantes du document de connexion Google ont été conservées hors de ce commit.
+- Deux commandes hPanel combinées, prévues à 01:06 et 01:12 UTC, n’ont fourni aucune sortie exploitable ; elles ne constituent pas une preuve de réussite. La méthode a été remplacée par un script CLI dans `storage/app/private/security/security-maintenance.php`, conformément à la [méthode Hostinger pour les caractères spéciaux](https://www.hostinger.com/support/5646919-how-to-set-up-a-cron-job-with-special-characters-at-hostinger/). Aucun point d’entrée HTTP de maintenance créé.
+- À **01:20:03 UTC**, le helper confirme séparément les retours **0** de `config:cache`, `event:cache`, `route:cache`, `view:cache`, puis redémarre une instance Laravel fraîche. Contexte production valide avant/après, sauvegarde privée de l’ancienne configuration, **mode observe**, indicateur de validation IP **false**, actualisation Google réussie et listes fraîches.
+- Le cache fichiers dédié a été vérifié par un verrou et une clé aléatoire de contrôle : écriture/lecture correctes, clé retirée, aucun cache global vidé. Le statut générique conserve volontairement `runtime_cache_availability_verified=false`, car cette commande seule ne fait pas de test ; le contrôle effectif distinct du helper est vrai. Un ancien signal d’indisponibilité à 01:04:23 correspond à la période précédant la reconstruction de configuration ; il ne décrit pas le résultat positif de la sonde après reconstruction.
+- Le helper vérifie par empreinte que **`.env` est inchangé** ; aucune donnée client, commande, configuration bancaire, offre, URL ou prix modifié. Script, listes, sauvegarde et rapport restent privés ; dossier 0700, fichiers opérationnels 0600. Le script ne fonctionne qu’en CLI.
+- **37 GET publics aboutis**, séquentiels et à faible volume : accueils FR/EN/DE, catalogue, produits, panier en lecture seule, images, asset, robots, index XML, trois enfants représentatifs et flux Merchant accessibles en 200. **12/12 requêtes de miroirs déclarés refusées en 403**. Deux URL fictives de sauvegarde donnent 404 plutôt que 403 ; elles n’existent pas et aucune exposition n’est constatée. Les refus sur fichiers sensibles existants ont été vérifiés avec les fixtures Apache locales, pas en téléchargeant des secrets de production.
+- Les trois GET refaits après maintenance (`/fr`, `/sitemap.xml`, `/google/merchant/fr.xml`) répondent **200**. Flux : **151 offres**, 198 970 octets, strictement identique au XML approuvé. Les essais réseau bloqués dans la sandbox n’ont reçu aucune réponse HTTP et sont distingués de ces 37 contrôles.
+- **Search Console réel**, le **15 octobre à 01:04:25 UTC**, fiche `https://homya.eu/fr/produit/lg-f84b15whs-lave-linge` : outil Google pour smartphone, exploration autorisée, récupération **Réussie**, indexation autorisée. Cela prouve son accès après publication, sans prouver l’indexation ni l’approbation Merchant.
+- **Merchant Center**, récupération manuelle de la source existante à **03:06:07 CEST / 01:06:07 UTC** : **151 produits mis à jour**, zéro nouveau, attributs **Tous reconnus**, fichier **Aucun problème trouvé**. La consultation des diagnostics indique **149 en examen et deux refusés pour « Image non traitée »**, avec retraitement annoncé sous trois jours, sans action requise. Les images des modèles **LG GTF8659PS** et **LG F964R71WRST** répondent 200 avec des dimensions respectives PNG 1059 × 1059 et JPEG 1600 × 1062. Aucune erreur d’accès à ces images démontrée ; leur traitement par Google reste distinct.
+- Le planificateur existant `schedule:run` reste inchangé et une exécution commerciale **DONE** avec PHP 8.5 a été observée à 01:11:01 UTC. Les maintenances Google quotidiennes et la purge horaire réutilisent ce planificateur. Aucun changement du CDN, mode Under Attack, DNS ou abonnement.
+- Après confirmation explicite de l’utilisateur au moment du nettoyage, les trois tâches temporaires prévues à **01:06, 01:12 et 01:20 UTC** ont été supprimées. À **01:26 UTC**, la liste hPanel ne contient plus que `schedule:run` chaque minute. Preuve : `output/security-review-20261015/hostinger-cleanup-complete.png`.
+
+Preuves sous `output/security-review-20261015/` : `release-receipt.json`, `hostinger-maintenance-complete.json`, `public-http-results.json`, `post-maintenance-http.json`, captures Hostinger, Search Console et Merchant. Les preuves ne contiennent ni coordonnées bancaires, ni secrets, ni données clients.
