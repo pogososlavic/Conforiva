@@ -52,3 +52,29 @@ Recette XAMPP réussie : 276 URL d'options (92 × 3 langues), neuf pages sur 144
 ## Sources officielles
 
 Consultées le 10/10/2026 : [variantes et ProductGroup](https://developers.google.com/search/docs/appearance/structured-data/product-variants), [groupes d'articles](https://support.google.com/merchants/answer/6324507?hl=fr), [titres et provenance des textes](https://support.google.com/merchants/answer/6324415?hl=fr). Vérifier de nouveau les exigences à la publication et selon les catégories/programmes réellement retenus.
+
+
+## Corrections françaises du premier lot Merchant — 15 octobre 2026
+
+La revue privée des 151 offres a relevé 16 descriptions incohérentes avec le titre et les caractéristiques du modèle. La projection `CatalogueProductCorrections` corrige uniquement les sources françaises exactes : F14V13WHS passe de « 1 kg » à 10,5 kg dans la description et la capacité de lavage ; les 15 références RH0X71WH, RH0X76WH, RH8N14SL, RH8N15WH, RH8N15WHB, RH8P12BS, RH8P12WH, RH9B15WH, RH9V50WH, RH9V51WH, RH9X56WH, RH9X58WH, RH9X71WH, RH9X76BM et RH9X76WH sont décrites comme des sèche-linge. Leurs capacités déjà présentes restent identiques. RH9X56WH rejoint aussi la catégorie Sèche-linge sur l’index et la fiche ; son URL historique est conservée.
+
+Sources primaires consultées le 15/10/2026 : [LG F14V13WHS](https://www.lg.com/fr/lavage/lave-linge/lg-f14v13whs-lave-linge-standards/) indique 10,5 kg dans sa fiche produit de lavage et son titre. Cette fiche produit et l’étiquette énergétique du modèle font foi face à la première table de la page LG, qui présente elle-même une valeur incohérente de 1,5 kg. [LG RH9X56WH](https://www.lg.com/fr/lavage/seche-linge/lg-rh9x56wh-seche-linge/) confirme qu’il s’agit d’un sèche-linge de 9 kg. Les types et capacités des 14 autres sèche-linge concordent entre les titres et les caractéristiques fournisseur déjà archivés ; aucune nouvelle caractéristique n’est ajoutée.
+
+Les 16 descriptions corrigées reçoivent `description_source: trained_algorithmic_media`, conformément au contrat de provenance existant. Six titres de réfrigérateurs sont également corrigés, soit 22 produits concernés au total ; ils reçoivent `title_source: trained_algorithmic_media`. Les revues privées du flux doivent reprendre ces provenances et les nouvelles empreintes des projections finales avant réactivation. Une revue ancienne est refusée par la garde d’empreinte. Les traductions EN/DE ne sont pas réécrites dans ce correctif français.
+
+La vérification des volumes a aussi relevé six titres qui divergent de la description et de la capacité totale déjà archivées. Seul le volume dans le titre français change, sur l’index et la fiche ; descriptions et caractéristiques restent identiques. Les tables de capacité officielles LG, consultées le 15/10/2026, corroborent les valeurs suivantes, même lorsque le titre marketing LG conserve l’ancien volume :
+
+| Référence et source LG | Volume du titre corrigé |
+|---|---|
+| [GBBSJ20DSW](https://www.lg.com/fr/refrigerateur/combine/lg-gbbsj20dsw-refrigerateurs-combine/) | 333 → 375 L |
+| [GMF960PY2E](https://www.lg.com/fr/refrigerateur/gmf960py2e/) | 646 → 645 L |
+| [GML960EVBE](https://www.lg.com/fr/refrigerateur/multi-portes/lg-gml960evbe-refrigerateurs-multi-portes/) | 637 → 641 L |
+| [GML960MBBE](https://www.lg.com/fr/refrigerateur/multi-portes/lg-gml960mbbe-refrigerateurs-multi-portes/) | 637 → 641 L |
+| [GML960PYBE](https://www.lg.com/fr/refrigerateur/multi-portes/lg-gml960pybe/) | 637 → 641 L |
+| [GSLC40EPSE](https://www.lg.com/fr/refrigerateur/americain/lg-gslc40epse-refrigerateurs-americain/) | 635 → 638 L |
+
+Les règles exigent les slug, référence et titre source exacts. Sur les fiches détaillées, le volume total doit aussi être unique et correspondre à la valeur vérifiée ; une donnée différente n’est pas remplacée silencieusement.
+
+Les archives, profils de lecture immuables, prix, stocks, images et identifiants fournisseur sont conservés. La projection précède `CatalogueContent` puis les surcharges administratives : celles-ci gardent leur priorité. Le contrôle des produits finaux reste donc nécessaire lorsqu’une surcharge existe. Aucun déploiement ni validation Google n’est attesté par ce correctif local.
+
+Vérification locale ciblée de ce correctif : 41 tests / 1 429 assertions réussis (`CatalogueProductCorrectionsTest`, `CataloguePresentationTest`, `GoogleSeoMerchantTest`), sans base réelle ; syntaxe PHP, Pint et `git diff --check` réussis. Les tests couvrent les 15 sèche-linge, le lave-linge F14V13WHS, les six titres de réfrigérateurs, les champs conservés, les sources modifiées, l’idempotence, les catégories de l’index et la conservation des traductions EN/DE.
