@@ -431,6 +431,24 @@ class GoogleSeoMerchantTest extends TestCase
         }
     }
 
+    public function test_sellable_product_offer_is_not_blocked_by_unrelated_catalogue_warnings(): void
+    {
+        $this->production();
+        app()->setLocale('fr');
+        config(['commerce.enabled' => true, 'commerce.legal_ready' => true,
+            'commerce.bank' => ['enabled' => true, 'beneficiary' => 'Fixture beneficiary',
+                'iban' => 'DE89370400440532013000', 'bic' => 'COBADEFFXXX', 'bank_name' => 'Fixture bank']]);
+        $product = array_replace($this->product(), ['issues' => ['missing_specifications']]);
+
+        $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => $product['slug']]),
+            $product['name'], $product['description'], ['available' => true, 'product' => $product]);
+        $graph = json_decode($metadata['json'], true)['@graph'];
+        $node = array_values(array_filter($graph, fn ($entry) => $entry['@type'] === 'Product'))[0];
+
+        $this->assertSame(['@type' => 'Offer', 'url' => 'https://homya-store.com/fr/produit/fixture-product',
+            'price' => '123.45', 'priceCurrency' => 'EUR', 'itemCondition' => 'https://schema.org/NewCondition'], $node['offers']);
+    }
+
     public function test_feed_uses_the_localized_store_hierarchy_and_only_reviewed_taxonomy_ids(): void
     {
         $merchant = app(MerchantProducts::class);

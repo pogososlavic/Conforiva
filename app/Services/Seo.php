@@ -166,8 +166,7 @@ final class Seo
                 if ($indexable && ($readiness->bankReady() || $readiness->cardReady())
                     && ! ($product['has_variants'] ?? true) && is_int($product['price_cents'] ?? null)
                     && $product['price_cents'] > 0 && $product['price_cents'] <= config('commerce.max_total_cents')
-                    && empty($product['issues']) && ($product['currency'] ?? null) === 'EUR'
-                    && $images) {
+                    && ($product['currency'] ?? null) === 'EUR' && $images) {
                     $node['offers'] = ['@type' => 'Offer', 'url' => $canonical,
                         'price' => number_format($product['price_cents'] / 100, 2, '.', ''), 'priceCurrency' => 'EUR'];
                     if (is_int($context['available_stock'] ?? null) && $context['available_stock'] >= 0) {
