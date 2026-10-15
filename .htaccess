@@ -3,6 +3,12 @@
 # application source tree directly.
 Options -Indexes
 
+# These file protections do not depend on URL rewriting. Include compressed
+# backups/dumps (for example .sql.gz and .bak.zip), not ordinary public assets.
+<FilesMatch "(?i)(?:^(?:\.env(?:\..*)?|\.ht(?:access|passwd)(?:\..*)?|artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|vite\.config\.[^/]+)$|\.(?:sql|sqlite3?|db|log|env|ini|bak|backup|orig|old|save|swp|swo|pem|key|p12|pfx|sh|py|pl|cgi|phar|phtml)(?:\.(?:tar|gz|bz2|xz|zip|7z|tgz))*$)">
+    Require all denied
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
@@ -15,9 +21,15 @@ Options -Indexes
     # Hostinger and Laravel need access to ACME challenge files at the root.
     RewriteRule ^\.well-known/acme-challenge/ - [L]
 
-    # Deny private source/configuration paths even if routing is unavailable.
+    # Deter tools that identify themselves as offline website mirrors, including
+    # static-asset requests. User-Agent can be changed: this is not bot verification.
+    RewriteCond %{HTTP_USER_AGENT} (?:Win[[:space:]_-]*)?HTTrack|Web[[:space:]_-]*Copier|Web[[:space:]_-]*ZIP|Offline[[:space:]_-]*Explorer|Teleport[[:space:]_-]*Pro|Site[[:space:]_-]*Sucker [NC]
+    RewriteRule ^ - [F,L]
+
+    # Deny private source/configuration paths before routing.
     RewriteRule "(^|/)\.(?!well-known/acme-challenge/)" - [F,L]
     RewriteRule ^(?:app|bootstrap|config|database|vendor|node_modules|scripts|tests|output|docs)(?:/|$) - [F,L,NC]
+    RewriteRule ^storage/(?:app|framework|logs)(?:/|$) - [F,L,NC]
     RewriteRule ^(?:artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|vite\.config\.[^/]+)$ - [F,L,NC]
     RewriteRule "\.(?:sql|log|env|ini|bak|backup|orig|sh|py|pl|cgi|phar|phtml)(?:/|$)" - [F,L,NC]
 

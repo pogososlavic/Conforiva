@@ -1,6 +1,12 @@
 # Directory listings must remain disabled even without content negotiation.
 Options -Indexes
 
+# Apply even when URL rewriting is unavailable. Ordinary XML feeds, JSON and
+# public images remain accessible; private files and compressed backups do not.
+<FilesMatch "(?i)(?:^(?:\.env(?:\..*)?|\.ht(?:access|passwd)(?:\..*)?|artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|vite\.config\.[^/]+)$|\.(?:sql|sqlite3?|db|log|env|ini|bak|backup|orig|old|save|swp|swo|pem|key|p12|pfx|sh|py|pl|cgi|phar|phtml)(?:\.(?:tar|gz|bz2|xz|zip|7z|tgz))*$)">
+    Require all denied
+</FilesMatch>
+
 # Compress text assets when the selected hosting environment provides these modules.
 <IfModule mod_filter.c>
     <IfModule mod_deflate.c>
@@ -22,10 +28,19 @@ Options -Indexes
 
     RewriteEngine On
 
+    # Preserve certificate renewal challenge files before the mirror-tool rule.
+    RewriteRule ^\.well-known/acme-challenge/ - [L]
+
+    # Deter declared offline mirrors before existing-file/static-asset handling.
+    # A changed User-Agent bypasses this rule; it is not strong bot verification.
+    RewriteCond %{HTTP_USER_AGENT} (?:Win[[:space:]_-]*)?HTTrack|Web[[:space:]_-]*Copier|Web[[:space:]_-]*ZIP|Offline[[:space:]_-]*Explorer|Teleport[[:space:]_-]*Pro|Site[[:space:]_-]*Sucker [NC]
+    RewriteRule ^ - [F,L]
+
     # Refuse hidden files, source/configuration files and executable uploads.
     # ACME challenge tokens are the only hidden-directory exception.
     RewriteRule "(^|/)\.(?!well-known/acme-challenge/)" - [F,L]
     RewriteRule "^(?:app|bootstrap|config|database|vendor|node_modules|scripts|tests|output|docs)(?:/|$)" - [F,L,NC]
+    RewriteRule "^storage/(?:app|framework|logs)(?:/|$)" - [F,L,NC]
     RewriteRule "^(?:composer\.(?:json|lock)|package(?:-lock)?\.json|artisan|phpunit\.xml|vite\.config\.[^/]+)$" - [F,L,NC]
     RewriteRule "\.(?:sql|log|env|ini|bak|backup|orig|sh|py|pl|cgi|phar|phtml)(?:/|$)" - [F,L,NC]
     RewriteRule "^(?!index\.php$).*\.php[0-9]*(?:/|$)" - [F,L,NC]

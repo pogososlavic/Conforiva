@@ -3,6 +3,7 @@
 use App\Http\Middleware\ProductionGuard;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\StorefrontActivity;
+use App\Http\Middleware\StorefrontScrapeGuard;
 use App\Services\ProductionSecurity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(SecurityHeaders::class);
         // Evaluate HTTPS after Laravel's proxy handling, before any web session or controller.
         $middleware->append(ProductionGuard::class);
+        $middleware->append(StorefrontScrapeGuard::class);
         $middleware->append(StorefrontActivity::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

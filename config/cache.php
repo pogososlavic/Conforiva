@@ -53,6 +53,13 @@ return [
             'lock_path' => storage_path('framework/cache/locks'),
         ],
 
+        // Isolate visitor budgets so retention cleanup cannot affect business caches.
+        'storefront_protection' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/storefront-protection/data'),
+            'lock_path' => storage_path('framework/cache/storefront-protection/locks'),
+        ],
+
         'storage' => [
             'driver' => 'storage',
             'disk' => env('CACHE_STORAGE_DISK'),
