@@ -28,6 +28,8 @@ final class AdminBoundary
             $response = response()->view('errors.page', ['status' => 404, 'reference' => $reference], 404);
         } elseif (! $request->routeIs('admin.login', 'admin.authenticate') && ! app(AdminAccess::class)->valid($request)) {
             $response = redirect()->route('admin.login');
+        } elseif (in_array($request->session()->get('admin.auth.role'), ['manager'], true) && $this->ownerOnly($request)) {
+            abort(403);
         } else {
             $response = $next($request);
         }
@@ -40,5 +42,10 @@ final class AdminBoundary
         }
 
         return $response;
+    }
+
+    private function ownerOnly(Request $request): bool
+    {
+        return $request->routeIs('admin.managers*', 'admin.settings*', 'admin.bank.settings*', 'admin.integrations*', 'admin.google.*', 'admin.documents.*', 'admin.receipt');
     }
 }

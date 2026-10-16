@@ -23,7 +23,9 @@ Le tableau de bord de base lit les tables `commerce_orders` et `commerce_invento
 
 Pour Hostinger, définir les variables dans la configuration privée de production, pas dans Git : `HOMYA_ADMIN_REMOTE_ENABLED=true`, `HOMYA_ADMIN_USERNAME` et `HOMYA_ADMIN_PASSWORD_HASH`. Les valeurs d’administration locale ne sont pas automatiquement copiées depuis ce Mac vers le serveur. Après modification de l’environnement, reconstruire le cache de configuration avec la procédure habituelle du déploiement, puis vérifier le résultat sans afficher les valeurs secrètes. Le verrou reste fermé en cas de contrôle de production en échec. Vérifier ensuite `/admin/connexion`, puis les pages qui lisent la base commerce ; un succès de connexion ne prouve pas que la base, ses tables ou les données de stock sont configurées.
 
-Le compte unique se configure dans `.env` : `HOMYA_ADMIN_USERNAME` et `HOMYA_ADMIN_PASSWORD_HASH`. Aucun compte public ni migration de table `users` n’est nécessaire.
+Le compte administrateur principal reste configuré dans `.env` : `HOMYA_ADMIN_USERNAME` et `HOMYA_ADMIN_PASSWORD_HASH`. Depuis le 16 octobre 2026, il peut créer des accès gestionnaire dans **Gestionnaires**. Les comptes gestionnaires et leurs hashes sont stockés dans `storage/app/private/admin/accounts.encrypted`, chiffrés avec la clé Laravel et protégés par des permissions locales restrictives. Cette fonction ne modifie pas MariaDB et n’utilise pas la migration `users`.
+
+Les gestionnaires ont un compte et un mot de passe personnels (minimum 16 caractères) qu’ils peuvent changer depuis **Mon compte / mot de passe** ; leur session est invalidée après le changement. Ils peuvent consulter le dashboard, commandes, stocks, retours, livraisons, messages, activité et modifier les produits. Ils ne peuvent pas gérer les comptes, consulter les documents commerciaux, modifier les paramètres vendeur, le RIB ou les intégrations, confirmer un virement, ni émettre un document commercial. L’administrateur principal conserve ces actions. Les accès restent soumis aux restrictions de réseau/environnement du dashboard.
 
 Création interactive locale (PHP 8.3+ ; PHP 8.5 local) :
 

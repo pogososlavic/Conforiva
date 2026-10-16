@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Services\AdminAccess;
 use App\Services\AdminDashboard;
-use App\Services\Commerce\CheckoutReadiness;
 use App\Services\Commerce\AutomaticOrderQuote;
+use App\Services\Commerce\CheckoutReadiness;
 use App\Services\Commerce\OrderStore;
 use App\Services\ReturnRequests;
 use Illuminate\Http\Request;
@@ -41,6 +41,45 @@ final class AdminController extends Controller
         }
 
         return redirect()->route('admin.dashboard');
+    }
+
+    public function account(Request $request)
+    {
+        return view('admin.account', ['username' => $request->session()->get('admin.auth.username'), 'role' => $request->session()->get('admin.auth.role')]);
+    }
+
+    public function changePassword(Request $request, AdminAccess $access)
+    {
+        try {
+            $data = $request->validate(['current_password' => ['required', 'string', 'max:256'], 'password' => ['required', 'string', 'min:16', 'max:72', 'confirmed']]);
+        } catch (ValidationException $error) {
+            return back()->withErrors($error->errors());
+        }
+        $account = $access->authenticate((string) $request->session()->get('admin.auth.username'), $data['current_password']);
+        if (! $account || $account['id'] !== $request->session()->get('admin.auth.id')) {
+            return back()->withErrors(['current_password' => 'Mot de passe actuel incorrect.']);
+        }
+        $access->changePassword($request, $data['password']);
+
+        return to_route('admin.login')->with('admin_message', 'Mot de passe modifié. Reconnectez-vous avec votre nouveau mot de passe.');
+    }
+
+    public function managers(Request $request, AdminAccess $access)
+    {
+        abort_unless($access->isOwner($request), 403);
+        abort_unless(config('dashboard.enabled'), 503);
+
+        return view('admin.managers', ['managers' => $access->accounts()]);
+    }
+
+    public function createManager(Request $request, AdminAccess $access)
+    {
+        abort_unless($access->isOwner($request), 403);
+        abort_unless(config('dashboard.enabled'), 503);
+        $data = $request->validate(['username' => ['required', 'string', 'regex:/\A[a-zA-Z0-9._-]{3,80}\z/'], 'password' => ['required', 'string', 'min:16', 'max:72', 'confirmed']]);
+        $access->createManager($data['username'], $data['password']);
+
+        return to_route('admin.managers')->with('admin_message', 'Compte gestionnaire créé. Transmettez son mot de passe par un canal privé.');
     }
 
     public function logout(Request $request)

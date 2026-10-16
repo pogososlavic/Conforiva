@@ -24,6 +24,10 @@ Route::prefix('admin')->middleware(AdminBoundary::class)->group(function () {
     Route::get('/connexion', [AdminController::class, 'login'])->name('admin.login');
     Route::post('/connexion', [AdminController::class, 'authenticate'])->middleware('throttle:admin-login')->block()->name('admin.authenticate');
     Route::post('/deconnexion', [AdminController::class, 'logout'])->block()->name('admin.logout');
+    Route::get('/mon-compte', [AdminController::class, 'account'])->name('admin.account');
+    Route::post('/mon-compte/mot-de-passe', [AdminController::class, 'changePassword'])->middleware('throttle:admin-write')->block()->name('admin.password.change');
+    Route::get('/gestionnaires', [AdminController::class, 'managers'])->name('admin.managers');
+    Route::post('/gestionnaires', [AdminController::class, 'createManager'])->middleware('throttle:admin-write')->block()->name('admin.managers.create');
     Route::get('/', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/commandes', [AdminController::class, 'orders'])->name('admin.orders');
     Route::get('/commandes/{id}', [AdminController::class, 'order'])->whereUuid('id')->name('admin.order');

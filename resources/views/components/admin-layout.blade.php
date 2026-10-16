@@ -21,8 +21,14 @@
 @php($active = request()->routeIs('admin.'.$key) || ($key === 'orders' && request()->routeIs('admin.order')) || ($key === 'returns' && request()->routeIs('admin.return')))
 <a href="{{ route('admin.'.$key) }}" @if($active) aria-current="page" @endif>{{ $label }} @if($key === 'orders')<span class="admin-count-badge" data-admin-count="orders" aria-label="Commandes non consultées"></span>@endif</a>
 @endforeach
+<a href="{{ route('admin.account') }}" @if(request()->routeIs('admin.account')) aria-current="page" @endif>Mon compte / mot de passe</a>
+@if(session('admin.auth.role') === 'owner')<a href="{{ route('admin.managers') }}" @if(request()->routeIs('admin.managers*')) aria-current="page" @endif>Gestionnaires</a>@endif
 @if(config('dashboard.enabled'))
+@if(session('admin.auth.role') === 'owner')
 @foreach(['documents.index' => 'Documents commerciaux', 'deliveries' => 'Livraisons','inbox' => 'Messages clients','activity' => 'Activité et notifications','bank.settings' => 'RIB HOMYA','settings' => 'Vendeur et paiements','integrations' => 'Google et Meta'] as $key => $label)<a href="{{ route('admin.'.$key) }}" @if(request()->routeIs('admin.'.$key) || ($key === 'documents.index' && request()->routeIs('admin.documents.*')) || ($key === 'inbox' && request()->routeIs('admin.thread'))) aria-current="page" @endif>{{ $label }} @if(in_array($key, ['inbox','activity']))<span data-admin-count="{{ $key === 'inbox' ? 'messages' : 'notifications' }}" aria-label="À lire"></span>@endif</a>@endforeach
+@else
+@foreach(['deliveries' => 'Livraisons','inbox' => 'Messages clients','activity' => 'Activité et notifications'] as $key => $label)<a href="{{ route('admin.'.$key) }}" @if(request()->routeIs('admin.'.$key) || ($key === 'inbox' && request()->routeIs('admin.thread'))) aria-current="page" @endif>{{ $label }}</a>@endforeach
+@endif
 @endif
 </nav>
 <p class="admin-notification-status" data-admin-notifications="{{ route('admin.notifications') }}" data-admin-orders-url="{{ route('admin.orders') }}" role="status" aria-live="polite"></p>

@@ -9,12 +9,12 @@ use App\Services\Admin\Integrations;
 use App\Services\Admin\Messages;
 use App\Services\Admin\PrivateSettings;
 use App\Services\Admin\ProductManager;
+use App\Services\AdminAccess;
 use App\Services\Catalogue;
 use App\Services\Commerce\BankTransfer;
 use App\Services\Commerce\CheckoutReadiness;
 use App\Services\Commerce\OrderStore;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -317,7 +317,8 @@ final class AdminManagementController extends Controller
     private function reauthenticate(Request $request): void
     {
         $request->validate(['current_password' => 'required|string|max:256']);
-        if (! Hash::check($request->string('current_password')->toString(), config('admin.password_hash'))) {
+        $account = app(AdminAccess::class)->authenticate((string) $request->session()->get('admin.auth.username'), $request->string('current_password')->toString());
+        if (! $account || $account['id'] !== $request->session()->get('admin.auth.id')) {
             throw ValidationException::withMessages(['current_password' => 'Mot de passe administrateur incorrect.']);
         }
     }

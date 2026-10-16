@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Services\Admin\Activity;
+use App\Services\AdminAccess;
 use App\Services\Commerce\BankTransfer;
 use App\Services\Documents\DocumentData;
 use App\Services\Documents\DocumentStore;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -69,7 +69,8 @@ final class AdminDocumentController extends Controller
     public function issue(Request $request, DocumentStore $store, Activity $activity, string $id)
     {
         $data = $request->validate(['revision' => 'required|integer|min:1', 'confirmed' => 'required|accepted', 'password' => 'required|string|max:200', 'document_language' => ['sometimes', Rule::in(array_keys(DocumentData::LANGUAGES))]]);
-        if (! Hash::check($data['password'], config('admin.password_hash'))) {
+        $account = app(AdminAccess::class)->authenticate((string) $request->session()->get('admin.auth.username'), $data['password']);
+        if (! $account || $account['id'] !== $request->session()->get('admin.auth.id') || $account['role'] !== 'owner') {
             throw ValidationException::withMessages(['password' => 'Mot de passe administrateur incorrect.']);
         }
         $record = $store->issue($id, (int) $data['revision'], $data + [
