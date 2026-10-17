@@ -28,3 +28,13 @@ Aucun blocage Googlebot ou Lighthouse reproductible identifié ; aucune correcti
 Les User-Agent simulés ne prouvent pas l’accessibilité depuis les IP réelles de Google. Aucun score Lighthouse, Core Web Vitals ou diagnostic PageSpeed réel mesuré. Un incident ponctuel du service tiers, son quota API, un délai dépassé ou une règle CDN dépendante de la région restent des hypothèses, sans cause confirmée. Aucune revue exhaustive du CDN, du DNS mondial, des pages produit ou de la configuration privée Hostinger.
 
 Références : https://developers.google.com/speed/docs/insights/v5/about et https://developers.google.com/speed/docs/insights/rest/v5/pagespeedapi/runpagespeed.
+
+## Complément : alias www et fiche produit
+
+Correction locale du 17 octobre : ProductionGuard redirige les navigations GET/HEAD de l’alias exact www.homya.eu vers HTTPS homya.eu en 301, chemin et paramètres conservés. Contrôles de production, refus des autres hôtes/ports, écritures et accès administrateur maintenus. SecurityHeaders n’ajoute pas de noindex à cette redirection canonique. Publication non effectuée dans cette intervention ; réponse www publique à recontrôler après déploiement.
+
+Recette : CanonicalDomainTest, SecurityHeadersTest et GoogleSeoMerchantTest : 30 tests réussis, 903 assertions.
+
+Fiche publique contrôlée : https://homya.eu/fr/produit/froid-rb33b610esa-samsung-combines-congelateur-en-bas . JSON-LD analysable avec WebSite, BreadcrumbList, Product et Offer ; nom, marque Samsung, huit images et URL présents. Prix Offer 361.90 EUR identique au prix visible 361,90 € TTC ; disponibilité InStock identique au statut visible En stock ; état NewCondition cohérent avec Neuf. Il ne s’agit pas d’une validation Google ni d’une vérification physique du stock.
+
+Bouton Ajouter au panier activé : clic effectué, message de succès observé et même prix unitaire dans le panier. Un article a été ajouté au panier préexistant, puis la quantité initiale a été rétablie et vérifiée. Aucun checkout, commande, réservation ou paiement effectué. Aucune donnée client saisie.

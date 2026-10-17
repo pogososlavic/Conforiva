@@ -33,8 +33,9 @@ class SecurityHeaders
         // on that redirect would conflict with the indexable destination.
         $publicDiscovery = $request->routeIs('seo.*')
             || ($request->routeIs('home.redirect') && $response->isRedirect());
-        if ($response->getStatusCode() >= 400 || ! app(Seo::class)->onPublicOrigin($request)
-            || ($robots === null && ! $publicDiscovery)) {
+        $canonicalRedirect = $request->attributes->get('homya.canonical_redirect') === true && $response->getStatusCode() === 301;
+        if (! $canonicalRedirect && ($response->getStatusCode() >= 400 || ! app(Seo::class)->onPublicOrigin($request)
+            || ($robots === null && ! $publicDiscovery))) {
             $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         }
         $admin = $request->is('admin', 'admin/*');

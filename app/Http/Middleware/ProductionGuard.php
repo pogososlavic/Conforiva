@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\ProductionSecurity;
 use App\Services\AdminAccess;
+use App\Services\ProductionSecurity;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -49,6 +49,16 @@ final class ProductionGuard
         }
         if ($failures !== []) {
             return $this->unavailable($request, 503, $reference, 'production_security_checks_failed', $failures);
+        }
+        // Only canonicalize safe browsing requests from the exact public alias.
+        // Keep administration, writes and unusual ports behind the existing guards.
+        if ($request->getHost() === 'www.'.ProductionSecurity::HOST
+            && in_array($request->getMethod(), ['GET', 'HEAD'], true)
+            && in_array($request->getPort(), [80, 443], true)) {
+            $request->attributes->set('homya.canonical_redirect', true);
+
+            return redirect()->away('https://'.ProductionSecurity::HOST.$request->getRequestUri(), 301)
+                ->header('X-HOMYA-Reference', $reference);
         }
         if ($request->getHost() !== ProductionSecurity::HOST || ($request->isSecure() && $request->getPort() !== 443)) {
             return $this->unavailable($request, 400, $reference, 'canonical_host_required');
