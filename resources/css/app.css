@@ -2261,3 +2261,25 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
 }
 
 .cart-page .cart-checkout { inset:auto; width:100%; margin-top:12px; justify-content:center; }
+
+/* Mobile purchase actions remain available throughout the cart and checkout. */
+@media(max-width:599px) {
+    .homya-storefront .cart-page .cart-checkout,
+    .homya-storefront .checkout-page .checkout-submit {
+        position:fixed;
+        z-index:40;
+        inset:auto 16px calc(12px + env(safe-area-inset-bottom));
+        width:auto;
+        max-width:none;
+        margin:0;
+        min-height:44px;
+        padding:9px 12px;
+        border-radius:10px;
+        box-shadow:0 4px 20px #28241b35;
+    }
+    .homya-storefront .checkout-page .checkout-summary { container-type:normal; }
+    body:has(.cart-page .cart-checkout),
+    body:has(.checkout-page .checkout-submit) { padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
+    body:has(.cart-page .cart-checkout) .whatsapp-chat,
+    body:has(.checkout-page .checkout-submit) .whatsapp-chat { bottom:calc(76px + env(safe-area-inset-bottom)); }
+}
