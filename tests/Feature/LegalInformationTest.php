@@ -30,6 +30,20 @@ class LegalInformationTest extends TestCase
         $this->app->instance(Catalogue::class, $catalogue);
     }
 
+    public function test_official_notice_and_analytics_inventory_are_localized_without_claiming_unknown_retention(): void
+    {
+        config(['analytics.enabled' => true]);
+        foreach (['fr', 'en', 'de'] as $locale) {
+            $response = $this->get('/'.$locale.'/cookies')->assertOk()
+                ->assertSee('legal/guarantees/eu-legal-guarantee-'.$locale.'.svg', false)
+                ->assertSee('homya_analytics_choice')->assertSee('_ga')
+                ->assertSee(__('compliance.analytics_retention', [], $locale));
+            $this->assertFileExists(public_path('legal/guarantees/eu-legal-guarantee-'.$locale.'.svg'));
+            $this->get('/'.$locale.'/confidentialite')->assertOk()
+                ->assertSee(__('compliance.hosting', [], $locale));
+        }
+    }
+
     private function xpath(string $html): DOMXPath
     {
         $document = new DOMDocument;

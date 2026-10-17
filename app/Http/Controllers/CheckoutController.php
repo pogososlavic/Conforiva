@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AnalyticsConsent;
+use App\Services\ApplianceTakeBack;
 use App\Services\Commerce\AutomaticOrderQuote;
 use App\Services\Commerce\BankTransfer;
 use App\Services\Commerce\Cart;
@@ -13,6 +14,7 @@ use App\Services\Commerce\OrderTerms;
 use App\Services\Commerce\TransferProof;
 use App\Services\Documents\DocumentStore;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -56,6 +58,9 @@ final class CheckoutController extends CommerceController
         if (! $readiness->ready()) {
             return response()->view('commerce.unavailable', [], 503);
         }
+        if (is_string($request->input('billing_country'))) {
+            $request->merge(['billing_country' => strtoupper(trim($request->input('billing_country')))]);
+        }
         $data = $request->validate([
             'checkout_key' => ['required', 'uuid'], 'quote_hash' => ['required', 'string', 'size:64'],
             'terms_hash' => ['required', 'string', 'size:64'],
@@ -65,6 +70,14 @@ final class CheckoutController extends CommerceController
             'city' => ['required', 'string', 'max:100'], 'country' => ['required', Rule::in(config('commerce.countries'))],
             'terms' => ['accepted'], 'privacy_acknowledged' => ['accepted'], 'shipping_acknowledged' => ['accepted'],
             'payment_method' => ['nullable', Rule::in(['bank_transfer', 'deferred'])],
+            'billing_different' => ['nullable', 'boolean'],
+            'billing_name' => ['exclude_unless:billing_different,1', 'required', 'string', 'max:150'],
+            'billing_address' => ['exclude_unless:billing_different,1', 'required', 'string', 'max:200'],
+            'billing_postal_code' => ['exclude_unless:billing_different,1', 'nullable', 'string', 'max:20'],
+            'billing_city' => ['exclude_unless:billing_different,1', 'required', 'string', 'max:100'],
+            'billing_country' => ['exclude_unless:billing_different,1', 'required', 'regex:/\A[A-Z]{2}\z/'],
+            'take_back' => ['nullable', 'array', 'max:100'],
+            'take_back.*' => ['required', 'integer', 'min:0'],
         ]);
         $quote = $cart->quote($request->session());
         if (! hash_equals((string) $request->session()->get('commerce.checkout_key', ''), $data['checkout_key'])
@@ -83,6 +96,16 @@ final class CheckoutController extends CommerceController
             throw ValidationException::withMessages(['postal_code' => __('commerce.invalid_postal')]);
         }
         $customer = array_intersect_key($data, array_flip(['email', 'name', 'phone', 'address', 'postal_code', 'city', 'country']));
+        $customer['take_back'] = app(ApplianceTakeBack::class)->snapshot($quote, $data['take_back'] ?? []);
+        if ($customer['take_back'] !== []) {
+            $customer['take_back_policy'] = __('takeback.policy');
+        }
+        $customer['billing'] = array_intersect_key($customer, array_flip(['name', 'address', 'postal_code', 'city', 'country']));
+        if ($data['billing_different'] ?? false) {
+            foreach (['name', 'address', 'postal_code', 'city', 'country'] as $field) {
+                $customer['billing'][$field] = $data['billing_'.$field] ?? '';
+            }
+        }
         $method = $data['payment_method'] ?? ($readiness->bankReady() ? 'bank_transfer' : 'deferred');
         abort_if($method === 'bank_transfer' && ! $readiness->bankReady(), 503);
         abort_if($method === 'deferred' && ! $readiness->deferredReady(), 503);
@@ -119,6 +142,8 @@ final class CheckoutController extends CommerceController
         $orders->expireBankTransfers();
         $order = $orders->owned($id, $owner);
         $items = $orders->items($id);
+        $customer = json_decode(Crypt::decryptString($order->customer_encrypted), true, 32, JSON_THROW_ON_ERROR);
+        $takeBack = $customer['take_back'] ?? [];
         $db = $orders->connection();
         $quoteEmailStatus = $db->getSchemaBuilder()->hasTable('commerce_order_quotes')
             ? $db->table('commerce_order_quotes')->where('order_id', $id)->value('status')
@@ -138,7 +163,7 @@ final class CheckoutController extends CommerceController
             }
         }
 
-        return view('commerce.order', compact('order', 'items', 'locale') + ['bankReady' => app(CheckoutReadiness::class)->bankReady(),
+        return view('commerce.order', compact('order', 'items', 'locale', 'takeBack') + ['bankReady' => app(CheckoutReadiness::class)->bankReady(),
             'quoteEmailStatus' => $quoteEmailStatus,
             'documents' => config('dashboard.enabled') ? app(DocumentStore::class)->forOrder($id) : [],
             'cardReady' => app(CheckoutReadiness::class)->cardReady(), 'deadline' => app(BankTransfer::class)->deadline($order)->setTimezone('Europe/Paris')]);

@@ -37,7 +37,7 @@ if (root) {
                 if (values.length === 1 && /^[A-Za-z0-9_-]{1,512}$/.test(values[0])) pageLocation.searchParams.set(key, values[0]);
             }
         }
-        window.gtag('config', id, {send_page_view: false, page_location: pageLocation.href, page_referrer: '', page_title: 'HOMYA', allow_google_signals: false, allow_ad_personalization_signals: false, cookie_expires: 15552000});
+        window.gtag('config', id, {send_page_view: false, page_location: pageLocation.href, page_referrer: '', page_title: 'HOMYA', allow_google_signals: false, allow_ad_personalization_signals: false, cookie_expires: 15552000, cookie_update: false});
         if (publicPath) window.gtag('event', 'page_view', {page_location: pageLocation.href, page_referrer: '', page_title: 'HOMYA'});
         window.gtag('get', id, 'client_id', (clientId) => {
             if (granted && /^\d{1,20}\.\d{1,20}$/.test(clientId || '')) post('/mesure/identifiant', {client_id: clientId}).catch(() => {});

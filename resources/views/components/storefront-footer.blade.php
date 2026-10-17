@@ -1,3 +1,4 @@
+<x-legal-guarantee-notice />
 <footer class="home-footer">
     <div class="shell footer-discoveries">
         <div class="footer-intro"><a class="footer-brand" href="{{ route('home', ['locale' => app()->getLocale()]) }}"><x-brand-logo loading="lazy" /></a><p>{{ __('home.footer_intro') }}</p></div>

@@ -46,11 +46,16 @@ final class DocumentData
         if ($orderId) {
             $source = app(AdminDashboard::class)->order($orderId);
             $customer = $source['customer'];
+            $billing = is_array($customer['billing'] ?? null) ? $customer['billing'] : [];
             foreach (array_keys($data['customer']) as $key) {
-                $data['customer'][$key] = $customer[$key] ?? '';
+                $data['customer'][$key] = $billing[$key] ?? $customer[$key] ?? '';
             }
             $data['professional'] = ! empty($customer['company']);
             $data['delivery_address'] = implode(', ', array_filter([$customer['address'] ?? '', $customer['address_extra'] ?? '', $customer['postal_code'] ?? '', $customer['city'] ?? '', $customer['country'] ?? '']));
+            if (! empty($customer['take_back'])) {
+                $data['delivery_terms'] = __('takeback.recorded')."\n".implode("\n", array_map(
+                    fn (array $collection) => $collection['name'].' — '.$collection['reference'].' : '.$collection['quantity'], $customer['take_back']));
+            }
             $data['lines'] = $this->orderLines($source);
         }
 
@@ -79,7 +84,7 @@ final class DocumentData
             $input['customer']['country'] = strtoupper(trim($input['customer']['country']));
         }
         $money = ['nullable', 'regex:/\A[0-9]{1,6}(?:[.,][0-9]{1,2})?\z/'];
-        $rules = ['document_language' => ['required', Rule::in(array_keys(self::LANGUAGES))], 'customer' => 'required|array', 'customer.name' => 'nullable|string|max:150', 'customer.company' => 'nullable|string|max:200', 'customer.email' => 'nullable|email:rfc|max:254', 'customer.address' => 'nullable|string|max:300', 'customer.postal_code' => 'nullable|string|max:15', 'customer.city' => 'nullable|string|max:100', 'customer.country' => ['nullable', 'regex:/\A[A-Z]{2}\z/'], 'customer.siren' => 'nullable|regex:/\A[0-9]{9}\z/', 'customer.vat' => 'nullable|regex:/\A[A-Z]{2}[A-Z0-9]{2,15}\z/', 'professional' => 'nullable|boolean', 'delivery_address' => 'nullable|string|max:500', 'buyer_reference' => 'nullable|string|max:100', 'tax_mode' => ['nullable', Rule::in(['taxed', 'exempt', 'reverse'])], 'tax_note' => $text, 'valid_until' => 'nullable|date_format:Y-m-d', 'valid_until_at' => 'nullable|date', 'operation_date' => 'nullable|date_format:Y-m-d', 'due_date' => 'nullable|date_format:Y-m-d', 'payment_terms' => $text, 'delivery_terms' => $text, 'discount_terms' => $text, 'late_terms' => $text, 'legal_notes' => $text, 'eco_reviewed' => 'nullable|boolean', 'guarantee_reviewed' => 'nullable|boolean', 'lines' => 'required|array|min:1|max:50', 'lines.*' => 'required|array', 'lines.*.reference' => 'nullable|string|max:255', 'lines.*.name' => 'nullable|string|max:600', 'lines.*.quantity' => 'required|integer|min:1|max:10000', 'lines.*.price' => $money, 'lines.*.vat_rate' => ['nullable', 'regex:/\A[0-9]{1,2}(?:[.,][0-9]{1,2})?\z/'], 'lines.*.eco' => $money];
+        $rules = ['document_language' => ['required', Rule::in(array_keys(self::LANGUAGES))], 'customer' => 'required|array', 'customer.name' => 'nullable|string|max:150', 'customer.company' => 'nullable|string|max:200', 'customer.email' => 'nullable|email:rfc|max:254', 'customer.address' => 'nullable|string|max:300', 'customer.postal_code' => 'nullable|string|max:20', 'customer.city' => 'nullable|string|max:100', 'customer.country' => ['nullable', 'regex:/\A[A-Z]{2}\z/'], 'customer.siren' => 'nullable|regex:/\A[0-9]{9}\z/', 'customer.vat' => 'nullable|regex:/\A[A-Z]{2}[A-Z0-9]{2,15}\z/', 'professional' => 'nullable|boolean', 'delivery_address' => 'nullable|string|max:500', 'buyer_reference' => 'nullable|string|max:100', 'tax_mode' => ['nullable', Rule::in(['taxed', 'exempt', 'reverse'])], 'tax_note' => $text, 'valid_until' => 'nullable|date_format:Y-m-d', 'valid_until_at' => 'nullable|date', 'operation_date' => 'nullable|date_format:Y-m-d', 'due_date' => 'nullable|date_format:Y-m-d', 'payment_terms' => $text, 'delivery_terms' => $text, 'discount_terms' => $text, 'late_terms' => $text, 'legal_notes' => $text, 'eco_reviewed' => 'nullable|boolean', 'guarantee_reviewed' => 'nullable|boolean', 'lines' => 'required|array|min:1|max:50', 'lines.*' => 'required|array', 'lines.*.reference' => 'nullable|string|max:255', 'lines.*.name' => 'nullable|string|max:600', 'lines.*.quantity' => 'required|integer|min:1|max:10000', 'lines.*.price' => $money, 'lines.*.vat_rate' => ['nullable', 'regex:/\A[0-9]{1,2}(?:[.,][0-9]{1,2})?\z/'], 'lines.*.eco' => $money];
         $data = Validator::make($input, $rules)->validate();
         $data['type'] = $existing['type'];
         $data['order_id'] = $existing['order_id'];

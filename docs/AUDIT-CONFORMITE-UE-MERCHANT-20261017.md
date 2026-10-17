@@ -66,3 +66,7 @@ Aucune correction ni lancement publicitaire n'est effectué par cet audit. Revoi
 ## Suivi des corrections locales — 17 octobre 2026
 
 Une phase de correction a été autorisée après cet audit. Voir [le compte rendu](CORRECTIONS-P0-HOMYA-20261017.md) : bouton et CGV, documents énergétiques des deux modèles audités et données Fantea corrigés dans le dépôt ; 101 tests réussis. Le déploiement public et la couverture énergétique intégrale du catalogue ne sont pas confirmés par cette phase. Les constats de production ci-dessus décrivent l’état observé avant ces corrections.
+
+## Suivi P1 — reprise et fabricants
+
+La reprise à la livraison a été confirmée par HOMYA puis intégrée localement au parcours, aux CGV, aux récapitulatifs et à l’administration, sans supplément. Contacts officiels EPREL LG/Samsung et document de sécurité LG ajoutés ; section d’assistance ETNA. Voir [la phase complémentaire P1](CORRECTIONS-P1-HOMYA-20261017.md#phase-complémentaire--reprise-et-informations-fabricant). C07/C09 restent partiellement ouverts pour les preuves opérationnelles, les catégories supplémentaires et la couverture/répartition des rôles fabricant du catalogue. Prix et réductions conservés sur instruction de l’utilisateur, historique confidentiel non demandé de nouveau. Non déployé ; aucune campagne lancée.

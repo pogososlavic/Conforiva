@@ -56,6 +56,10 @@ class HomeNavigationTest extends TestCase
                     }
                     $this->assertSame(1, $destination->query('//*[@id="'.$url['fragment'].'"]')->length, 'Missing navigation destination');
                 }
+                if (isset($url['path']) && preg_match('~^/(media/energy/[a-z0-9-]+\.pdf|legal/guarantees/eu-legal-guarantee-(fr|en|de)\.svg)$~', $url['path'])) {
+                    $this->assertFileExists(public_path(ltrim($url['path'], '/')));
+                    continue;
+                }
                 if (isset($url['path'])) {
                     $this->assertMatchesRegularExpression('~^/(fr|en|de)(/catalogue|/promotions|/retours/declaration|/produit/[a-z0-9-]+|/(a-propos|provenance|conseiller|contact|livraison|retractation|paiement|suivi|panier|avis|mentions-legales|cgv|confidentialite|cookies))?$~', $url['path']);
                 }

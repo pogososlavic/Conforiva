@@ -1,5 +1,5 @@
 <x-layout :title="__('tracking.title').' — HOMYA'" :description="__('tracking.intro')" :catalogue-ready="true" :language-links="collect(config('homya.locales'))->mapWithKeys(fn ($language) => [$language => route('order.tracking', ['locale' => $language])])->all()">
-    <main id="main" class="shell commerce-page" tabindex="-1">
+    <main id="main" class="shell commerce-page tracking-page" tabindex="-1">
         <header class="information-heading"><p class="eyebrow">HOMYA</p><h1>{{ __('tracking.title') }}</h1><p>{{ __('tracking.intro') }}</p></header>
         <div class="commerce-grid">
             <section class="commerce-summary" aria-labelledby="tracking-form-heading">

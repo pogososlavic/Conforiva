@@ -20,16 +20,7 @@
                 </fieldset>
                 <fieldset class="checkout-panel"><legend><span class="checkout-section-number" aria-hidden="true">2</span> {{ __('commerce.shipping_address') }}</legend>
                     <x-checkout-field name="address" autocomplete="street-address" :max="200" />
-                    <div class="address-lookup" data-address-lookup data-url="{{ route('checkout.addresses', ['locale' => $locale]) }}" data-empty="{{ __('commerce.address_empty') }}" data-failure="{{ __('commerce.address_failure') }}" data-loading="{{ __('commerce.address_loading') }}" data-selected="{{ __('commerce.address_selected') }}" data-count="{{ __('commerce.address_count') }}" hidden>
-                        <ul id="checkout-address-suggestions" class="address-suggestions" data-address-results role="listbox" aria-label="{{ __('commerce.address_results') }}" hidden></ul>
-                        <p id="checkout-address-help" class="checkout-help">{{ __('commerce.address_hint') }}</p>
-                        <div class="address-lookup-controls">
-                            <label><input type="checkbox" data-address-auto checked> {{ __('commerce.address_auto') }}</label>
-                            <button type="button" class="button-secondary" data-address-search>{{ __('commerce.address_search') }}</button>
-                        </div>
-                        <p class="checkout-help">{{ __('commerce.address_privacy') }}</p>
-                        <p data-address-status role="status" aria-live="polite" aria-atomic="true"></p>
-                    </div>
+                    <x-address-lookup :locale="$locale" />
                     <div class="checkout-fields">
                         <x-checkout-field name="postal_code" autocomplete="postal-code" :max="12" />
                         <x-checkout-field name="city" autocomplete="address-level2" :max="100" />
@@ -39,6 +30,34 @@
                     </div>
                     <p class="checkout-help">{{ __('commerce.shipping_free') }} {{ __('commerce.delivery_estimate') }}</p>
                 </fieldset>
+                <fieldset class="checkout-panel"><legend>{{ __('compliance.billing_title') }}</legend>
+                    <p class="checkout-help">{{ __('compliance.billing_help') }}</p>
+                    <details @if(old('billing_different') || $errors->hasAny(['billing_name', 'billing_address', 'billing_postal_code', 'billing_city', 'billing_country'])) open @endif>
+                        <summary>{{ __('compliance.billing_different') }}</summary>
+                        <label class="terms-checkbox"><input type="checkbox" name="billing_different" value="1" @checked(old('billing_different'))><span>{{ __('compliance.billing_different') }}</span></label>
+                        @foreach(['name' => ['name', 150], 'address' => ['street-address', 200], 'postal_code' => ['postal-code', 20], 'city' => ['address-level2', 100], 'country' => ['country', 2]] as $field => $options)
+                            <x-checkout-field :name="'billing_'.$field" :label="__('compliance.billing_'.$field)" :autocomplete="'billing '.$options[0]" :max="$options[1]" :required="false" :default="$field === 'country' ? 'FR' : ''" />
+                            @if($field === 'address')<x-address-lookup :locale="$locale" prefix="billing_" />@endif
+                        @endforeach
+                        <p class="checkout-help">{{ __('compliance.billing_country_help') }}</p>
+                    </details>
+                </fieldset>
+                @if(collect($quote['lines'])->contains(fn($line) => app(\App\Services\ApplianceTakeBack::class)->eligible($line['product'])))
+                <fieldset class="checkout-panel"><legend>{{ __('takeback.title') }}</legend>
+                    <p class="checkout-help">{{ __('takeback.policy') }}</p>
+                    @foreach($quote['lines'] as $line)
+                        @if(app(\App\Services\ApplianceTakeBack::class)->eligible($line['product']))
+                        <div class="checkout-field"><label for="take-back-{{ $loop->index }}">{{ $line['product']['name'] }} — {{ __('takeback.quantity') }}</label>
+                            <select id="take-back-{{ $loop->index }}" name="take_back[{{ $line['key'] }}]">
+                                @for($quantity = 0; $quantity <= $line['quantity']; $quantity++)<option value="{{ $quantity }}" @selected((int) old('take_back.'.$line['key'], 0) === $quantity)>{{ $quantity === 0 ? __('takeback.none') : $quantity }}</option>@endfor
+                            </select>
+                        </div>
+                        @endif
+                    @endforeach
+                    <p class="checkout-help">{{ __('takeback.preparation') }}</p>
+                    <a href="{{ route('information', ['locale' => $locale, 'page' => 'livraison']) }}#reprise">{{ __('takeback.details') }}</a>
+                </fieldset>
+                @endif
                 <fieldset class="checkout-panel payment-options"><legend><span class="checkout-section-number" aria-hidden="true">3</span> {{ __('commerce.payment_method') }}</legend>
                     @if($bankReady)<label class="payment-choice"><input type="radio" name="payment_method" value="bank_transfer" checked required><span><strong>{{ __('commerce.bank_method') }}</strong><small>{{ __('commerce.bank_next_step') }}</small></span></label><p class="checkout-help">{{ __('commerce.bank_deadline_notice') }}</p>@endif
                     @if(!$bankReady)<input type="hidden" name="payment_method" value="deferred"><strong>{{ __('commerce.status.pending_payment_details') }}</strong><p class="checkout-help">{{ __('commerce.deferred_notice') }}</p><p class="checkout-help">{{ __('commerce.deferred_reservation_notice') }}</p>@endif

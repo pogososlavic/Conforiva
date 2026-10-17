@@ -30,6 +30,9 @@
                     <div><dt><code>{{ $name }}</code></dt><dd>{{ __('legal.'.$purpose) }} {{ config('session.expire_on_close') ? __('legal.cookie_session_duration') : __('legal.cookie_duration', ['minutes' => config('session.lifetime')]) }}</dd></div>
                 @endforeach
             </dl>
+            @if(config('analytics.enabled') === true)
+                <dl class="legal-cookie-inventory"><div><dt><code>homya_analytics_choice</code></dt><dd>{{ __('compliance.analytics_cookies') }}</dd></div><div><dt><code>_ga</code>, <code>_ga_&lt;stream&gt;</code></dt><dd>{{ __('compliance.analytics_recipient') }}</dd></div></dl>
+            @endif
         </section>
     @endif
     <section class="legal-section legal-sources" aria-labelledby="legal-sources-heading">

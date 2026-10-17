@@ -30,6 +30,21 @@ final class OrderPdf
                 $lines[] = __('commerce.'.$field).' : '.$customer[$field];
             }
             $lines[] = '';
+            if (isset($customer['billing'])) {
+                $lines[] = __('compliance.billing_title');
+                foreach (['name', 'address', 'postal_code', 'city', 'country'] as $field) {
+                    $lines[] = __('compliance.billing_'.$field).' : '.($customer['billing'][$field] ?? '');
+                }
+                $lines[] = '';
+            }
+            if (! empty($customer['take_back'])) {
+                $lines[] = __('takeback.recorded');
+                foreach ($customer['take_back'] as $collection) {
+                    $lines[] = $collection['name'].' — '.$collection['reference'].' : '.$collection['quantity'];
+                }
+                $lines[] = $customer['take_back_policy'] ?? '';
+                $lines[] = '';
+            }
             foreach ($items as $item) {
                 $lines[] = $item->name.($item->variant_name ? ' / '.$item->variant_name : '');
                 $lines[] = __('catalogue.reference').' '.$item->reference.($item->variant_reference ? ' / '.$item->variant_reference : '');

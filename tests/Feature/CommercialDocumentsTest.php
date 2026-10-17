@@ -48,7 +48,7 @@ final class CommercialDocumentsTest extends TestCase
 
     private function auth(): array
     {
-        return ['admin.auth' => ['fingerprint' => app(AdminAccess::class)->fingerprint(), 'started' => now()->timestamp, 'seen' => now()->timestamp]];
+        return ['admin.auth' => ['id' => 'owner', 'username' => 'fixture', 'role' => 'owner', 'fingerprint' => app(AdminAccess::class)->fingerprint(), 'started' => now()->timestamp, 'seen' => now()->timestamp]];
     }
 
     private function complete(string $type = 'invoice'): array

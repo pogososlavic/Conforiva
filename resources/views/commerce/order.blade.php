@@ -8,6 +8,7 @@
         </header>
 
         <x-commerce-errors />
+        @if(!empty($takeBack))<section class="checkout-panel"><h2>{{ __('takeback.recorded') }}</h2><ul>@foreach($takeBack as $collection)<li>{{ $collection['name'] }} — {{ $collection['reference'] }} : {{ $collection['quantity'] }}</li>@endforeach</ul></section>@endif
 
         <section class="order-status-card" aria-label="{{ __('commerce.order') }}">
             <span class="order-status-mark" aria-hidden="true">

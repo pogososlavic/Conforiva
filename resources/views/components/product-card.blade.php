@@ -14,7 +14,7 @@
             <span class="product-card-action">{{ __('catalogue.view_product') }} <span aria-hidden="true">↗</span></span>
         </div>
     </a>
-    <x-product-energy :product="$product" :locale="$locale" />
+    <div class="product-card-energy"><x-product-energy :product="$product" :locale="$locale" /></div>
     <div class="product-card-purchase">
         <p>{{ __('commerce.shipping_free') }}</p>
         <p><a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']] + $filters) }}#product-purchase-information">{{ __('commerce.free_returns') }}<span class="sr-only"> — {{ $product['name'] }}</span></a></p>

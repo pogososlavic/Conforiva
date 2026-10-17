@@ -7,6 +7,7 @@
         <nav class="product-section-navigation" aria-label="{{ __('catalogue.product_navigation') }}">
             @if($product['description'])<a href="#product-description">{{ __('catalogue.product_description') }}</a>@endif
             @if($product['specifications'])<a href="#product-specifications">{{ __('catalogue.specifications') }}</a>@endif
+            @if(app(\App\Services\ProductSafetyInformation::class)->forProduct($product))<a href="#product-safety-heading">{{ __('safety.title') }}</a>@endif
             @if($product['has_variants'] && collect($product['variants'])->contains(fn(array $variant) => trim($variant['title'] ?? '') !== ''))<a href="#product-variants">{{ __('catalogue.variants') }}</a>@endif
             @if($relatedProducts->isNotEmpty())<a href="#related-products">{{ __('catalogue.related_products') }}</a>@endif
         </nav>
@@ -31,6 +32,7 @@
                 @if(config('commerce.inventory_enabled'))@if($available !== null)<p class="stock-indicator @if($available === 0) stock-empty @endif"><span aria-hidden="true">●</span> {{ __($available > 0 ? 'commerce.in_stock' : 'commerce.out_of_stock') }}</p>@else<p class="stock-indicator stock-empty" role="status">{{ __('commerce.unavailable_product') }}</p>@endif @endif
                 @if($product['specifications'])<dl class="product-highlights">@foreach(array_slice($product['specifications'], 0, 4) as $spec)<div><dt>{{ $spec['label'] }}</dt><dd>{{ $spec['value'] }}</dd></div>@endforeach</dl>@endif
                 <dl class="product-overview"><div><dt>{{ __('catalogue.category') }}</dt><dd><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ $product['category']['name'] }}</a></dd></div>@if($product['condition'])<div><dt>{{ __('catalogue.condition') }}</dt><dd>{{ __('catalogue.conditions')[$product['condition']] ?? $product['condition'] }}</dd></div>@endif</dl>
+                @if(app(\App\Services\ApplianceTakeBack::class)->eligible($product))<x-take-back-notice :locale="$locale" />@endif
                 <x-purchase-information :locale="$locale" id="product-purchase-information" open />
                 @if(app(\App\Services\Commerce\Cart::class)->eligible($product))
                     <x-commerce-errors />
@@ -45,6 +47,7 @@
             </section>
         </div>
         @if($product['description'])<section id="product-description" class="product-description-section" aria-labelledby="description-heading" tabindex="-1"><h2 id="description-heading">{{ __('catalogue.product_description') }}</h2><p class="product-description">{{ $product['description'] }}</p></section>@endif
+        <x-product-safety :product="$product" />
         <section id="product-specifications" class="specifications" aria-labelledby="specifications-heading" tabindex="-1"><h2 id="specifications-heading">{{ __('catalogue.specifications') }}</h2>
             @if($product['specifications'])<dl>@foreach($product['specifications'] as $spec)<div><dt>{{ $spec['label'] }}</dt><dd>{{ $spec['value'] }}</dd></div>@endforeach</dl>@else<p>{{ __('catalogue.specifications_missing') }}</p>@endif
         </section>

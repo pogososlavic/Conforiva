@@ -54,6 +54,8 @@ test('Consent loads one tag with no automatic page view or advertising consent',
     assert.match(state.scripts[0].src, /^https:\/\/www.googletagmanager.com\/gtag\/js\?id=G-FIXTURE123$/);
     const commands = state.window.dataLayer.map(args => Array.from(args));
     assert.equal(commands.find(c => c[0] === 'config')[2].send_page_view, false);
+    assert.equal(commands.find(c => c[0] === 'config')[2].cookie_expires, 15552000);
+    assert.equal(commands.find(c => c[0] === 'config')[2].cookie_update, false);
     assert.equal(commands.find(c => c[0] === 'consent')[2].ad_storage, 'denied');
     assert.equal(commands.filter(c => c[0] === 'event' && c[1] === 'purchase').length, 0);
 });

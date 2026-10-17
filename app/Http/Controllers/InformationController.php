@@ -38,6 +38,9 @@ class InformationController extends Controller
             }
         }
         $content = app(OrderTerms::class)->adapt($page, $content);
+        if ($page === 'paiement' && $readiness->bankReady()) {
+            $content['paragraphs'] = [__('compliance.payment_current'), __('commerce.bank_deadline_notice')];
+        }
         if (config('analytics.enabled') === true && in_array($page, ['cookies', 'confidentialite'], true)) {
             foreach ($content['sections'] as &$section) {
                 if ($page === 'cookies' && $section['id'] === 'utilisation') {
@@ -49,10 +52,14 @@ class InformationController extends Controller
                 if ($page === 'confidentialite' && $section['id'] === 'donnees') {
                     $section['paragraphs'][3] = trim(preg_replace('/(?:Aucun tag Google Analytics|No Google Analytics|In der untersuchten Version)[^.]*\./u', '', $section['paragraphs'][3])).' '.__('analytics.description');
                 }
+                if ($page === 'confidentialite' && $section['id'] === 'destinataires') {
+                    $section['paragraphs'][1] = __('compliance.hosting');
+                    unset($section['paragraphs'][3]);
+                }
             }
             unset($section);
             $content['sections'][] = ['id' => 'google-analytics', 'title' => __('analytics.title'),
-                'paragraphs' => [__('analytics.description')]];
+                'paragraphs' => [__('analytics.description'), __('compliance.analytics_recipient'), __('compliance.analytics_cookies'), __('compliance.analytics_retention')]];
         }
         if ($page === 'contact' && config('dashboard.enabled')) {
             $content['paragraphs'][1] = __('support.contact_notice');

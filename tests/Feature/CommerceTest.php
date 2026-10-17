@@ -153,6 +153,78 @@ class CommerceTest extends TestCase
         $this->post('/fr/commande/'.$order->id.'/virement')->assertRedirect('/fr/commande/'.$order->id);
     }
 
+    public function test_billing_can_be_outside_shipping_countries_and_is_kept_in_the_encrypted_order(): void
+    {
+        $orders = $this->database();
+        $this->enable();
+        $this->post('/fr/commande', $this->checkout([
+            'billing_different' => 1, 'billing_name' => 'Billing fixture',
+            'billing_address' => 'Synthetic billing address', 'billing_postal_code' => 'SW1A 1AA',
+            'billing_city' => 'London', 'billing_country' => ' gb ',
+        ]))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $customer = json_decode(Crypt::decryptString($order->customer_encrypted), true);
+        $this->assertSame('GB', $customer['billing']['country']);
+        $this->assertSame('SW1A 1AA', $customer['billing']['postal_code']);
+        $this->assertSame('FR', $customer['country']);
+        $this->assertSame('FR', $order->country);
+        $this->assertStringNotContainsString('Synthetic billing address', $order->customer_encrypted);
+        $pdf = app(OrderPdf::class)->render($order, $orders->items($order->id), 'quote', 'fr');
+        $this->assertStringContainsString('Synthetic billing address', $pdf);
+    }
+
+    public function test_default_billing_uses_delivery_and_ignores_unselected_billing_fields(): void
+    {
+        $orders = $this->database();
+        $this->enable();
+        $this->post('/fr/commande', $this->checkout(['billing_country' => 'US']))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $customer = json_decode(Crypt::decryptString($order->customer_encrypted), true);
+        $this->assertSame('FR', $customer['billing']['country']);
+        $this->assertSame($customer['address'], $customer['billing']['address']);
+    }
+
+    public function test_selected_billing_address_requires_details_and_does_not_expand_delivery_zones(): void
+    {
+        $this->database();
+        $this->enable();
+        $this->post('/fr/commande', $this->checkout(['billing_different' => 1]))
+            ->assertSessionHasErrors(['billing_name', 'billing_address', 'billing_city', 'billing_country']);
+        $this->post('/fr/commande', $this->checkout(['country' => 'US']))->assertSessionHasErrors('country');
+    }
+
+    public function test_take_back_is_free_recorded_and_shown_in_confirmation_and_pdf(): void
+    {
+        $this->products['test-unit']['universe'] = 'appliances';
+        $orders = $this->database();
+        $this->enable();
+        $this->post('/fr/commande', $this->checkout(['take_back' => ['test-unit' => 2]]))->assertRedirect();
+        $order = $orders->connection()->table('commerce_orders')->first();
+        $customer = json_decode(Crypt::decryptString($order->customer_encrypted), true);
+        $this->assertSame(2, $customer['take_back'][0]['quantity']);
+        $this->assertSame(0, $customer['take_back'][0]['fee_cents']);
+        $this->assertSame('at_delivery', $customer['take_back'][0]['method']);
+        $this->assertSame(24690, (int) $order->total_cents);
+        $this->assertSame('pending_bank_transfer', $order->status);
+        $this->get('/fr/commande/'.$order->id)->assertOk()->assertSee(__('takeback.recorded'));
+        $pdf = app(OrderPdf::class)->render($order, $orders->items($order->id), 'quote', 'fr');
+        $this->assertStringContainsString('TEST-UNIT : 2', $pdf);
+    }
+
+    public function test_take_back_cannot_exceed_purchased_quantity_or_target_an_ineligible_line(): void
+    {
+        $this->products['test-unit']['universe'] = 'appliances';
+        $orders = $this->database();
+        $this->enable();
+        foreach ([['test-unit' => 3], ['foreign-item' => 1], ['test-unit' => -1], ['test-unit' => 'bad']] as $input) {
+            $this->post('/fr/commande', $this->checkout(['take_back' => $input]))->assertSessionHasErrors();
+            $this->assertSame(0, $orders->connection()->table('commerce_orders')->count());
+        }
+        $this->products['test-unit']['universe'] = 'furniture';
+        $this->post('/fr/commande', $this->checkout(['take_back' => ['test-unit' => 1]]))->assertSessionHasErrors('take_back');
+        $this->assertSame(0, $orders->connection()->table('commerce_orders')->count());
+    }
+
     private function checkout(array $extra = [], string $locale = 'fr'): array
     {
         $this->post('/'.$locale.'/panier', ['slug' => 'test-unit', 'quantity' => 2])->assertRedirect();

@@ -272,19 +272,23 @@ document.querySelectorAll('[data-copy-target]').forEach((button) => {
 
 document.querySelectorAll('[data-address-lookup]').forEach((lookup) => {
     const form = lookup.closest('form');
-    const address = form?.querySelector('[name="address"]');
-    const country = form?.querySelector('[name="country"]');
+    const prefix = lookup.dataset.fieldPrefix === 'billing_' ? 'billing_' : '';
+    const address = form?.querySelector(`[name="${prefix}address"]`);
+    const country = form?.querySelector(`[name="${prefix}country"]`);
+    const postal = form?.querySelector(`[name="${prefix}postal_code"]`);
+    const city = form?.querySelector(`[name="${prefix}city"]`);
+    const isFrance = () => country.value.trim().toUpperCase() === 'FR';
     const search = lookup.querySelector('[data-address-search]');
     const automatic = lookup.querySelector('[data-address-auto]');
     const results = lookup.querySelector('[data-address-results]');
     const status = lookup.querySelector('[data-address-status]');
-    if (!address || !country || !search || !automatic || !results || !status) return;
+    if (!address || !country || !postal || !city || !search || !automatic || !results || !status) return;
     let request, timer, entries = [], activeIndex = -1, lastStarted = 0, composing = false;
     address.setAttribute('role', 'combobox');
     address.setAttribute('aria-autocomplete', 'list');
     address.setAttribute('aria-controls', results.id);
     address.setAttribute('aria-expanded', 'false');
-    address.setAttribute('aria-describedby', [address.getAttribute('aria-describedby'), 'checkout-address-help'].filter(Boolean).join(' '));
+    address.setAttribute('aria-describedby', [address.getAttribute('aria-describedby'), `${results.id.replace(/-suggestions$/, '')}-help`].filter(Boolean).join(' '));
     const dismiss = () => {
         results.hidden = true;
         results.replaceChildren();
@@ -301,13 +305,13 @@ document.querySelectorAll('[data-address-lookup]').forEach((lookup) => {
         dismiss();
         status.textContent = '';
         search.disabled = false;
-        lookup.hidden = country.value !== 'FR';
+        lookup.hidden = !isFrance();
     };
     const choose = (entry) => {
         clear();
         address.value = entry.address;
-        form.querySelector('[name="postal_code"]').value = entry.postal_code;
-        form.querySelector('[name="city"]').value = entry.city;
+        postal.value = entry.postal_code;
+        city.value = entry.city;
         status.textContent = lookup.dataset.selected;
         address.focus();
     };
@@ -321,7 +325,7 @@ document.querySelectorAll('[data-address-lookup]').forEach((lookup) => {
     const lookupAddress = async () => {
         clear();
         const query = address.value.trim();
-        if (country.value !== 'FR' || query.length < 4 || query.length > 200) return;
+        if (!isFrance() || query.length < 4 || query.length > 200) return;
         request = new AbortController();
         const activeRequest = request;
         lastStarted = Date.now();
@@ -335,7 +339,7 @@ document.querySelectorAll('[data-address-lookup]').forEach((lookup) => {
             });
             if (!response.ok) throw new Error('Address lookup unavailable');
             const data = await response.json();
-            if (activeRequest !== request || country.value !== 'FR' || address.value.trim() !== query) return;
+            if (activeRequest !== request || !isFrance() || address.value.trim() !== query) return;
             entries = (Array.isArray(data.suggestions) ? data.suggestions : []).slice(0, 6).filter(entry =>
                 typeof entry.address === 'string' && entry.address.length <= 200 &&
                 typeof entry.city === 'string' && entry.city.length <= 100 && /^\d{5}$/.test(entry.postal_code));
@@ -365,7 +369,7 @@ document.querySelectorAll('[data-address-lookup]').forEach((lookup) => {
     };
     const schedule = () => {
         clear();
-        if (!automatic.checked || composing || country.value !== 'FR' || address.value.trim().length < 4) return;
+        if (!automatic.checked || composing || !isFrance() || address.value.trim().length < 4) return;
         // Debounce typing and stay below the existing twenty requests/minute limit.
         timer = window.setTimeout(lookupAddress, Math.max(650, 3200 - (Date.now() - lastStarted)));
     };
@@ -393,6 +397,7 @@ document.querySelectorAll('[data-address-lookup]').forEach((lookup) => {
     });
     address.addEventListener('blur', clear);
     country.addEventListener('change', clear);
+    country.addEventListener('input', clear);
     automatic.addEventListener('change', () => { if (automatic.checked) schedule(); else clear(); });
     search.addEventListener('click', () => { address.focus(); lookupAddress(); });
     clear();
