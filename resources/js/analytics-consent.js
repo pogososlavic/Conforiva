@@ -27,10 +27,18 @@ if (root) {
         window.gtag = function () { window.dataLayer.push(arguments); };
         window.gtag('consent', 'default', {analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied'});
         window.gtag('js', new Date());
-        window.gtag('config', id, {send_page_view: false, page_location: location.origin, page_referrer: '', page_title: 'HOMYA', allow_google_signals: false, allow_ad_personalization_signals: false, cookie_expires: 15552000});
-        // No order reference, search query, form value or private URL is sent to Google.
         const publicPath = /^\/(fr|en|de)(?:$|\/(?:catalogue|produit|promotions|a-propos|provenance|conseiller|livraison|paiement|cookies|confidentialite|mentions-legales|cgv|retractation)(?:\/|$))/.test(location.pathname);
-        if (publicPath) window.gtag('event', 'page_view', {page_location: location.origin + location.pathname, page_referrer: '', page_title: 'HOMYA'});
+        // Preserve only Google's click identifiers after consent, never arbitrary query data.
+        const pageLocation = new URL(publicPath ? location.origin + location.pathname : location.origin);
+        if (publicPath) {
+            const query = new URLSearchParams(location.search || '');
+            for (const key of ['gclid', 'gbraid', 'wbraid']) {
+                const values = query.getAll(key);
+                if (values.length === 1 && /^[A-Za-z0-9_-]{1,512}$/.test(values[0])) pageLocation.searchParams.set(key, values[0]);
+            }
+        }
+        window.gtag('config', id, {send_page_view: false, page_location: pageLocation.href, page_referrer: '', page_title: 'HOMYA', allow_google_signals: false, allow_ad_personalization_signals: false, cookie_expires: 15552000});
+        if (publicPath) window.gtag('event', 'page_view', {page_location: pageLocation.href, page_referrer: '', page_title: 'HOMYA'});
         window.gtag('get', id, 'client_id', (clientId) => {
             if (granted && /^\d{1,20}\.\d{1,20}$/.test(clientId || '')) post('/mesure/identifiant', {client_id: clientId}).catch(() => {});
         });
