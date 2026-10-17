@@ -38,6 +38,22 @@ class InformationController extends Controller
             }
         }
         $content = app(OrderTerms::class)->adapt($page, $content);
+        if (config('analytics.enabled') === true && in_array($page, ['cookies', 'confidentialite'], true)) {
+            foreach ($content['sections'] as &$section) {
+                if ($page === 'cookies' && $section['id'] === 'utilisation') {
+                    $section['paragraphs'][1] = __('analytics.description');
+                }
+                if ($page === 'cookies' && $section['id'] === 'choix') {
+                    $section['paragraphs'][0] = __('analytics.description');
+                }
+                if ($page === 'confidentialite' && $section['id'] === 'donnees') {
+                    $section['paragraphs'][3] = trim(preg_replace('/(?:Aucun tag Google Analytics|No Google Analytics|In der untersuchten Version)[^.]*\./u', '', $section['paragraphs'][3])).' '.__('analytics.description');
+                }
+            }
+            unset($section);
+            $content['sections'][] = ['id' => 'google-analytics', 'title' => __('analytics.title'),
+                'paragraphs' => [__('analytics.description')]];
+        }
         if ($page === 'contact' && config('dashboard.enabled')) {
             $content['paragraphs'][1] = __('support.contact_notice');
         }

@@ -1,4 +1,5 @@
 import './catalogue-variants';
+import './analytics-consent';
 
 const toggle = document.querySelector('[data-menu-toggle]');
 const navigation = document.getElementById('primary-navigation');

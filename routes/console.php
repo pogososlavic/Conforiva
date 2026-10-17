@@ -25,3 +25,7 @@ Schedule::command('security:prune-storefront-cache')
 Schedule::command('homya:measure-paid-purchases --scheduled --apply')
     ->everyMinute()->withoutOverlapping(5)
     ->when(fn () => config('purchase_measurement.enabled') === true);
+
+Schedule::command('homya:ga4-purchases --apply')
+    ->everyMinute()->withoutOverlapping(5)
+    ->when(fn () => config('analytics.enabled') === true && config('analytics.api_secret') !== '');

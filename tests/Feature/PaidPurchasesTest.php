@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Services\AnalyticsConsent;
 use App\Services\Commerce\OrderStore;
 use App\Services\Commerce\PaidPurchases;
+use App\Services\Ga4Purchases;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -13,6 +15,88 @@ use Tests\TestCase;
 class PaidPurchasesTest extends TestCase
 {
     private string $id;
+
+    private function ga4Context(): string
+    {
+        (require database_path('migrations/commerce/2026_10_17_000006_create_ga4_consent_and_deliveries.php'))->up();
+        config(['analytics.enabled' => true, 'analytics.measurement_id' => 'G-FIXTURE123', 'analytics.api_secret' => 'fixture-secret-only']);
+        $consentId = (string) Str::uuid();
+        $db = app(OrderStore::class)->connection();
+        $db->table('commerce_analytics_consents')->insert(['id' => $consentId, 'granted' => true, 'measurement_id' => 'G-FIXTURE123',
+            'client_id_encrypted' => Crypt::encryptString('123456.123456'), 'expires_at' => now()->addDays(180), 'created_at' => now(), 'updated_at' => now()]);
+        $row = $db->table('commerce_orders')->where('id', $this->id)->first();
+        $customer = json_decode(Crypt::decryptString($row->customer_encrypted), true);
+        $customer['analytics'] = ['consent_id' => $consentId, 'measurement_id' => 'G-FIXTURE123'];
+        $db->table('commerce_orders')->where('id', $this->id)->update(['customer_encrypted' => Crypt::encryptString(json_encode($customer))]);
+
+        return $consentId;
+    }
+
+    private function recordReceipt(): void
+    {
+        app(OrderStore::class)->confirmBankReceipt($this->id, 24690, 'fixture-google-receipt');
+        app(PaidPurchases::class)->reconcile(now()->subDay()->format('Y-m-d H:i:s'), now()->addDay()->format('Y-m-d H:i:s'), true);
+    }
+
+    public function test_ga4_sends_only_after_receipt_once_with_current_consent_and_without_customer_details(): void
+    {
+        $this->ga4Context();
+        Http::fake(['region1.google-analytics.com/*' => Http::response('', 204)]);
+        $service = app(Ga4Purchases::class);
+        $this->assertSame(0, $service->dispatch(true)['submitted']);
+        Http::assertNothingSent();
+        $this->recordReceipt();
+        $this->assertSame(1, $service->dispatch()['eligible']);
+        Http::assertNothingSent();
+        $this->assertSame(1, $service->dispatch(true)['submitted']);
+        $this->assertSame(0, $service->dispatch(true)['submitted']);
+        Http::assertSentCount(1);
+        Http::assertSent(function ($request) {
+            $payload = $request->data();
+
+            return $payload['client_id'] === '123456.123456'
+                && $payload['events'][0]['params']['transaction_id'] === $this->id
+                && $payload['consent']['ad_user_data'] === 'DENIED'
+                && ! str_contains(json_encode($payload), 'private')
+                && ! isset($payload['events'][0]['params']['page_location']);
+        });
+    }
+
+    public function test_withdrawn_and_expired_consent_prevent_ga4_delivery_even_after_receipt(): void
+    {
+        $consentId = $this->ga4Context();
+        $this->recordReceipt();
+        $db = app(OrderStore::class)->connection();
+        $db->table('commerce_analytics_consents')->where('id', $consentId)->update(['granted' => false]);
+        $this->assertSame(0, app(Ga4Purchases::class)->dispatch(true)['submitted']);
+        $db->table('commerce_analytics_consents')->where('id', $consentId)->update(['granted' => true, 'expires_at' => now()->subDay()]);
+        $this->assertSame(0, app(Ga4Purchases::class)->dispatch(true)['submitted']);
+        Http::assertNothingSent();
+    }
+
+    public function test_google_validation_does_not_count_a_purchase_and_uncertain_delivery_is_not_automatically_retried(): void
+    {
+        $this->ga4Context();
+        $this->recordReceipt();
+        Http::fake(['region1.google-analytics.com/debug/*' => Http::response(['validationMessages' => []]),
+            'region1.google-analytics.com/mp/*' => Http::response('', 500)]);
+        $service = app(Ga4Purchases::class);
+        $this->assertSame(1, $service->dispatch(false, true)['validated']);
+        $this->assertSame(0, app(OrderStore::class)->connection()->table('commerce_analytics_deliveries')->count());
+        $this->assertSame(1, $service->dispatch(true)['unknown']);
+        $this->assertSame(0, $service->dispatch(true)['eligible']);
+        Http::assertSentCount(2);
+    }
+
+    public function test_choice_endpoint_defaults_to_no_consent_and_withdrawal_revokes_previous_order_identity(): void
+    {
+        $consentId = $this->ga4Context();
+        $this->getJson('/mesure/preferences')->assertOk()->assertJsonPath('choice', null)->assertHeader('Cache-Control', 'no-store, private');
+        $this->postJson('/mesure/identifiant', ['client_id' => '123.456'])->assertForbidden();
+        $this->withCredentials()->withCookie('homya_analytics_choice', $consentId)->postJson('/mesure/preferences', ['granted' => false])->assertOk()->assertJsonPath('choice', false);
+        $this->assertNull(app(AnalyticsConsent::class)->clientId($consentId));
+        $this->assertFalse((bool) app(OrderStore::class)->connection()->table('commerce_analytics_consents')->where('id', $consentId)->value('granted'));
+    }
 
     protected function setUp(): void
     {

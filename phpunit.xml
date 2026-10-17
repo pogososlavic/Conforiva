@@ -28,6 +28,8 @@
         <!-- Tests isolés : aucune lecture de stock réel, ni clé Stripe du poste. -->
         <env name="HOMYA_ADMIN_MANAGEMENT_ENABLED" value="false" force="true"/>
         <env name="HOMYA_PAID_PURCHASE_MEASUREMENT_ENABLED" value="false" force="true"/>
+        <env name="HOMYA_GA4_ENABLED" value="false" force="true"/>
+        <env name="HOMYA_GA4_API_SECRET" value="" force="true"/>
         <env name="HOMYA_PAID_PURCHASE_MEASUREMENT_START_DATE" value="" force="true"/>
         <env name="HOMYA_INVENTORY_ENABLED" value="false" force="true"/>
         <env name="HOMYA_CHECKOUT_ENABLED" value="false" force="true"/>

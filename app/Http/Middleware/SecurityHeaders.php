@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AnalyticsConsent;
 use App\Services\Seo;
 use Closure;
 use Illuminate\Http\Request;
@@ -19,8 +20,11 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
         // Inline styles remain supported for the existing interface; scripts require self or a per-request nonce.
         if (! $response->headers->has('Content-Security-Policy')) {
+            $analytics = app(AnalyticsConsent::class)->enabled() && ! $request->is('admin', 'admin/*');
+            $analyticsScript = $analytics ? ' https://www.googletagmanager.com' : '';
+            $analyticsConnect = $analytics ? ' https://www.google-analytics.com https://region1.google-analytics.com' : '';
             $response->headers->set('Content-Security-Policy', $request->is('admin', 'admin/*') ? AdminBoundary::CSP
-                : "default-src 'self'; script-src 'self' 'nonce-{$nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
+                : "default-src 'self'; script-src 'self' 'nonce-{$nonce}'{$analyticsScript}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'{$analyticsConnect}; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
         }
         if (app()->environment('production') && $request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000');
@@ -48,7 +52,7 @@ class SecurityHeaders
             $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         }
         $response->headers->set('Referrer-Policy', $commerce ? 'no-referrer' : 'strict-origin-when-cross-origin');
-        if ($commerce || ($request->hasSession() && $request->session()->has('commerce.cart'))) {
+        if ($commerce || $request->routeIs('analytics.*') || ($request->hasSession() && $request->session()->has('commerce.cart'))) {
             $response->headers->set('Cache-Control', 'no-store, private');
         }
 

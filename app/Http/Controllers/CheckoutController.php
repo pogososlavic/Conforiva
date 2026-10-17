@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AnalyticsConsent;
 use App\Services\Commerce\AutomaticOrderQuote;
 use App\Services\Commerce\BankTransfer;
 use App\Services\Commerce\Cart;
@@ -86,6 +87,13 @@ final class CheckoutController extends CommerceController
         abort_if($method === 'bank_transfer' && ! $readiness->bankReady(), 503);
         abort_if($method === 'deferred' && ! $readiness->deferredReady(), 503);
         $customer['payment_method'] = $method;
+        try {
+            if ($analytics = app(AnalyticsConsent::class)->orderContext($request)) {
+                $customer['analytics'] = $analytics;
+            }
+        } catch (Throwable) {
+            // Analytics failure must never prevent a customer's order or invent consent.
+        }
         $customer['terms_hash'] = $data['terms_hash'];
         $customer['terms_accepted_at'] = $request->session()->get('commerce.terms_accepted_at') ?? now()->toIso8601String();
         // Acknowledgement of information is distinct from consent to marketing.

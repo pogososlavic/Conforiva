@@ -1319,3 +1319,7 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
     .admin-product-actions .admin-icon-button { transition: none; }
     .admin-product-actions .admin-icon-button:hover { transform: none; }
 }
+/* Analytics choices have identical visual prominence and never block checkout. */
+.analytics-preferences { padding-block: 20px; }
+.analytics-preferences [data-analytics-panel] { padding: 20px; margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: white; }
+.analytics-actions { display: flex; flex-wrap: wrap; gap: 12px; }

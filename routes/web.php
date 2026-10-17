@@ -4,6 +4,7 @@ use App\Http\Controllers\AddressLookupController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminDocumentController;
 use App\Http\Controllers\AdminManagementController;
+use App\Http\Controllers\AnalyticsConsentController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CheckoutController;
@@ -19,6 +20,10 @@ use App\Http\Middleware\AdminBoundary;
 use App\Http\Middleware\CommerceBoundary;
 use App\Http\Middleware\SupportBoundary;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/mesure/preferences', [AnalyticsConsentController::class, 'state'])->block()->name('analytics.state');
+Route::post('/mesure/preferences', [AnalyticsConsentController::class, 'save'])->middleware('throttle:30,1')->block()->name('analytics.save');
+Route::post('/mesure/identifiant', [AnalyticsConsentController::class, 'identify'])->middleware('throttle:30,1')->block()->name('analytics.identify');
 
 Route::prefix('admin')->middleware(AdminBoundary::class)->group(function () {
     Route::get('/connexion', [AdminController::class, 'login'])->name('admin.login');
