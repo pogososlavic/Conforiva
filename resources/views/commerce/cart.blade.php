@@ -28,6 +28,7 @@
                         </div>
                         <div class="cart-prices"><strong>{{ $line['line_cents'] === null ? __('commerce.unavailable_product') : \App\Services\Catalogue::money($line['line_cents'], $locale) }}</strong>
                             @if($line['line_cents'] !== null)<span>{{ __('commerce.unit_price') }} : {{ \App\Services\Catalogue::money($line['product']['price_cents'], $locale) }}</span>@endif
+                            @if($line['product'])<x-product-energy :product="$line['product']" :locale="$locale" />@endif
                         </div>
                         @if($line['product'])<x-purchase-information :locale="$locale" :product-name="$line['product']['name']" />@endif
                     </article>@endforeach

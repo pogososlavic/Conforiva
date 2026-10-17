@@ -1345,3 +1345,165 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
     .footer-copyright { flex-basis: 100%; text-align: center; }
     .whatsapp-chat { padding: 10px; min-height: 44px; }
 }
+/* Model-specific energy information remains usable without JavaScript. */
+.product-energy { display:flex; align-items:flex-start; flex-wrap:wrap; gap:8px 12px; margin:8px 0 12px; font-size:16px; }
+.energy-disclosure { min-width:0; }
+.energy-disclosure summary { display:flex; align-items:center; gap:8px; cursor:pointer; min-height:44px; list-style:none; }
+.energy-disclosure summary::-webkit-details-marker { display:none; }
+.energy-disclosure summary:focus-visible { outline:3px solid var(--ink); outline-offset:3px; }
+.energy-arrow { width:2.85em; height:1.52em; flex-shrink:0; }
+.product-summary .product-energy { font-size:32px; }
+.product-card .product-energy { margin:0 20px 12px; font-size:21px; }
+.energy-summary-text,.energy-sheet,.energy-document a { font-size:13px; line-height:1.4; }
+.energy-sheet { display:flex; align-items:center; min-height:44px; text-decoration:underline; text-underline-offset:3px; }
+.energy-document { padding:12px; border:1px solid var(--border); background:white; max-width:300px; }
+.energy-document img { display:block; width:100%; height:auto; margin-bottom:12px; }
+.energy-document a { display:block; min-height:44px; }
+.cart-prices .product-energy { text-align:left; font-size:20px; }
+@media(max-width:720px) { .product-card .product-energy { font-size:18px; } }
+
+.checkout-items .product-energy { font-size:14px; }
+
+.checkout-label-mobile { display:none; }
+@media(max-width:599px) {
+    .button-add-cart,.product-buy-now,.product-summary > .button-primary,.cart-checkout { min-height:44px; padding:9px 12px; gap:8px; font-size:14px; line-height:1.25; border-radius:8px; }
+    .button-add-cart svg { width:18px; height:18px; flex:0 0 18px; }
+    .product-card-purchase .button-add-cart { width:auto; max-width:100%; }
+    .product-card-purchase form { display:flex; justify-content:center; }
+    .product-cart-form { gap:10px; padding-block:8px; }
+    .product-buy-row { flex-wrap:nowrap; align-items:end; gap:8px; }
+    .product-buy-row > .button-add-cart { flex:1 1 auto; min-width:0; }
+    .quantity-control input[type=number] { width:38px; min-height:44px; }
+    .quantity-control button { min-width:32px; min-height:44px; font-size:20px; }
+    .checkout-label-full { display:none; }
+    .checkout-label-mobile { display:inline; }
+    .checkout-submit { min-height:46px; padding:10px 12px; gap:10px; font-size:14px; line-height:1.25; border-radius:8px; }
+    .checkout-action-label,.checkout-submit strong { white-space:nowrap; }
+    .checkout-submit strong { font-size:15px; }
+}
+@media(max-width:359px) {
+    .product-buy-row > .button-add-cart { padding-inline:8px; font-size:12px; gap:5px; }
+    .checkout-submit { padding-inline:9px; gap:7px; font-size:12px; }
+    .checkout-submit strong { font-size:13px; }
+}
+
+/* Shared storefront actions: soft edges, clear hierarchy and restrained feedback. */
+.homya-storefront :is(.button-primary,.button-secondary,.home-button) {
+    border-radius:10px;
+    font-weight:600;
+    letter-spacing:0;
+    box-shadow:0 1px 2px #1820190d;
+    text-decoration:none;
+}
+
+.homya-storefront :is(.button-primary,.home-button-yellow) {
+    background:linear-gradient(180deg,#f8d663 0%,var(--brand-yellow) 100%);
+    border-color:#bc982e;
+}
+.homya-storefront :is(.button-primary,.button-secondary,.home-button):hover {
+    text-decoration:none;
+    box-shadow:0 3px 8px #18201914;
+}
+.homya-storefront :is(.button-primary,.home-button-yellow):hover {
+    background:#efc13b;
+    border-color:#a88725;
+}
+.homya-storefront .button-secondary { border-color:#d9dde0; background:#fff; }
+.homya-storefront .button-secondary:hover { background:#f7f8f6; border-color:#afb8b1; }
+.homya-storefront :is(.button-primary,.button-secondary,.home-button):focus-visible {
+    outline:2px solid #28241b;
+    outline-offset:3px;
+}
+.homya-storefront .whatsapp-chat-inline {
+    background:#176c3a;
+    border-color:#176c3a;
+    color:#fff;
+    justify-content:center;
+    gap:8px;
+}
+.homya-storefront .whatsapp-chat-inline:hover { background:#12582f; border-color:#12582f; }
+.whatsapp-chat-inline svg { width:20px; height:20px; flex:0 0 20px; }
+@media(prefers-reduced-motion:no-preference) {
+    .homya-storefront :is(.button-primary,.button-secondary,.home-button) {
+        transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease;
+    }
+}
+@media(max-width:599px) {
+    .homya-storefront :is(.button-primary,.button-secondary,.home-button) {
+        min-height:44px;
+        padding-block:8px;
+        border-radius:9px;
+    }
+    .homya-storefront .checkout-submit { min-height:44px; padding:8px 11px; gap:8px; font-size:13px; }
+    .homya-storefront .checkout-submit strong { font-size:14px; font-weight:650; }
+    .homya-storefront .whatsapp-chat-inline { font-size:14px; }
+}
+@media(max-width:359px) {
+    .homya-storefront .checkout-submit { padding-inline:9px; gap:7px; font-size:12px; }
+    .homya-storefront .checkout-submit strong { font-size:13px; }
+}
+
+/* Compact actions use their content width; help buttons never fill unused space. */
+.homya-storefront :is(.button-primary,.button-secondary,.home-button) {
+    position:relative;
+    min-height:42px;
+    padding:8px 14px;
+    font-size:14px;
+    line-height:1.3;
+    border-radius:8px;
+}
+.homya-storefront .purchase-help .purchase-help-actions {
+    display:flex;
+    justify-content:flex-start;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    width:auto;
+}
+.homya-storefront .purchase-help-actions :is(.button-primary,.button-secondary) {
+    flex:0 0 auto;
+    width:auto;
+    min-height:40px;
+    padding:7px 12px;
+    font-size:13px;
+    white-space:nowrap;
+}
+.homya-storefront .purchase-help-actions .whatsapp-chat-inline svg { width:17px; height:17px; flex-basis:17px; }
+@media(max-width:599px) {
+    .homya-storefront :is(.button-primary,.button-secondary,.home-button) { min-height:40px; padding:7px 11px; font-size:13px; }
+    .homya-storefront :is(.button-primary,.button-secondary,.home-button)::after { content:""; position:absolute; inset:-2px 0; }
+    .homya-storefront .checkout-submit { min-height:40px; padding:7px 10px; gap:8px; font-size:13px; }
+    .homya-storefront .checkout-submit strong { font-size:14px; }
+    .homya-storefront .purchase-help .purchase-help-actions { gap:8px; }
+    .homya-storefront .purchase-help-actions :is(.button-primary,.button-secondary) { min-height:40px; padding:7px 11px; font-size:12px; }
+    .homya-storefront .product-buy-row > .button-add-cart { min-height:40px; padding:7px 10px; font-size:13px; }
+}
+@media(max-width:359px) {
+    .homya-storefront .checkout-submit { font-size:12px; padding-inline:8px; gap:6px; }
+    .homya-storefront .checkout-submit strong { font-size:13px; }
+    .homya-storefront .product-buy-row > .button-add-cart { padding-inline:8px; font-size:12px; }
+}
+
+/* Cart actions stay compact in cards and beside the quantity control. */
+.homya-storefront .button-add-cart {
+    min-height:40px;
+    padding:7px 12px;
+    gap:7px;
+    font-size:13px;
+    line-height:1.3;
+}
+.homya-storefront .button-add-cart svg { width:18px; height:18px; flex:0 0 18px; }
+.homya-storefront .product-card-purchase .button-add-cart { width:auto; max-width:100%; }
+.homya-storefront .product-card-purchase form { display:flex; justify-content:center; }
+.homya-storefront .product-buy-row > .button-add-cart { flex:0 1 auto; }
+@media(max-width:599px) {
+    .homya-storefront .button-add-cart,
+    .homya-storefront .product-buy-row > .button-add-cart {
+        min-height:38px;
+        padding:6px 10px;
+        gap:6px;
+        font-size:12px;
+    }
+    .homya-storefront .button-add-cart svg { width:17px; height:17px; flex-basis:17px; }
+    .homya-storefront .button-add-cart::after { inset:-3px 0; }
+}

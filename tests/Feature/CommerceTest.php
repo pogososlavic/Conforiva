@@ -175,7 +175,7 @@ class CommerceTest extends TestCase
             ->assertSee(__('commerce.unit_price'))->assertSee('data-cart-quantity', false)
             ->assertSee('cart-checkout', false)->assertDontSee('TVA 20')->assertDontSee('Code promo')
             ->assertSee(__('commerce.bank_cart_unavailable'))->assertSee('72 heures')
-            ->assertDontSee('7 jours ouvrés')->assertDontSee('uniquement le virement')
+            ->assertSee('3 à 7 jours ouvrés')->assertDontSee('uniquement le virement')
             ->assertHeader('Cache-Control', 'no-store, private');
         $this->patch('/fr/panier/test-unit', ['quantity' => 3])->assertRedirect();
         $this->get('/fr/panier')->assertSee('370,35 €');
@@ -271,6 +271,8 @@ class CommerceTest extends TestCase
             $xpath = new \DOMXPath($document);
             $this->assertSame(1, $xpath->query('//form[@id="checkout-form" and @method="post"]')->length);
             $this->assertSame(1, $xpath->query('//aside//button[@type="submit" and @form="checkout-form"]')->length);
+            $expected = ['fr' => 'Commander avec obligation de paiement', 'en' => 'Place order with obligation to pay', 'de' => 'Zahlungspflichtig bestellen'][$locale];
+            $this->assertStringContainsString($expected, $xpath->query('//aside//button[@type="submit"]')->item(0)->textContent);
             foreach (['name', 'email', 'address', 'postal_code', 'city', 'country', 'terms', 'privacy_acknowledged', 'shipping_acknowledged'] as $field) {
                 $this->assertSame(1, $xpath->query('//form[@id="checkout-form"]//*[@name="'.$field.'" and @required]')->length);
             }

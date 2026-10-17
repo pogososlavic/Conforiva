@@ -60,14 +60,14 @@
                 <div class="checkout-summary-heading"><h2 id="checkout-summary-heading">{{ __('commerce.summary') }}</h2><a href="{{ route('cart.show', ['locale' => $locale]) }}">{{ __('commerce.edit_cart') }}</a></div>
                 <ul class="checkout-items">@foreach($quote['lines'] as $line)<li>
                     <x-product-image :src="$line['product']['image']['local_url'] ?? null" alt="" sizes="64px" />
-                    <div><strong>{{ $line['product']['name'] }}</strong>@if($line['variant_name'])<span>{{ $line['variant_name'] }}</span>@endif<span>{{ __('commerce.quantity') }} : {{ $line['quantity'] }}</span><b>{{ \App\Services\Catalogue::money($line['line_cents'], $locale) }}</b></div>
+                    <div><strong>{{ $line['product']['name'] }}</strong>@if($line['variant_name'])<span>{{ $line['variant_name'] }}</span>@endif<span>{{ __('commerce.quantity') }} : {{ $line['quantity'] }}</span><b>{{ \App\Services\Catalogue::money($line['line_cents'], $locale) }}</b><x-product-energy :product="$line['product']" :locale="$locale" /></div>
                 </li>@endforeach</ul>
                 <dl class="checkout-totals"><div><dt>{{ __('commerce.subtotal') }}</dt><dd>{{ \App\Services\Catalogue::money($quote['total_cents'], $locale) }}</dd></div><div><dt>{{ __('commerce.delivery') }}</dt><dd>{{ __('commerce.free_delivery') }}</dd></div><div class="checkout-total"><dt>{{ __('commerce.total_tax_included') }}</dt><dd>{{ \App\Services\Catalogue::money($quote['total_cents'], $locale) }}</dd></div></dl>
                 <div class="checkout-next-step"><strong>{{ __('commerce.next_step') }}</strong>
                     @if($bankReady)<p>{{ __('commerce.bank_next_step') }}</p>@endif
                     @if(!$bankReady)<p>{{ __('commerce.deferred_notice') }}</p>@endif
                 </div>
-                <button class="button-primary checkout-submit" type="submit" form="checkout-form" data-busy-label="{{ __('commerce.validating') }}"><span data-submit-label>{{ __('commerce.confirm_order_action') }}</span><strong>{{ \App\Services\Catalogue::money($quote['total_cents'], $locale) }}</strong></button>
+                <button class="button-primary checkout-submit" type="submit" form="checkout-form" data-busy-label="{{ __('commerce.validating') }}"><span class="checkout-action-label"><span class="checkout-label-full" data-submit-label>{{ __('commerce.confirm_order_action') }}</span><span class="checkout-label-mobile" data-submit-label>{{ __('commerce.confirm_order_mobile') }}</span></span><strong>{{ \App\Services\Catalogue::money($quote['total_cents'], $locale) }}</strong></button>
                 <p class="checkout-help">{{ __('commerce.validation_help') }}</p>
                 <p class="checkout-return"><a href="{{ route('information', ['locale' => $locale, 'page' => 'retractation']) }}">{{ __('commerce.free_returns') }}</a></p>
                 <p class="checkout-help"><a href="{{ route('information', ['locale' => $locale, 'page' => 'contact']) }}">{{ __('commerce.need_help') }}</a></p>

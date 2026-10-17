@@ -36,7 +36,12 @@ Thumbs.db
 
 # Generated evidence and immutable runtime originals stay on disk, outside Git.
 /output/
-/public/media/
+/public/media/*
+# Model-specific, official energy documents are shipped with the application.
+!/public/media/energy/
+/public/media/energy/*
+!/public/media/energy/*.pdf
+!/public/media/energy/*.png
 /storage/app/catalogue/
 __pycache__/
 *.py[cod]

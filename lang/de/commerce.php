@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'payment_commitment' => 'Mit „Zahlungspflichtig bestellen“ oder „Bestellen und bezahlen“ bestätigen Sie Ihre Bestellung und Ihre Verpflichtung, den angezeigten Betrag zu bezahlen. Die Website führt keine Überweisung aus; Sie bezahlen über Ihre Bank.',
+    'order_document_notice' => 'Das PDF zu Ihrer Bestellung fasst Artikel und Beträge zusammen. Unabhängig von der Bezeichnung als Angebot oder Bestellübersicht ersetzt es die Bestellbestätigung nicht und ist weder eine Rechnung noch ein Nachweis des Zahlungseingangs. Vorbereitung und Versand erfolgen erst nach tatsächlichem Zahlungseingang.',
     'card_form' => [
         'fallback_loading' => 'Die Kartenzahlung ist für diesen Versuch nicht verfügbar. Prüfung vor der Weiterleitung zur Überweisung…',
         'fallback_title' => 'Ihre Bestellung per SEPA-Überweisung fortsetzen',
@@ -63,7 +65,7 @@ return [
     'invalid_cart' => 'Der Warenkorb ist ungültig.',
     'unavailable_product' => 'Dieser Artikel kann derzeit nicht bestellt werden.',
     'invalid_quantity' => 'Bitte geben Sie eine gültige Menge ein.',
-    'changed_offer' => 'Preis oder Verfügbarkeit haben sich geändert, seit diese Seite geöffnet wurde. Prüfen Sie die aktualisierten Beträge und Mengen und klicken Sie anschließend erneut auf „Bestellung bestätigen“.',
+    'changed_offer' => 'Preis oder Verfügbarkeit haben sich geändert, seit diese Seite geöffnet wurde. Prüfen Sie die aktualisierten Beträge und Mengen und klicken Sie anschließend erneut auf „Zahlungspflichtig bestellen“.',
     'stale_checkout' => 'Dieses Formular ist nicht mehr aktuell. Prüfen Sie die angezeigten Angaben und laden Sie die Seite neu, bevor Sie erneut bestätigen.',
     'inventory_changed' => 'Preis oder Verfügbarkeit dieses Artikels müssen vor der Reservierung geprüft werden. Aktualisieren Sie den Warenkorb und kontaktieren Sie HOMYA, falls das Problem weiterhin besteht.',
     'invalid_postal' => 'Bitte geben Sie eine gültige Postleitzahl für das gewählte Land ein.',
@@ -168,8 +170,9 @@ return [
     'next_step' => 'Nach der Bestätigung',
     'bank_next_step' => 'Überweisung: Die Bankverbindung und Ihre Bestellreferenz werden nach der Bestellbestätigung angezeigt.',
     'card_next_step' => 'Karte: Das Formular wird nach Einrichtung des Zahlungsdienstes verfügbar.',
-    'confirm_order_action' => 'Bestellung bestätigen',
-    'validate_order' => 'Bestellung bestätigen',
+    'confirm_order_action' => 'Zahlungspflichtig bestellen',
+    'confirm_order_mobile' => 'Bestellen und bezahlen',
+    'validate_order' => 'Zahlungspflichtig bestellen',
     'validating' => 'Bestätigung läuft…',
     'need_help' => 'Benötigen Sie Hilfe?',
     'bank_how_to' => 'Ihre Überweisung in 2 Schritten',

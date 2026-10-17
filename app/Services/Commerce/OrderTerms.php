@@ -17,6 +17,14 @@ final class OrderTerms
                 }
             }
         }
+        if ($page === 'cgv') {
+            foreach ($content['sections'] ?? [] as $index => $section) {
+                if ($section['id'] === 'commande') {
+                    $content['sections'][$index]['paragraphs'][1] .= ' '.__('commerce.payment_commitment');
+                    $content['sections'][$index]['paragraphs'][5] = __('commerce.order_document_notice');
+                }
+            }
+        }
         $readiness = app(CheckoutReadiness::class);
         if (! $readiness->deferredReady() || $readiness->cardReady() || $readiness->bankReady()) {
             return $content;

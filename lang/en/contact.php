@@ -13,7 +13,7 @@ return [
     'advice_pending' => 'Contact channels are being prepared. Guides and purchase information remain available.',
     'advice_contact' => 'View contact options',
     'purchase_help_heading' => 'A question before you order?',
-    'chat_action' => 'Chat on WhatsApp',
-    'chat_label' => 'Chat with HOMYA on WhatsApp — opens in a new tab',
+    'chat_action' => 'Message us',
+    'chat_label' => 'Message us on WhatsApp — opens in a new tab',
     'chat_help' => 'The conversation opens in WhatsApp. You write and send your message yourself.',
 ];

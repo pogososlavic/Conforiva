@@ -249,7 +249,9 @@ class Catalogue
 
         $product = CatalogueProductCorrections::apply($source, $product, app()->getLocale());
 
-        return app(ProductManager::class)->decorate(CatalogueContent::apply($source, $product, app()->getLocale()));
+        $product = CatalogueSafetyCorrections::apply($source, CatalogueContent::apply($source, $product, app()->getLocale()), app()->getLocale());
+
+        return app(ProductManager::class)->decorate($product);
     }
 
     public function product(string $slug): ?array

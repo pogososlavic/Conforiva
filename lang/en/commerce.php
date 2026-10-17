@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'payment_commitment' => 'By clicking “Place order with obligation to pay” or “Order and pay”, you confirm your order and your obligation to pay the displayed amount. The website does not initiate a bank transfer; you make the payment through your bank.',
+    'order_document_notice' => 'The PDF associated with your order summarises the items and amounts. Whether titled quote or order summary, it does not replace order confirmation and is neither an invoice nor proof of received payment. Preparation and dispatch remain subject to actual receipt of payment.',
     'card_form' => [
         'fallback_loading' => 'Card payment is unavailable for this attempt. Checking before redirecting you to bank transfer…',
         'fallback_title' => 'Continue your order with a SEPA bank transfer',
@@ -63,7 +65,7 @@ return [
     'invalid_cart' => 'The basket is invalid.',
     'unavailable_product' => 'This product cannot currently be ordered.',
     'invalid_quantity' => 'Please enter a valid quantity.',
-    'changed_offer' => 'The price or availability changed after this page was opened. Review the updated amounts and quantities, then click “Confirm my order” again.',
+    'changed_offer' => 'The price or availability changed after this page was opened. Review the updated amounts and quantities, then click “Place order with obligation to pay” again.',
     'stale_checkout' => 'This form is out of date. Review the displayed information, then reload the page before confirming again.',
     'inventory_changed' => 'The price or availability of this item must be checked before it can be reserved. Refresh your basket and contact HOMYA if the issue persists.',
     'invalid_postal' => 'Please enter a valid postcode for the selected country.',
@@ -168,8 +170,9 @@ return [
     'next_step' => 'After confirmation',
     'bank_next_step' => 'Bank transfer: the bank details and your reference will be displayed after you confirm the order.',
     'card_next_step' => 'Card: the form will become available once the payment service is configured.',
-    'confirm_order_action' => 'Confirm my order',
-    'validate_order' => 'Confirm my order',
+    'confirm_order_action' => 'Place order with obligation to pay',
+    'confirm_order_mobile' => 'Order and pay',
+    'validate_order' => 'Place order with obligation to pay',
     'validating' => 'Confirming…',
     'need_help' => 'Need help?',
     'bank_how_to' => 'Make your bank transfer in 2 steps',

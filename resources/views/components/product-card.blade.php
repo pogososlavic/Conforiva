@@ -9,11 +9,12 @@
             <p class="product-brand">{{ $product['brand'] ?: __('catalogue.brand_missing') }}</p>
             <{{ $headingLevel === 'h3' ? 'h3' : 'h2' }}>{{ $product['name'] }}</{{ $headingLevel === 'h3' ? 'h3' : 'h2' }}>
             @if($product['reference'])<p class="product-reference">{{ __('catalogue.reference') }} {{ $product['reference'] }}</p>@endif
-            <x-product-price :product="$product" :locale="$locale" />
+            <x-product-price :product="$product" :locale="$locale" :energy="false" />
             @if($product['price_cents'] !== null)<p class="product-tax-label">{{ __('commerce.tax_included') }}</p>@endif
             <span class="product-card-action">{{ __('catalogue.view_product') }} <span aria-hidden="true">↗</span></span>
         </div>
     </a>
+    <x-product-energy :product="$product" :locale="$locale" />
     <div class="product-card-purchase">
         <p>{{ __('commerce.shipping_free') }}</p>
         <p><a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']] + $filters) }}#product-purchase-information">{{ __('commerce.free_returns') }}<span class="sr-only"> — {{ $product['name'] }}</span></a></p>

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'payment_commitment' => 'En cliquant sur « Commander avec obligation de paiement » ou « Commander et payer », vous confirmez votre commande et votre obligation de payer le montant affiché. Aucun virement n’est exécuté par le site ; vous effectuez le règlement depuis votre banque.',
+    'order_document_notice' => 'Le document PDF associé à votre commande récapitule les articles et les montants. Qu’il soit intitulé devis ou récapitulatif, il ne remplace pas la validation de commande et ne constitue ni une facture ni une preuve d’encaissement. La préparation et l’expédition restent conditionnées à la réception effective du paiement.',
     'card_form' => [
         'fallback_loading' => 'Le paiement par carte est indisponible pour cette tentative. Vérification avant de vous orienter vers le virement…',
         'fallback_title' => 'Poursuivre votre commande par virement SEPA',
@@ -63,7 +65,7 @@ return [
     'invalid_cart' => 'Le panier est invalide.',
     'unavailable_product' => 'Ce produit ne peut pas être commandé actuellement.',
     'invalid_quantity' => 'Veuillez saisir une quantité valide.',
-    'changed_offer' => 'Le prix ou la disponibilité a changé depuis l’ouverture de la page. Vérifiez les montants et les quantités actualisés, puis cliquez à nouveau sur « Valider ma commande ».',
+    'changed_offer' => 'Le prix ou la disponibilité a changé depuis l’ouverture de la page. Vérifiez les montants et les quantités actualisés, puis cliquez à nouveau sur « Commander avec obligation de paiement ».',
     'stale_checkout' => 'Ce formulaire n’est plus à jour. Vérifiez les informations affichées, puis rechargez la page avant de valider à nouveau.',
     'inventory_changed' => 'Le prix ou la disponibilité de cet article doit être vérifié avant sa réservation. Actualisez le panier et contactez HOMYA si le blocage persiste.',
     'invalid_postal' => 'Veuillez saisir un code postal valide pour le pays choisi.',
@@ -168,8 +170,9 @@ return [
     'next_step' => 'Après la validation',
     'bank_next_step' => 'Virement : les coordonnées bancaires et votre référence seront affichées après la validation de la commande.',
     'card_next_step' => 'Carte : le formulaire sera utilisable après configuration du service de paiement.',
-    'confirm_order_action' => 'Valider ma commande',
-    'validate_order' => 'Valider ma commande',
+    'confirm_order_action' => 'Commander avec obligation de paiement',
+    'confirm_order_mobile' => 'Commander et payer',
+    'validate_order' => 'Commander avec obligation de paiement',
     'validating' => 'Validation en cours…',
     'need_help' => 'Besoin d’aide ?',
     'bank_how_to' => 'Effectuer votre virement en 2 étapes',

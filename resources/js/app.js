@@ -218,11 +218,11 @@ document.querySelectorAll('.checkout-form, .product-cart-form, .product-card-pur
         // Keep the chosen button's intent in the submitted data; do not disable it before serialization.
         submitButtons(form).forEach((button) => {
             button.setAttribute('aria-disabled', 'true');
-            const label = button.querySelector('[data-submit-label]');
-            if (label && button.dataset.busyLabel) {
+            button.querySelectorAll('[data-submit-label]').forEach((label) => {
+                if (!button.dataset.busyLabel) return;
                 label.dataset.originalLabel = label.textContent;
                 label.textContent = button.dataset.busyLabel;
-            }
+            });
         });
     });
 });
@@ -237,11 +237,11 @@ window.addEventListener('pageshow', () => {
         }
         submitButtons(form).forEach((button) => {
             button.removeAttribute('aria-disabled');
-            const label = button.querySelector('[data-submit-label]');
-            if (label?.dataset.originalLabel) {
+            button.querySelectorAll('[data-submit-label]').forEach((label) => {
+                if (!label.dataset.originalLabel) return;
                 label.textContent = label.dataset.originalLabel;
                 delete label.dataset.originalLabel;
-            }
+            });
         });
     });
 });

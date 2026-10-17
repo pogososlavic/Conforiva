@@ -13,7 +13,7 @@ return [
     'advice_pending' => 'Les moyens de contact sont en cours de préparation. Les guides et les informations d’achat restent accessibles.',
     'advice_contact' => 'Voir les moyens de contact',
     'purchase_help_heading' => 'Une question avant de commander ?',
-    'chat_action' => 'Discuter sur WhatsApp',
-    'chat_label' => 'Discuter avec HOMYA sur WhatsApp — s’ouvre dans un nouvel onglet',
+    'chat_action' => 'Nous écrire',
+    'chat_label' => 'Nous écrire sur WhatsApp — s’ouvre dans un nouvel onglet',
     'chat_help' => 'La conversation s’ouvre dans WhatsApp. Vous rédigez et envoyez votre message vous-même.',
 ];
