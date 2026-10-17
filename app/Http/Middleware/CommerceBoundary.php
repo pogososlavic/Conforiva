@@ -24,6 +24,8 @@ final class CommerceBoundary
                 : redirect()->back()->withErrors($error->errors())->withInput($request->only(['email', 'name', 'address', 'postal_code', 'city', 'country', 'quantity', 'variant', 'payment_method', 'contract', 'method', 'logistics', 'notes']));
         } catch (HttpExceptionInterface $error) {
             $response = response()->view('commerce.unavailable', [], $error->getStatusCode());
+            // Keep framework rate-limit metadata while replacing the error body safely.
+            $response->headers->add($error->getHeaders());
         } catch (Throwable) {
             // Never debug-render SQL/payment exceptions, credentials or customer details.
             $response = response()->view('commerce.unavailable', [], 503);

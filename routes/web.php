@@ -95,9 +95,9 @@ Route::middleware(CommerceBoundary::class)->group(function () {
     Route::get('/{locale}/retours/{id}/document', [ReturnController::class, 'download'])->whereIn('locale', config('homya.locales'))->whereUuid('id')->block()->name('returns.download');
     Route::post('/{locale}/commande/adresses', AddressLookupController::class)->whereIn('locale', config('homya.locales'))->middleware('throttle:address-lookup')->name('checkout.addresses');
     Route::get('/{locale}/panier', [CartController::class, 'show'])->whereIn('locale', config('homya.locales'))->name('cart.show');
-    Route::post('/{locale}/panier', [CartController::class, 'add'])->whereIn('locale', config('homya.locales'))->block()->name('cart.add');
-    Route::patch('/{locale}/panier/{slug}', [CartController::class, 'update'])->whereIn('locale', config('homya.locales'))->where('slug', '[a-z0-9][a-z0-9-]{0,220}(?:~v[1-9][0-9]{0,2})?')->block()->name('cart.update');
-    Route::delete('/{locale}/panier/{slug}', [CartController::class, 'remove'])->whereIn('locale', config('homya.locales'))->where('slug', '[a-z0-9][a-z0-9-]{0,220}(?:~v[1-9][0-9]{0,2})?')->block()->name('cart.remove');
+    Route::post('/{locale}/panier', [CartController::class, 'add'])->whereIn('locale', config('homya.locales'))->middleware('throttle:cart-write')->block()->name('cart.add');
+    Route::patch('/{locale}/panier/{slug}', [CartController::class, 'update'])->whereIn('locale', config('homya.locales'))->where('slug', '[a-z0-9][a-z0-9-]{0,220}(?:~v[1-9][0-9]{0,2})?')->middleware('throttle:cart-write')->block()->name('cart.update');
+    Route::delete('/{locale}/panier/{slug}', [CartController::class, 'remove'])->whereIn('locale', config('homya.locales'))->where('slug', '[a-z0-9][a-z0-9-]{0,220}(?:~v[1-9][0-9]{0,2})?')->middleware('throttle:cart-write')->block()->name('cart.remove');
     Route::get('/{locale}/commande', [CheckoutController::class, 'show'])->whereIn('locale', config('homya.locales'))->block()->name('checkout.show');
     Route::post('/{locale}/commande', [CheckoutController::class, 'store'])->whereIn('locale', config('homya.locales'))->middleware('throttle:10,1')->block()->name('checkout.store');
     Route::get('/{locale}/commande/{id}/virement', [CheckoutController::class, 'bank'])->whereIn('locale', config('homya.locales'))->whereUuid('id')->block()->name('order.bank');

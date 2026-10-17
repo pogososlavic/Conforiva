@@ -32,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // One budget across cart actions, locales and regenerated visitor sessions.
+        RateLimiter::for('cart-write', fn (Request $request) => [
+            Limit::perMinute(60)->by('cart-minute|'.$request->ip()),
+            Limit::perHour(600)->by('cart-hour|'.$request->ip()),
+        ]);
         RateLimiter::for('admin-document-download', fn (Request $request) => Limit::perMinute(20)->by('admin-document-download|'.$request->ip()));
         RateLimiter::for('commercial-document-download', fn (Request $request) => Limit::perMinute(20)->by('commercial-document-download|'.$request->ip()));
         RateLimiter::for('admin-document-issue', fn (Request $request) => Limit::perMinute(5)->by('admin-document-issue|'.$request->ip()));

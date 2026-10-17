@@ -112,7 +112,8 @@ class StorefrontChromeTest extends TestCase
                     $this->get($path)->assertOk();
                 }
             }
-            $this->assertSame(1, $xpath->query('//footer//a[contains(@href,"/'.$locale.'/cookies")]')->length);
+            $this->assertSame(2, $xpath->query('//footer//a[contains(@href,"/'.$locale.'/cookies")]')->length);
+            $this->assertSame(1, $xpath->query('//footer//nav[contains(@class,"home-footer-bottom")]//a[contains(@href,"/'.$locale.'/cookies")]')->length);
             $commerce = $xpath->query('.//section[@class="footer-commerce"]', $footer)->item(0);
             $this->assertNotNull($commerce);
             $label = $xpath->query('.//span[@class="footer-transfer-logo"]/span', $commerce);
@@ -265,7 +266,8 @@ class StorefrontChromeTest extends TestCase
                 $this->assertSame(3, $xpath->query('//nav[@class="storefront-actions"]//a')->length);
                 $this->assertSame(1, $xpath->query('//footer[@class="home-footer"]')->length);
                 $this->assertSame(count(config('storefront.discoveries')), $xpath->query('//nav[@aria-labelledby="footer-discoveries-heading"]//a')->length);
-                $this->assertSame(1, $xpath->query('//footer//a[contains(@href,"/'.$locale.'/cookies")]')->length);
+                $this->assertSame(2, $xpath->query('//footer//a[contains(@href,"/'.$locale.'/cookies")]')->length);
+                $this->assertSame(1, $xpath->query('//footer//nav[contains(@class,"home-footer-bottom")]//a[contains(@href,"/'.$locale.'/cookies")]')->length);
             }
         }
     }

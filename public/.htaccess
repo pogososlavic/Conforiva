@@ -7,6 +7,12 @@ Options -Indexes
     Require all denied
 </FilesMatch>
 
+# Deny executable PHP files even if mod_rewrite is unavailable. Only Laravel's
+# front controller is public; uploads never need their own executable endpoint.
+<FilesMatch "(?i)^(?!index\.php$).*\.(?:php[0-9]*|phps|pht|phtml|phar)(?:\..*)?$">
+    Require all denied
+</FilesMatch>
+
 # Compress text assets when the selected hosting environment provides these modules.
 <IfModule mod_filter.c>
     <IfModule mod_deflate.c>
