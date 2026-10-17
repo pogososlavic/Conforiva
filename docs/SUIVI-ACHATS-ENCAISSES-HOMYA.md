@@ -88,3 +88,47 @@ Contrôles du lot : 10 tests du suivi (66 assertions), 38 tests commerce, 39 tes
 Autorisation explicite de création du secret Measurement Protocol reçue le 17 octobre 2026. Sa création et la validation Google restent à faire : la console affiche à nouveau `ERR_NAME_NOT_RESOLVED`, après des échecs d'enregistrement des préférences email. La session Hostinger est authentifiée sur homya.eu, déploiement Git `main` au commit `c290f701`. L'accès SSH est actif, mais aucune identité SSH correspondante n'est disponible localement ; aucun nouvel accès SSH n'a été créé sans confirmation.
 
 Tests dédiés SQLite en mémoire, HTTP externe interdit : réceptions exactes, statuts falsifiés, empreinte incorrecte, montants incorrects, expiration, absence de TVA, cohérence HT/TVA/TTC, identifiants Merchant, absence de données personnelles, reprises, périodes UTC et activation planifiée. Ces tests ne valent pas validation MariaDB ou GA4.
+
+### Contrôle du serveur — 17 octobre 2026
+
+- Déploiement Hostinger vérifié au commit `9ebe040`, PHP CLI 8.5.11.
+- Sauvegarde privée pré-migration de la base commerce et de la configuration dans `/home/u429557141/homya-private-backups/ga4-20261017` (répertoire 0700, fichiers 0600) : 3 944 lignes, 1 233 927 octets JSONL. Sauvegarde créée ; restauration non testée.
+- Migrations ciblées `000005` et `000006` appliquées avec succès ; trois tables de mesure présentes. Cache de configuration et cache des routes actualisés.
+- Registre des encaissements activé, date de début UTC `2026-10-17`. Première réconciliation : zéro achat vérifié et zéro transmission externe.
+- Consentement GA4 activé sur le site. Acceptation et retrait testés : choix persistés, balise ajoutée après acceptation et absente après retrait ; aucun consentement encore accordé après le test. Aucun identifiant Google n'a été reçu lors du test.
+- Cron Hostinger existant vérifié dans hPanel : `* * * * * /usr/bin/php /home/u429557141/domains/homya.eu/public_html/artisan schedule:run`. Aucun doublon ajouté. L'outil `crontab` est absent en SSH : son absence ne signifie pas absence de tâche hPanel.
+- Console Analytics toujours bloquée par `ERR_NAME_NOT_RESOLVED`. Secret Measurement Protocol non créé ; aucune réception GA4 ou conversion réelle confirmée. Les tests de virements sont ceux des fixtures locales, pas un encaissement réel de production.
+- Clé SSH temporaire utilisée uniquement pour ces opérations puis révoquée ; clé privée locale supprimée. L'accès préexistant est conservé.
+
+### Reprise du raccordement Google — 17 octobre 2026
+
+La confirmation de collecte a été acceptée après accord explicite. Une ligne de secret « HOMYA — achats encaissés serveur » a été observée après création, sans divulguer sa valeur. Lors de la reprise pour installation, le panneau Google est resté en chargement puis le rechargement a échoué avec `ERR_NAME_NOT_RESOLVED`. La valeur n'a pas été récupérée ni installée. Le contrôle SSH confirme que le secret n'est toujours pas configuré en production. Le nouvel accès SSH temporaire autorisé a été retiré ; sa clé privée locale est supprimée. Aucune conversion Google envoyée dans cette reprise.
+
+### Secret installé — 17 octobre 2026
+
+Secret existant du flux récupéré sans divulgation, installé dans `.env` de production puis cache de configuration actualisé. Contrôle des indicateurs : GA4 et registre activés, secret présent, trois tables présentes. Validation serveur sur `/debug/mp/collect` avec fixture explicitement technique, sans collecte : HTTP 200 et zéro message de validation stricte. Cet endpoint ne vérifie pas l'authentification du secret ; ce résultat ne prouve donc pas l'ingestion dans les rapports GA4. Aucun achat réel éligible : commande `--validate` retourne zéro événement. Vérification de réception réelle et attribution restent à effectuer après visite consentie et prochain encaissement éligible. Clé SSH temporaire retirée et fichiers locaux de transport du secret supprimés. Aucun secret dans Git.
+
+### Réception des visites confirmée — 17 octobre 2026
+
+Visite consentie sur `/fr/a-propos`, puis observation du rapport en temps réel de la propriété HOMYA `559384141` : un utilisateur actif dans les fenêtres de cinq et trente minutes, une vue HOMYA, `page_view` = 1 et `first_visit` = 1. Réception navigateur GA4 confirmée. Consentement du navigateur de test retiré ensuite. Aucun achat ou encaissement fictif effectué. Installation terminée pour les visites ; réception d'un achat serveur et attribution à vérifier au prochain encaissement réellement éligible et consenti. Preuve locale : `/private/tmp/homya-ga4-visits-confirmed.jpg`.
+
+### Association Google Ads et préparation au lancement — 17 octobre 2026
+
+Compte Google Ads confirmé : `524-611-8848`, « Compte Google Ads HOMYA ». Association à la propriété GA4 `559384141` créée après confirmation explicite, état « Association créée », puis tableau « Associations terminées (1) ». Publicité personnalisée désactivée, accès aux fonctionnalités Analytics depuis Ads désactivé ; activation du taggage automatique sélectionnée lors de l'association. Google annonce un délai maximal de 24 heures pour la circulation des données. Preuve : `/private/tmp/homya-ga4-ads-linked.jpg`.
+
+Contrôle de préparation, sans lancement ni budget modifié :
+- Facturation : navigation renvoie à « Nouvelle configuration de facturation », profil de paiement à créer. Aucune information de paiement saisie.
+- Campagnes : vue toutes les campagnes, toute la période, affiche aucune campagne activée, zéro brouillon, budget total 0 EUR/jour. Les paramètres de budget, annonces, ciblage et stratégie ne sont donc pas validés pour un lancement.
+- Conversions : écran « Configurer le suivi des conversions », aucune action d'achat visible ; Google Ads affiche aussi un avertissement sur un bloqueur de publicité, ce qui limite la fiabilité du chargement. Aucun import/modification de conversion exécuté.
+- Merchant Center HOMYA `5874312343` : compte Ads ci-dessus connecté avec état Actifs. Vue toutes méthodes : 151 produits, 119 approuvés, 14 limités, 2 refusés, 16 en examen. Diagnostic des deux refus : « Image non traitée », retraitement automatique annoncé sous trois jours, aucune action requise selon Google. L'éligibilité Shopping de la sélection de campagne reste à vérifier par destination.
+- Attribution : la balise actuelle remplace `page_location` par origine/chemin sans query et le serveur n'envoie pas de `session_id`. Réception de visites confirmée, mais attribution des clics publicitaires et des achats différés NON validée. Ne pas assimiler l'association ou la validation du payload à une preuve d'attribution Ads. Référence officielle Google : https://developers.google.com/analytics/devguides/collection/protocol/ga4/use-cases ; les règles d'export Ads et celles d'attribution de session sont distinctes.
+
+Conclusion : association réalisée ; lancement non prêt. Restent facturation, conversion unique d'achat encaissé/import et validation réelle de l'attribution, campagne et budget à faire approuver. Aucun lancement, aucune dépense, aucun ajout de droit d'édition Analytics via Ads.
+
+### Import de la conversion Google Ads — 17 octobre 2026
+
+Import de `purchase` de GA4 559384141 autorisé puis réalisé. Une seule action active observée : « HOMYA — achat réellement encaissé (GA4) », source GA4 Web, principale, toutes les conversions, fenêtre après clic 90 jours, état en attente de conversions. Valeur GA4 avec repli zéro et modèle basé sur les données choisis. Aucun faux achat envoyé. Préparation Shopping à 16 EUR/jour et FR/BE/DE conservée dans `CAMPAGNE-HOMYA-BROUILLON.md` ; formulaire non publié, non enregistré en campagne persistante car Google exige la finalisation pour sauvegarder. Attribution réelle non vérifiable sans achat lié à un clic ; collecte des paramètres publicitaires non validée, synthèse géographique incohérente et facturation non finalisée. Aucun lancement.
+
+### Correction des identifiants de clic — 17 octobre 2026
+
+Commit `2ca51ed` déployé : conservation ciblée de gclid/gbraid/wbraid dans page_location après consentement, exclusion des autres paramètres et chemins privés. Cinq tests JS et build réussis ; nouveau bundle observé en production. Attribution commerciale toujours non vérifiée faute d'encaissement relié à un clic réel. L'absence de session_id ne bloque pas en elle-même l'export publicitaire Google ; ne pas confondre ce point avec l'attribution à une session. Le blocage restant du formulaire de campagne est décrit dans `CAMPAGNE-HOMYA-BROUILLON.md`.

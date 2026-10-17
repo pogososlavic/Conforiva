@@ -1323,3 +1323,25 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
 .analytics-preferences { padding-block: 20px; }
 .analytics-preferences [data-analytics-panel] { padding: 20px; margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: white; }
 .analytics-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Compact legal strip inspired by the supplied reference, with room for WhatsApp. */
+.footer-legal-strip { margin-top: 30px; border-top: 1px solid #e0e2e6; }
+.home-footer .home-footer-bottom { margin-top: 0; border-top: 0; justify-content: center; align-items: center; gap: 4px 24px; min-height: 96px; padding-block: 20px; padding-right: 220px; font-size: 14px; color: #667080; }
+.home-footer-bottom > a, .home-footer-bottom .footer-legal-button { color: #667080; min-height: 44px; font: inherit; }
+.footer-legal-button { border: 0; background: transparent; padding: 0; cursor: pointer; text-underline-offset: 4px; }
+.footer-legal-button:hover { color: var(--ink); text-decoration: underline; }
+.footer-copyright { white-space: nowrap; }
+.footer-consent { display: contents; }
+.footer-consent [data-analytics-panel] { flex-basis: 100%; order: 1; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--ink); }
+.footer-consent h2 { margin-top: 0; }
+.homya-storefront:has(.whatsapp-chat) { padding-bottom: 0; }
+.whatsapp-chat { background: #128c45; border-color: #128c45; font-size: 18px; padding: 14px 22px; min-height: 58px; }
+.whatsapp-chat:hover { background: #0e7137; }
+@media(max-width:899px) {
+    .home-footer .home-footer-bottom { padding-right: 24px; padding-bottom: 84px; gap: 0 20px; }
+}
+@media(max-width:599px) {
+    .home-footer .home-footer-bottom { padding-inline: 20px; gap: 0 16px; }
+    .footer-copyright { flex-basis: 100%; text-align: center; }
+    .whatsapp-chat { padding: 10px; min-height: 44px; }
+}

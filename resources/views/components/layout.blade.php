@@ -82,7 +82,6 @@
     @if($errors->any() && request()->routeIs('home', 'catalogue', 'promotions'))<div class="shell"><x-commerce-errors /></div>@endif
     {{ $slot }}
     <x-storefront-footer />
-    <x-analytics-consent />
     <x-whatsapp-chat />
 </body>
 </html>

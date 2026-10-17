@@ -25,5 +25,14 @@
             <ul class="footer-commerce-links">@foreach(['paiement', 'livraison'] as $page)<li><a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => $page]) }}">{{ __('pages.entries.'.$page.'.title') }} <span aria-hidden="true">→</span></a></li>@endforeach</ul>
         </section>
     </div>
-    <div class="shell home-footer-bottom"><span>© {{ date('Y') }} HOMYA</span><span>{{ __('home.footer_intro') }}</span></div>
+    <div class="footer-legal-strip">
+        <nav class="shell home-footer-bottom" aria-label="{{ __('chrome.legal_title') }}">
+            <a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'mentions-legales']) }}">{{ __('pages.entries.mentions-legales.title') }}</a>
+            <a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'cgv']) }}">{{ __('footer.terms') }}</a>
+            <a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'confidentialite']) }}">{{ __('pages.entries.confidentialite.title') }}</a>
+            <x-analytics-consent compact />
+            <a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'retractation']) }}">{{ __('footer.withdrawal') }}</a>
+            <span class="footer-copyright">© {{ date('Y') }} HOMYA</span>
+        </nav>
+    </div>
 </footer>
