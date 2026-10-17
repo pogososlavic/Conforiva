@@ -1,6 +1,6 @@
 @props(['compact' => false])
 @if(app(\App\Services\AnalyticsConsent::class)->enabled() && (app()->environment('testing') || app(\App\Services\Seo::class)->onConfiguredPublicOrigin(request())))
-<section class="{{ $compact ? 'footer-consent' : 'shell analytics-preferences' }}" data-analytics-preferences data-measurement-id="{{ config('analytics.measurement_id') }}" aria-label="{{ __('analytics.title') }}">
+<section class="{{ $compact ? 'footer-consent' : 'shell analytics-preferences' }}" data-analytics-preferences data-measurement-id="{{ config('analytics.measurement_id') }}" data-gtm-container-id="{{ preg_match('/\AGTM-[A-Z0-9]+\z/', (string) config('analytics.gtm_container_id')) ? config('analytics.gtm_container_id') : '' }}" data-gtm-manages-ga4="{{ config('analytics.gtm_manages_ga4') ? 'true' : 'false' }}" aria-label="{{ __('analytics.title') }}">
     <button type="button" class="{{ $compact ? 'footer-legal-button' : 'button-secondary' }}" data-analytics-open>{{ $compact ? __('footer.cookies') : __('analytics.preferences') }}</button>
     <div data-analytics-panel hidden>
         <h2>{{ __('analytics.title') }}</h2>

@@ -66,3 +66,13 @@ Tests ciblés de durcissement : **3 tests / 87 assertions**, incluant les permis
 4. **P2 — maintenir et surveiller.** Réexaminer les avis de dépendances après mises à jour ; suivre 429/5xx, échecs de connexion, accès administrateur et événements de paiement sans consigner de secrets. La limitation catalogue existante reste conditionnée à la validation des IP et des plages des robots ; ne pas l'activer aveuglément. Aucun monitoring continu mis en place dans cette intervention.
 
 Les alertes masquées exigent leur export détaillé pour une clôture individuelle. Les comportements serveur effectifs, MFA et règles CDN ne sont pas certifiés par les tests locaux. Aucun site invulnérable ou absence générale de vulnérabilités revendiquée.
+
+## Vérification publique après intervention utilisateur — 17 octobre 2026
+
+L'utilisateur a transmis les résultats du terminal Hostinger : PHP 8.5.11 ; optimize:clear, config:cache, route:cache et view:cache réussis ; homya:security-audit avec configuration_passed=true pour les 18 contrôles listés. Ce sont des preuves fournies par l'utilisateur, distinctes de l'inspection distante directe. hosting_tls_permissions_backups_verified reste false car la commande ne réalise pas ces contrôles d'hébergement.
+
+Contrôle direct limité à 13 requêtes HEAD, sans téléchargement de fichiers privés ni écriture : accueil et catalogue 200 ; panier 200 avec no-store/private et no-referrer ; commande sans panier 302 vers le panier ; connexion admin 200 avec no-store/private, no-referrer et X-Frame-Options DENY ; HTTP et www redirigent en 301 vers https://homya.eu/fr. HTTPS validé par le client sans désactivation de vérification du certificat. HSTS, nosniff, Permissions-Policy et CSP avec nonce observés sur la réponse applicative publique.
+
+Les chemins .env, .git/config, composer.json, storage/logs/laravel.log et scripts/install_commerce_preview.py renvoient 403. Un chemin témoin PHP non créé dans media/admin-products renvoie également 403 : comportement de refus observé, aucun fichier exécutable téléversé ou lancé. Cette vérification ne prouve pas l'absence de tout autre chemin d'exposition ni le comportement lorsque mod_rewrite est absent.
+
+Le dépôt local contient désormais le commit dfc8bdf (nouvellescorrections), avec les correctifs et tests de cette revue. L'identité exacte de la version serveur et les empreintes des cinq fichiers applicatifs restent à comparer depuis le terminal Hostinger. Les réponses publiques ci-dessus ne suffisent pas à confirmer les nouvelles limites du panier ou la visibilité du disque privé. Aucun test de rafale des limites n'a été effectué en production ; les tests automatisés locaux restent la preuve de ces comportements une fois la version serveur concordante.

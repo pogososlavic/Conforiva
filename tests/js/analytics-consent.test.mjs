@@ -4,14 +4,14 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source = fs.readFileSync(new URL('../../resources/js/analytics-consent.js', import.meta.url), 'utf8');
-async function run(choice, pathname = '/fr', search = '') {
+async function run(choice, pathname = '/fr', search = '', gtm = {}) {
     const events = {};
     const buttons = ['true', 'false'].map(value => ({dataset: {analyticsChoice: value}, addEventListener: (_name, fn) => {events[value] = fn;}}));
     const status = {dataset: {success: 'saved', error: 'error'}};
     const panel = {hidden: true};
     const scripts = [];
     const calls = [];
-    const root = {dataset: {measurementId: 'G-FIXTURE123'}, querySelectorAll: () => buttons,
+    const root = {dataset: {measurementId: 'G-FIXTURE123', gtmContainerId: gtm.id || '', gtmManagesGa4: gtm.managesGa4 ? 'true' : 'false'}, querySelectorAll: () => buttons,
         querySelector: selector => selector === '[data-analytics-panel]' ? panel : selector === '[data-analytics-status]' ? status : {addEventListener() {}}};
     const window = {};
     let reloads = 0;
@@ -58,6 +58,27 @@ test('Consent loads one tag with no automatic page view or advertising consent',
     assert.equal(commands.find(c => c[0] === 'config')[2].cookie_update, false);
     assert.equal(commands.find(c => c[0] === 'consent')[2].ad_storage, 'denied');
     assert.equal(commands.filter(c => c[0] === 'event' && c[1] === 'purchase').length, 0);
+});
+test('GTM does not load before consent and keeps direct GA4 as fallback until configured', async () => {
+    for (const choice of [null, false]) {
+        const state = await run(choice, '/fr', '', {id: 'GTM-FIXTURE'});
+        assert.equal(state.scripts.length, 0);
+    }
+    const state = await run(true, '/fr/catalogue', '', {id: 'GTM-FIXTURE'});
+    assert.deepEqual(state.scripts.map(script => script.src), [
+        'https://www.googletagmanager.com/gtm.js?id=GTM-FIXTURE',
+        'https://www.googletagmanager.com/gtag/js?id=G-FIXTURE123',
+    ]);
+    const commands = state.window.dataLayer.map(args => Array.from(args));
+    assert.equal(commands.find(c => c[0] === 'config')[2].send_page_view, false);
+    assert.equal(commands.filter(c => c[0] === 'event' && c[1] === 'page_view').length, 1);
+});
+test('GTM can manage GA4 without loading a second Google Analytics library', async () => {
+    const state = await run(true, '/fr/catalogue', '', {id: 'GTM-FIXTURE', managesGa4: true});
+    assert.deepEqual(state.scripts.map(script => script.src), ['https://www.googletagmanager.com/gtm.js?id=GTM-FIXTURE']);
+    const commands = state.window.dataLayer.map(args => Array.from(args));
+    assert.equal(commands.find(c => c[0] === 'config')[2].send_page_view, false);
+    assert.equal(commands.filter(c => c[0] === 'event' && c[1] === 'page_view').length, 1);
 });
 test('Withdrawal disables collection before saving and reloads to stop the library', async () => {
     const state = await run(true);
