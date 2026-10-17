@@ -1507,3 +1507,51 @@ button:disabled, button[aria-disabled=true] { opacity: .6; cursor: default; }
     .homya-storefront .button-add-cart svg { width:17px; height:17px; flex-basis:17px; }
     .homya-storefront .button-add-cart::after { inset:-3px 0; }
 }
+
+/* Purchase details share the compact cart-action proportions. */
+.homya-storefront .purchase-information {
+    width:fit-content;
+    max-width:100%;
+    border-radius:8px;
+    background:#fff;
+}
+.homya-storefront .purchase-information[open] { width:100%; }
+.homya-storefront .purchase-information summary {
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-height:40px;
+    padding:7px 12px;
+    font-size:13px;
+    line-height:1.3;
+    font-weight:600;
+    list-style:none;
+    border-radius:8px;
+    transition:background-color .15s ease;
+}
+.homya-storefront .purchase-information summary::-webkit-details-marker { display:none; }
+.homya-storefront .purchase-information summary::before {
+    content:"";
+    width:6px;
+    height:6px;
+    flex:0 0 6px;
+    border-right:1.5px solid currentColor;
+    border-bottom:1.5px solid currentColor;
+    transform:rotate(-45deg);
+}
+.homya-storefront .purchase-information[open] summary::before { transform:rotate(45deg); }
+.homya-storefront .purchase-information summary:hover { background:#f7f8f6; }
+.homya-storefront .purchase-information summary:focus-visible { outline:2px solid #28241b; outline-offset:3px; }
+@media(max-width:599px) {
+    .homya-storefront .purchase-information summary {
+        min-height:38px;
+        padding:6px 10px;
+        gap:6px;
+        font-size:12px;
+    }
+    .homya-storefront .purchase-information summary::after { content:""; position:absolute; inset:-3px 0; }
+}
+@media(prefers-reduced-motion:reduce) {
+    .homya-storefront .purchase-information summary { transition:none; }
+}
