@@ -20,3 +20,8 @@ Schedule::command('security:refresh-google-crawlers')
 // Remove only inactive files in the protection's isolated cache, including after it is disabled.
 Schedule::command('security:prune-storefront-cache')
     ->hourly()->withoutOverlapping(10);
+
+// Reconciliation cannot interrupt receipt confirmation; unique order IDs prevent recounting.
+Schedule::command('homya:measure-paid-purchases --scheduled --apply')
+    ->everyMinute()->withoutOverlapping(5)
+    ->when(fn () => config('purchase_measurement.enabled') === true);

@@ -27,6 +27,8 @@
         <env name="HOMYA_CATALOGUE_SOURCE" value="files" force="true"/>
         <!-- Tests isolés : aucune lecture de stock réel, ni clé Stripe du poste. -->
         <env name="HOMYA_ADMIN_MANAGEMENT_ENABLED" value="false" force="true"/>
+        <env name="HOMYA_PAID_PURCHASE_MEASUREMENT_ENABLED" value="false" force="true"/>
+        <env name="HOMYA_PAID_PURCHASE_MEASUREMENT_START_DATE" value="" force="true"/>
         <env name="HOMYA_INVENTORY_ENABLED" value="false" force="true"/>
         <env name="HOMYA_CHECKOUT_ENABLED" value="false" force="true"/>
         <env name="HOMYA_DEFERRED_ORDERS_ENABLED" value="false" force="true"/>
