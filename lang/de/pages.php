@@ -3,6 +3,7 @@
 $legalPages = require __DIR__.'/legal.php';
 
 return [
+    'about_navigation' => 'Über uns',
     'help' => 'Hilfe & Beratung',
     'information' => 'Informationen',
     'pending' => 'Service in Vorbereitung',
@@ -12,8 +13,44 @@ return [
         'cookies' => $legalPages['entries']['cookies'],
         'a-propos' => [
             'title' => 'Über HOMYA',
-            'intro' => 'Alles für Ihr Zuhause.',
-            'paragraphs' => ['HOMYA ist ein unabhängiger Händler für Öfen und Holzheizungen, Kühlschränke, Waschmaschinen, Küchenmaschinen und Möbel.', 'Neue Geräte in versiegelter Verpackung, Lieferung durch unseren eigenen Transportdienst in 3 bis 7 Arbeitstagen nach bestätigtem Zahlungseingang, mit 2 Jahren gesetzlicher Gewährleistung und einer Rechnung auf Ihren Namen.'],
+            'intro' => 'Eine Familiengeschichte seit 2012 – für Wärme und Komfort zu Hause.',
+            'paragraphs' => [],
+            'sections' => [
+                [
+                    'title' => 'Unsere Geschichte',
+                    'paragraph' => 'HOMYA ist vor allem eine Familiengeschichte. Unser 2012 gegründetes Familienunternehmen baut auf einfachen Werten auf: Vertrauen, Qualität und Service. Heute erfüllt unser Onlineshop zwei wesentliche Bedürfnisse im Zuhause: Wärme und Komfort.',
+                ],
+                [
+                    'title' => 'Holzbrennstoffe für Ihre Heizung',
+                    'paragraph' => 'Scheitholz, Pellets und Briketts: Entdecken Sie die in unserem Katalog verfügbaren Brennstoffe. Prüfen Sie Holzarten, Verpackungen und Eigenschaften auf der jeweiligen Produktseite, um einen geeigneten Brennstoff für Kamin, Ofen, Kamineinsatz oder Heizkessel nach den Herstellerangaben auszuwählen.',
+                ],
+                [
+                    'title' => 'Haushaltsgeräte für den Alltag',
+                    'paragraph' => 'Kühlschränke, Waschmaschinen, Geschirrspüler, Backöfen, Staubsauger und Kleingeräte: Entdecken Sie die verfügbaren Geräte und Marken in unserem Katalog. Vergleichen Sie die Eigenschaften, um passende Geräte auszuwählen. Unser Angebot umfasst auch Heizgeräte, Möbel und Fernseher.',
+                ],
+                [
+                    'title' => 'Unsere Zusagen',
+                    'paragraph' => 'Klare Produktinformationen und Verkaufsbedingungen helfen Ihnen, Ihren Kauf vorzubereiten.',
+                    'items' => [
+                        'Kostenlose Lieferung nach Frankreich, Belgien und Deutschland gemäß den Bedingungen auf unserer Lieferseite.',
+                        'Für andere Länder kontaktieren Sie HOMYA vor einer Bestellung: Machbarkeit, Versandkosten und Lieferzeit müssen bestätigt werden. Diese Ziele sind im Onlinebestellprozess nicht verfügbar.',
+                        'Holz aus nachhaltig bewirtschafteten Wäldern.',
+                        'Die angegebene Lieferzeit nach Frankreich, Belgien und Deutschland beträgt 3 bis 7 Arbeitstage nach bestätigtem Zahlungseingang. Beachten Sie die Lieferbedingungen und produktspezifischen Informationen.',
+                        'Für unsere neuen Geräte gilt eine gesetzliche Gewährleistung von 2 Jahren. Eine etwaige Herstellergarantie ist davon getrennt und gilt nur nach den für das Produkt angegebenen Bedingungen.',
+                        'Unser Kundenservice ist unter den unten angegebenen Kontaktdaten für Fragen zu Produkten, Bestellungen und Sendungsverfolgung erreichbar.',
+                    ],
+                ],
+                [
+                    'title' => 'Warum HOMYA wählen?',
+                    'paragraph' => 'Mehr als zehn Jahre Familiengeschichte, eine Auswahl an Produkten für das Zuhause und Serviceorientierung prägen unsere Tätigkeit. Wir glauben, dass ein angenehmes Zuhause mit guten Produkten und einem vertrauenswürdigen Service beginnt. Vielen Dank, dass Sie Teil unserer Geschichte sind.',
+                ],
+                [
+                    'title' => 'Das HOMYA-Team und das Unternehmen',
+                    'paragraph' => 'HOMYA wird von dem unten genannten Geschäftsführer geleitet. Wir handeln als unabhängiger Händler: Marken bleiben Eigentum ihrer jeweiligen Inhaber; eine offizielle Verbindung zu Herstellern wird nicht beansprucht. Nachfolgend finden Sie unsere Unternehmensdaten, den Geschäftssitz und unsere Kontaktdaten.',
+                    'company_details' => true,
+                ],
+            ],
+            'useful_information' => 'Nützliche Informationen',
             'pending' => false,
         ],
         'provenance' => [

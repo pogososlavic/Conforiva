@@ -38,6 +38,28 @@ class InformationPagesTest extends TestCase
         }
     }
 
+    public function test_about_page_exposes_company_identity_and_primary_navigation_in_all_languages(): void
+    {
+        DB::shouldReceive('connection')->never();
+        foreach (['fr', 'en', 'de'] as $locale) {
+            $response = $this->get('/'.$locale.'/a-propos')->assertOk();
+            foreach (config('legal.company') as $value) {
+                $response->assertSee($value);
+            }
+            $document = new DOMDocument;
+            @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+            $xpath = new DOMXPath($document);
+            $links = $xpath->query('//nav[@id="primary-navigation"]//a[@aria-current="page"]');
+            $this->assertSame(1, $links->length);
+            $this->assertSame(__('pages.about_navigation', [], $locale), $links->item(0)->textContent);
+            $this->assertStringEndsWith('/'.$locale.'/a-propos', $links->item(0)->getAttribute('href'));
+            $this->assertGreaterThanOrEqual(4, $xpath->query('//main//article//h2')->length);
+            foreach (['contact', 'mentions-legales', 'livraison', 'paiement', 'retractation', 'cgv'] as $page) {
+                $this->assertGreaterThan(0, $xpath->query('//main//article//a[contains(@href,"/'.$locale.'/'.$page.'")]')->length);
+            }
+        }
+    }
+
     public function test_information_remains_available_during_catalogue_outage_and_unknown_pages_are_rejected(): void
     {
         config(['catalogue.archive_path' => sys_get_temp_dir().'/homya-missing-'.uniqid().'.json']);

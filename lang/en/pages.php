@@ -3,6 +3,7 @@
 $legalPages = require __DIR__.'/legal.php';
 
 return [
+    'about_navigation' => 'About us',
     'help' => 'Help & advice',
     'information' => 'Information',
     'pending' => 'Service in preparation',
@@ -12,8 +13,44 @@ return [
         'cookies' => $legalPages['entries']['cookies'],
         'a-propos' => [
             'title' => 'About HOMYA',
-            'intro' => 'Home, made simple.',
-            'paragraphs' => ['HOMYA is an independent retailer of stoves and wood heating equipment, refrigerators, washing machines, food processors and furniture.', 'New appliances in sealed packaging, delivered by our own carrier in 3 to 7 business days after payment is confirmed, with a 2-year legal guarantee of conformity and an invoice in your name.'],
+            'intro' => 'A family story since 2012, focused on warmth and comfort at home.',
+            'paragraphs' => [],
+            'sections' => [
+                [
+                    'title' => 'Our story',
+                    'paragraph' => 'HOMYA is first and foremost a family story. Founded in 2012, our family business was built on simple values: trust, quality and service. Today, our online shop addresses two essential needs at home: warmth and comfort.',
+                ],
+                [
+                    'title' => 'Wood fuels for your heating',
+                    'paragraph' => 'Logs, pellets and briquettes: discover the fuels available in our catalogue. Check each product page for wood species, packaging and specifications to choose a fuel suited to your fireplace, stove, insert or boiler, following the manufacturer’s recommendations.',
+                ],
+                [
+                    'title' => 'Appliances for everyday life',
+                    'paragraph' => 'Refrigerators, washing machines, dishwashers, ovens, vacuum cleaners and small appliances: explore the appliances and brands available in our catalogue. Compare specifications to choose equipment that meets your needs. Our range also includes heating equipment, furniture and televisions.',
+                ],
+                [
+                    'title' => 'Our commitments',
+                    'paragraph' => 'Clear product information and terms of sale help you prepare your purchase.',
+                    'items' => [
+                        'Free delivery to France, Belgium and Germany, under the terms set out on our Delivery page.',
+                        'For another country, contact HOMYA before ordering: feasibility, shipping charges and delivery time must be confirmed. These destinations are not available in the online checkout.',
+                        'Wood sourced from sustainably managed forests.',
+                        'Delivery is stated as 3 to 7 business days after confirmed payment for France, Belgium and Germany. Please check the delivery terms and product-specific information.',
+                        'A 2-year legal guarantee of conformity for our new appliances. Any manufacturer’s commercial guarantee is separate and applies only under the conditions specified for the product.',
+                        'Customer service is available through the contact details below for questions about products, orders and tracking.',
+                    ],
+                ],
+                [
+                    'title' => 'Why choose HOMYA?',
+                    'paragraph' => 'More than ten years of family history, a selection of products for the home and a focus on service guide our business. We believe a welcoming home starts with good products and service you can trust. Thank you for being part of our story.',
+                ],
+                [
+                    'title' => 'The HOMYA team and company',
+                    'paragraph' => 'HOMYA is managed by the person identified below. We operate as an independent retailer: trademarks remain the property of their respective owners, with no official manufacturer affiliation claimed. Find our legal identity, registered office and contact details below.',
+                    'company_details' => true,
+                ],
+            ],
+            'useful_information' => 'Useful information',
             'pending' => false,
         ],
         'provenance' => [

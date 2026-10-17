@@ -74,6 +74,7 @@
                 <li><a href="{{ route('catalogue', ['locale' => app()->getLocale(), 'universe' => $slug]) }}" @if(request()->routeIs('catalogue') && request('universe') === $slug) aria-current="page" @endif>{{ $category['name'] }}</a></li>
             @endforeach
             <li><a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'provenance']) }}" @if(request()->routeIs('information') && request()->route('page') === 'provenance') aria-current="page" @endif>{{ __('pages.help') }}</a></li>
+            <li><a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'a-propos']) }}" @if(request()->routeIs('information') && request()->route('page') === 'a-propos') aria-current="page" @endif>{{ __('pages.about_navigation') }}</a></li>
             @foreach(['suivi', 'panier'] as $page)<li class="navigation-service"><a href="{{ $page === 'panier' ? route('cart.show', ['locale' => app()->getLocale()]) : route('information', ['locale' => app()->getLocale(), 'page' => $page]) }}">{{ __('pages.entries.'.$page.'.title') }}</a></li>@endforeach
         </ul>
     </nav>

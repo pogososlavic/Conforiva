@@ -3,6 +3,7 @@
 $legalPages = require __DIR__.'/legal.php';
 
 return [
+    'about_navigation' => 'À propos',
     'help' => 'Aide & conseils',
     'information' => 'Informations',
     'pending' => 'Service en préparation',
@@ -12,8 +13,44 @@ return [
         'cookies' => $legalPages['entries']['cookies'],
         'a-propos' => [
             'title' => 'À propos de HOMYA',
-            'intro' => 'La maison, tout simplement.',
-            'paragraphs' => ['HOMYA, revendeur indépendant de poêles et chauffage au bois, réfrigérateurs, lave-linge, robots de cuisine et mobilier.', 'Appareils neufs sous scellé, livrés par notre propre transporteur en 3 à 7 jours ouvrés à compter du paiement confirmé, garantie légale de conformité de 2 ans et facture à votre nom.'],
+            'intro' => 'Depuis 2012, une histoire de famille autour de la chaleur et du confort de la maison.',
+            'paragraphs' => [],
+            'sections' => [
+                [
+                    'title' => 'Notre histoire',
+                    'paragraph' => 'HOMYA, c’est avant tout une histoire de famille. Fondée en 2012, notre entreprise familiale s’est construite sur des valeurs simples : la confiance, la qualité et le sens du service. Aujourd’hui, notre boutique en ligne répond à deux besoins essentiels de la maison : la chaleur et le confort.',
+                ],
+                [
+                    'title' => 'Du bois pour votre chauffage',
+                    'paragraph' => 'Bûches, granulés, briquettes : découvrez les combustibles disponibles dans notre catalogue. Les essences, conditionnements et caractéristiques sont à vérifier sur chaque fiche produit pour choisir un combustible adapté à votre cheminée, poêle, insert ou chaudière, selon les préconisations du fabricant.',
+                ],
+                [
+                    'title' => 'L’électroménager pour votre quotidien',
+                    'paragraph' => 'Réfrigérateurs, lave-linge, lave-vaisselle, fours, aspirateurs et petit électroménager : explorez les appareils et les marques disponibles au catalogue. Comparez leurs caractéristiques pour choisir l’équipement qui correspond à vos attentes. Notre offre comprend également des appareils de chauffage, du mobilier et des téléviseurs.',
+                ],
+                [
+                    'title' => 'Nos engagements',
+                    'paragraph' => 'Des informations claires sur les produits et les conditions de vente vous aident à préparer votre achat.',
+                    'items' => [
+                        'Livraison gratuite en France, en Belgique et en Allemagne, selon les modalités de notre page Livraison.',
+                        'Pour un autre pays, contactez HOMYA avant toute commande : la faisabilité, les frais d’expédition et le délai doivent être confirmés. Ces destinations ne sont pas proposées dans le parcours de commande en ligne.',
+                        'Bois issu de forêts gérées durablement.',
+                        'Livraison annoncée en 3 à 7 jours ouvrés à compter du paiement confirmé pour la France, la Belgique et l’Allemagne. Consultez les modalités et les informations propres au produit.',
+                        'Garantie légale de conformité de 2 ans pour nos appareils neufs. Une éventuelle garantie commerciale du fabricant est distincte et s’applique uniquement selon les conditions indiquées pour le produit.',
+                        'Un service client joignable aux coordonnées ci-dessous pour vos questions sur les produits, les commandes et le suivi.',
+                    ],
+                ],
+                [
+                    'title' => 'Pourquoi choisir HOMYA ?',
+                    'paragraph' => 'Plus de dix ans d’histoire familiale, une sélection de produits pour la maison et le sens du service guident notre activité. Nous croyons qu’une maison agréable commence par de bons produits et un service en lequel on peut avoir confiance. Merci de faire partie de notre histoire.',
+                ],
+                [
+                    'title' => 'L’équipe HOMYA et l’entreprise',
+                    'paragraph' => 'HOMYA est dirigée par le gérant identifié ci-dessous. Notre entreprise intervient en tant que revendeur indépendant : les marques restent la propriété de leurs titulaires, sans affiliation officielle revendiquée avec les fabricants. Retrouvez notre identité légale, notre siège et nos coordonnées ci-dessous.',
+                    'company_details' => true,
+                ],
+            ],
+            'useful_information' => 'Informations utiles',
             'pending' => false,
         ],
         'provenance' => [

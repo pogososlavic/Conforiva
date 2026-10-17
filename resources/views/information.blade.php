@@ -11,8 +11,30 @@
                 @if($isLegal)
                     @if($page === 'retractation')<x-return-overview :locale="$locale" />@endif
                     <x-legal-document :content="$content" :page="$page" />
-                @else
+                @elseif($page !== 'a-propos')
                     <section class="information-copy" aria-label="{{ $content['title'] }}">@foreach($content['paragraphs'] as $paragraph)<p>{{ $paragraph }}</p>@endforeach</section>
+                @endif
+                @if($page === 'a-propos')
+                    <div class="information-copy">
+                        @foreach($content['sections'] as $section)
+                            <section>
+                                <h2>{{ $section['title'] }}</h2>
+                                <p>{{ $section['paragraph'] }}</p>
+                                @if(!empty($section['items']))
+                                    <ul>@foreach($section['items'] as $item)<li>{{ $item }}</li>@endforeach</ul>
+                                @endif
+                                @if($section['company_details'] ?? false)<x-company-details />@endif
+                            </section>
+                        @endforeach
+                        <section>
+                            <h2>{{ $content['useful_information'] }}</h2>
+                            <ul>
+                                @foreach(['contact', 'mentions-legales', 'livraison', 'paiement', 'retractation', 'cgv', 'confidentialite'] as $destination)
+                                    <li><a href="{{ route('information', ['locale' => $locale, 'page' => $destination]) }}">{{ __('pages.entries.'.$destination.'.title') }}</a></li>
+                                @endforeach
+                            </ul>
+                        </section>
+                    </div>
                 @endif
                 @if($page === 'contact')<x-company-details /><x-contact-actions email-phone-only />@endif
                 @if(in_array($page, ['provenance', 'conseiller'], true))
