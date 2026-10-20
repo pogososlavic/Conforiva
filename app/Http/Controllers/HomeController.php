@@ -23,12 +23,16 @@ class HomeController extends Controller
         foreach (['firewood', 'heating', 'appliances', 'furniture', 'televisions'] as $universe) {
             $universeImages[$universe] = $products->first(fn (array $product) => $product['universe'] === $universe && $product['image'] !== null)['image'] ?? null;
         }
+        $departmentImages = collect(config('home.departments', []))->mapWithKeys(
+            fn (array $department) => [$department['key'] => $bySlug->get($department['product_slug'])['image'] ?? null]
+        )->all();
 
         return view('home', [
             'locale' => $locale,
             'catalogueReady' => ! $catalogueUnavailable && $products->isNotEmpty(),
             'catalogueUnavailable' => $catalogueUnavailable,
             'departments' => config('home.departments', []),
+            'departmentImages' => $departmentImages,
             'featuredProducts' => $selection('featured'),
             'discoveryProducts' => $selection('discovery'),
             'universeImages' => $universeImages,

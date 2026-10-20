@@ -37,6 +37,14 @@ Thumbs.db
 # Generated evidence and immutable runtime originals stay on disk, outside Git.
 /output/
 /public/media/*
+# Small licensed home photographs ship with the code for future recovery.
+!/public/media/home/
+/public/media/home/*
+!/public/media/home/open-*.webp
+# Shared bank transfer pictogram is required by the storefront footer.
+!/public/media/payments/
+/public/media/payments/*
+!/public/media/payments/instant-transfer.svg
 # Model-specific, official energy documents are shipped with the application.
 !/public/media/energy/
 /public/media/energy/*
@@ -46,3 +54,6 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 /.playwright-cli/
+
+# Recovered database exports contain private archive data, not application source.
+/u429557141_catalogue.20261018180146.sql

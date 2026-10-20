@@ -2,11 +2,11 @@
 
 return [
     'departments' => [
-        ['key' => 'heating', 'id' => 'universe-heating', 'image' => 'chauffage-display.webp', 'width' => 800, 'height' => 800, 'filters' => ['universe' => 'heating']],
-        ['key' => 'furniture', 'id' => 'universe-furniture', 'image' => 'mobilier-display.webp', 'width' => 1200, 'height' => 1200, 'filters' => ['universe' => 'furniture']],
-        ['key' => 'cooling', 'id' => 'universe-appliances', 'image' => 'froid-display.webp', 'width' => 450, 'height' => 450, 'filters' => ['universe' => 'appliances', 'q' => 'réfrigérateur']],
-        ['key' => 'washing', 'id' => 'department-washing', 'image' => 'lavage-display.webp', 'width' => 1044, 'height' => 1334, 'filters' => ['category' => 'lavage-lave-linge']],
-        ['key' => 'coffee', 'id' => 'department-coffee', 'image' => 'cafe.webp', 'width' => 1600, 'height' => 1600, 'filters' => ['category' => 'cafe-baristina']],
+        ['key' => 'heating', 'id' => 'universe-heating', 'product_slug' => 'chauffage-pack-eworta11-poeles-a-bois', 'filters' => ['universe' => 'heating']],
+        ['key' => 'furniture', 'id' => 'universe-furniture', 'product_slug' => 'mobilier-3292-tables-extensibles', 'filters' => ['universe' => 'furniture']],
+        ['key' => 'cooling', 'id' => 'universe-appliances', 'product_slug' => 'froid-rb33b610esa-samsung-combines-congelateur-en-bas', 'filters' => ['universe' => 'appliances', 'q' => 'réfrigérateur']],
+        ['key' => 'washing', 'id' => 'department-washing', 'product_slug' => 'lg-f14r15whs-lave-linge', 'filters' => ['category' => 'lavage-lave-linge']],
+        ['key' => 'coffee', 'id' => 'department-coffee', 'product_slug' => 'philips-bar307-20-baristina', 'filters' => ['category' => 'cafe-baristina']],
     ],
     // Stable merchandising order. Every entry must exist in the catalogue;
     // missing entries are omitted without silently substituting another model.

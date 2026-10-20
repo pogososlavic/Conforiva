@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-19",
+  "scope": "Three freely licensed ambiance photographs for HOMYA homepage",
+  "assets": [
+    {
+      "id": "salon",
+      "title": "Living room (Unsplash).jpg",
+      "author": "Jarosław Ceborski",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Living_room_(Unsplash).jpg",
+      "original_url": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Living_room_%28Unsplash%29.jpg",
+      "source_date": "2017-05-03",
+      "destinations": [
+        "public/media/home/open-salon-1600.webp",
+        "public/media/home/open-salon-960.webp"
+      ],
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrieved_date": "2026-10-19",
+      "intended_use": "HOMYA homepage ambiance illustration; not a photograph of a specific product sold",
+      "rights_evidence": "Wikimedia Commons file description explicitly marks image CC0; checked with web browser tool 2026-10-19",
+      "original_private_path": "storage/app/private/home-assets-20261019/salon-original.jpg",
+      "status": "installed_and_visually_reviewed",
+      "original": {
+        "sha256": "98e196f52a67abb96e04c6a33694d1710ea885797e01ae2d52b7bba9f747893b",
+        "bytes": 2147730,
+        "dimensions": [
+          5346,
+          3568
+        ],
+        "mime": "image/jpeg"
+      },
+      "outputs": [
+        {
+          "path": "public/media/home/open-salon-1600.webp",
+          "dimensions": [
+            1600,
+            1068
+          ],
+          "sha256": "a6aa3d074e4d715b572258292c8b90170dcb3363efa982d7ec6cfd94010f30e2",
+          "bytes": 150478,
+          "mime": "image/webp",
+          "transformation": "EXIF orientation normalized, proportional Lanczos downsize, WebP quality 84 method 6; no crop, no AI"
+        },
+        {
+          "path": "public/media/home/open-salon-960.webp",
+          "dimensions": [
+            960,
+            641
+          ],
+          "sha256": "0cf2b8ebc4b8207ba01c1c0c5fd9a3156112cdef65b47ef64e2c687a3e78f7e3",
+          "bytes": 59746,
+          "mime": "image/webp",
+          "transformation": "EXIF orientation normalized, proportional Lanczos downsize, WebP quality 84 method 6; no crop, no AI"
+        }
+      ]
+    },
+    {
+      "id": "cuisine",
+      "title": "Blue white kitchen interior (Unsplash).jpg",
+      "author": "NeONBRAND",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Blue_white_kitchen_interior_(Unsplash).jpg",
+      "original_url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Blue_white_kitchen_interior_%28Unsplash%29.jpg",
+      "source_date": "2017-05-22",
+      "destinations": [
+        "public/media/home/open-cuisine-960.webp"
+      ],
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrieved_date": "2026-10-19",
+      "intended_use": "HOMYA homepage ambiance illustration; not a photograph of a specific product sold",
+      "rights_evidence": "Wikimedia Commons file description explicitly marks image CC0; checked with web browser tool 2026-10-19",
+      "original_private_path": "storage/app/private/home-assets-20261019/cuisine-original.jpg",
+      "status": "installed_and_visually_reviewed",
+      "original": {
+        "sha256": "1030543c6e3b65863e9ee11c4a4f9da6dfa78bc93c7d20b93782fb16ffcd2fb0",
+        "bytes": 6779867,
+        "dimensions": [
+          4896,
+          3264
+        ],
+        "mime": "image/jpeg"
+      },
+      "outputs": [
+        {
+          "path": "public/media/home/open-cuisine-960.webp",
+          "dimensions": [
+            960,
+            640
+          ],
+          "sha256": "65686123d54505e3e9bf00da0d46630d9d0e290c3006dc00875b00a00efcb4bb",
+          "bytes": 56236,
+          "mime": "image/webp",
+          "transformation": "EXIF orientation normalized, proportional Lanczos downsize, WebP quality 84 method 6; no crop, no AI"
+        }
+      ]
+    },
+    {
+      "id": "chauffage",
+      "title": "2016-366-319 On Fire (25358789789).jpg",
+      "author": "Alan Levine (cogdogblog)",
+      "source_page": "https://commons.wikimedia.org/wiki/File:2016-366-319_On_Fire_(25358789789).jpg",
+      "original_url": "https://upload.wikimedia.org/wikipedia/commons/6/65/2016-366-319_On_Fire_%2825358789789%29.jpg",
+      "source_date": "2016-11-14",
+      "destinations": [
+        "public/media/home/open-chauffage-960.webp"
+      ],
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrieved_date": "2026-10-19",
+      "intended_use": "HOMYA homepage ambiance illustration; not a photograph of a specific product sold",
+      "rights_evidence": "Wikimedia Commons file description explicitly marks image CC0; checked with web browser tool 2026-10-19",
+      "original_private_path": "storage/app/private/home-assets-20261019/chauffage-original.jpg",
+      "status": "installed_and_visually_reviewed",
+      "original": {
+        "sha256": "5399040007983efa3231c5146f146a7dc195d72f7f1e7dc41937968935cb9de5",
+        "bytes": 2469534,
+        "dimensions": [
+          5096,
+          3398
+        ],
+        "mime": "image/jpeg"
+      },
+      "outputs": [
+        {
+          "path": "public/media/home/open-chauffage-960.webp",
+          "dimensions": [
+            960,
+            640
+          ],
+          "sha256": "bc306365dea5daf5ca73b936390c7dc78fcb32f1719d77804d2c4810aed3aac8",
+          "bytes": 38374,
+          "mime": "image/webp",
+          "transformation": "EXIF orientation normalized, proportional Lanczos downsize, WebP quality 84 method 6; no crop, no AI"
+        }
+      ],
+      "visual_review": "Close-up of burning logs inside a wood stove; no people or visible brand. Context documented by photographer; depicts contained fire, not a house fire. Use for warmth ambiance, not an identified appliance."
+    }
+  ]
+}

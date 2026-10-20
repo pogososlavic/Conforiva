@@ -42,6 +42,17 @@ class HomeNavigationTest extends TestCase
 
                     continue;
                 }
+                if (in_array($url['host'] ?? null, ['commons.wikimedia.org', 'creativecommons.org'], true)) {
+                    $this->assertContains($link->getAttribute('href'), [
+                        'https://commons.wikimedia.org/wiki/File:Living_room_(Unsplash).jpg',
+                        'https://commons.wikimedia.org/wiki/File:Blue_white_kitchen_interior_(Unsplash).jpg',
+                        'https://commons.wikimedia.org/wiki/File:2016-366-319_On_Fire_(25358789789).jpg',
+                        'https://creativecommons.org/publicdomain/zero/1.0/',
+                    ]);
+                    $this->assertSame(1, $xpath->query('ancestor::details[contains(@class,"home-photo-credits")]', $link)->length);
+
+                    continue;
+                }
                 if (isset($url['scheme'])) {
                     $this->assertContains($url['scheme'], ['http', 'https']);
                 }
@@ -58,6 +69,7 @@ class HomeNavigationTest extends TestCase
                 }
                 if (isset($url['path']) && preg_match('~^/(media/energy/[a-z0-9-]+\.pdf|legal/guarantees/eu-legal-guarantee-(fr|en|de)\.svg)$~', $url['path'])) {
                     $this->assertFileExists(public_path(ltrim($url['path'], '/')));
+
                     continue;
                 }
                 if (isset($url['path'])) {

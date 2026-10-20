@@ -17,7 +17,9 @@ return new class extends Migration
             $table->unsignedInteger('received_cents');
             $table->string('currency', 3);
             $table->mediumText('event_encrypted');
-            $table->timestamp('created_at');
+            // Older MariaDB otherwise assigns a zero default to a second TIMESTAMP,
+            // which is rejected by Laravel's strict NO_ZERO_DATE connection.
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 

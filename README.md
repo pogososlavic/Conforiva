@@ -1,21 +1,23 @@
-# HOMYA
+# HOME CONFORT
 
-Accès local installé dans XAMPP : [ouvrir HOMYA](http://127.0.0.1:8080/fr). Le dossier servi est `/Applications/XAMPP/xamppfiles/htdocs/HOMYA/public`, avec PHP8.5 et catalogue SQL XAMPP. [Démarrage et contrôles réels](docs/ACCES-LOCAL-XAMPP.md). Le dossier de travail original et l'ancienne copie sont conservés. Les commandes locales sans paiement immédiat sont ouvertes ; le formulaire carte reste en attente de configuration ; le RIB reste à renseigner.
+Marque de travail confirmée le 19 octobre 2026. Les références techniques et documents historiques HOMYA restent conservés ; la raison sociale, les coordonnées et les références des documents commerciaux ne sont pas modifiées par ce changement de marque.
 
-Démarrage automatique installé le 10/10/2026 : MariaDB XAMPP au démarrage du Mac, puis HOMYA à l'ouverture de la session `akm`. Aucune commande manuelle nécessaire dans le fonctionnement prévu. [Vérifications et désactivation](docs/ACCES-LOCAL-XAMPP.md#démarrage-automatique--installé-le-10102026) ; prochain redémarrage complet du Mac non encore observé.
+Accès local installé dans XAMPP : [ouvrir HOME CONFORT](http://127.0.0.1:8080/fr). Le dossier servi est `/Applications/XAMPP/xamppfiles/htdocs/HOMECONFORT/public`, avec PHP8.5 et catalogue SQL XAMPP. [Démarrage et contrôles réels](docs/ACCES-LOCAL-XAMPP.md). Le dossier de travail original et l'ancienne copie sont conservés. Les commandes locales sans paiement immédiat sont ouvertes ; le formulaire carte reste en attente de configuration ; le RIB reste à renseigner.
+
+Démarrage automatique installé le 10/10/2026 : MariaDB XAMPP au démarrage du Mac, puis HOME CONFORT à l'ouverture de la session `akm`. Aucune commande manuelle nécessaire dans le fonctionnement prévu. [Vérifications et désactivation](docs/ACCES-LOCAL-XAMPP.md#démarrage-automatique--installé-le-10102026) ; prochain redémarrage complet du Mac non encore observé.
 
 Projet Laravel 13 de catalogue local FR/EN/DE, en euros, destiné aux marchés France, Belgique et Allemagne. La consultation est disponible : accueil, navigation, recherche, filtres, tri, pagination, fiches, caractéristiques et galeries. Le panier invité, les commandes, le formulaire de carte en attente de configuration et la page de virement avec réservation de 72 heures sont implémentés. L’inventaire local contient 1 000 unités déclarées par produit, partagées entre les options. Les paiements restent désactivés : prestataire carte non choisi, RIB professionnel et prérequis commerciaux à configurer. Le [dashboard administrateur local](http://127.0.0.1:8080/admin) est protégé et permet de consulter commandes, inventaire et retours. Voir [les accès et protections](docs/ADMINISTRATION-HOMYA.md).
 
 ## Démarrage sur cette machine
 
-Utiliser PHP 8.3 minimum. Le PHP 8.5 Homebrew est installé ici ; le PHP 8.2 fourni avec XAMPP ne peut pas exécuter cette version de Laravel. MariaDB reste le service **XAMPP sur le port 3307**, distinct du MySQL Homebrew sur 3306.
+Utiliser PHP 8.3 minimum. Le PHP 8.5 de Herd Lite est installé ici ; le PHP 8.2 fourni avec XAMPP ne peut pas exécuter cette version de Laravel. MariaDB reste le service **XAMPP sur le port 3307**, distinct du MySQL Homebrew sur 3306.
 
 Avec les dépendances déjà installées :
 
 ```sh
-/opt/homebrew/bin/php --version
+"$HOME/.config/herd-lite/bin/php" --version
 npm run build
-/opt/homebrew/bin/php artisan serve --host=127.0.0.1 --port=8000
+"$HOME/.config/herd-lite/bin/php" artisan serve --host=127.0.0.1 --port=8000
 ```
 
 Ouvrir `http://127.0.0.1:8000/fr` et démarrer MariaDB dans XAMPP pour la source SQL. Si le port 8000 est occupé, choisir un autre port local ; ne pas arrêter un service existant pour le libérer. L’instance Apache dédiée sur 8080 sert également cette application avec PHP-FPM 8.5 ; le PHP 8.2 intégré à Apache XAMPP ne doit pas exécuter Laravel 13.
@@ -34,13 +36,15 @@ Ne pas exécuter `config:cache` ou `optimize` pour ce lecteur local. Ne pas lanc
 
 ## Contrôles hors base
 
+Les tests Unit/Feature conservent leurs références statiques dans `tests/Fixtures`, créent leurs dossiers temporaires et utilisent le même interpréteur PHP que PHPUnit pour leurs sous-processus. Ils restent indépendants des anciens exports `output/qa-import` et de Homebrew.
+
 ```sh
-/opt/homebrew/bin/php vendor/bin/phpunit
-/opt/homebrew/bin/php vendor/bin/pint --test
+"$HOME/.config/herd-lite/bin/php" vendor/bin/phpunit
+"$HOME/.config/herd-lite/bin/php" vendor/bin/pint --test
 npm run build
 ```
 
-La configuration PHPUnit impose la source `files` même si le poste utilise SQL. La suite Unit/Feature utilise des fixtures et doubles ; elle ne lance pas la suite `tests/MariaDB` ; les scénarios commerce créent leurs seules tables dans une base SQLite en mémoire, sans migration MariaDB et ne constitue pas une preuve de connexion réelle. Les recettes MariaDB et les scripts OP nécessitent leur périmètre et autorisation propres. `composer test` inclut une purge de cache de configuration ; préférer la commande PHPUnit directe ci-dessus pour ces contrôles.
+La configuration PHPUnit réserve 512 Mo au processus de tests pour charger les catalogues multilingues et générer les PDF ; cette limite ne modifie pas celle du site. Elle impose la source `files` même si le poste utilise SQL. La suite Unit/Feature utilise des fixtures et doubles ; elle ne lance pas la suite `tests/MariaDB` ; les scénarios commerce créent leurs seules tables dans une base SQLite en mémoire, sans migration MariaDB et ne constitue pas une preuve de connexion réelle. Les recettes MariaDB et les scripts OP nécessitent leur périmètre et autorisation propres. `composer test` inclut une purge de cache de configuration ; préférer la commande PHPUnit directe ci-dessus pour ces contrôles.
 
 Les réponses Laravel portent les en-têtes `nosniff`, `SAMEORIGIN` et `strict-origin-when-cross-origin`. Ce contrôle limité ne constitue pas une certification de sécurité ; les ressources statiques dépendent aussi de la configuration du serveur qui les sert.
 
@@ -78,7 +82,7 @@ Les originaux restent inchangés. Des variantes WebP de 400, 800 et 1200 pixels 
 
 Le script `scripts/prepare_responsive_media.py` nécessite Python avec Pillow. Sur ce poste, l’interpréteur fourni par Codex est `/Users/akm/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3`. Sans `--apply`, le script prépare uniquement l’inventaire. Avec `--apply`, il crée `public/media/catalogue-display/` et refuse une collision avec un dossier existant. Une régénération doit préserver le dossier précédent dans une sauvegarde privée, sans supprimer automatiquement les originaux. Les variantes ajoutent environ 465 Mo au disque ; le téléchargement d’une seule taille est nettement inférieur à celui des originaux.
 
-Apache HOMYA compresse les assets CSS/JS avec gzip et réserve le cache immuable aux noms basés sur leur contenu. HTML, configuration et manifests ne reçoivent pas ce cache. Les règles équivalentes de `public/.htaccess` sont conditionnelles à la disponibilité des modules du futur hébergement ; elles ne prouvent pas sa compatibilité.
+Apache du site compresse les assets CSS/JS avec gzip et réserve le cache immuable aux noms basés sur leur contenu. HTML, configuration et manifests ne reçoivent pas ce cache. Les règles équivalentes de `public/.htaccess` sont conditionnelles à la disponibilité des modules du futur hébergement ; elles ne prouvent pas sa compatibilité.
 
 Vérifications du 8 octobre 2026 : 306 tests PHP hors base, 7 327 assertions, trois tests Python des variantes, Pint et build réussis. La recette HTTP compare le contenu, les liens et les URLs d’images originales de 21 pages et scénarios FR/EN/DE. CSS transféré : 97 435 → 19 185 octets. Médiane de trois réponses du catalogue FR : 0,909 → 0,722 seconde, soit environ 20 % de réduction locale ; EN et DE montrent respectivement environ 1 % et 10 %. Ces échantillons ne constituent pas une mesure des Core Web Vitals ni une garantie en production.
 

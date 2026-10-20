@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+  <!-- Original HOMYA bank transfer pictogram; no third-party bank branding. -->
+  <rect x="1" y="1" width="46" height="46" rx="11" fill="#EDF3EE"/>
+  <g stroke="#173D32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 18 22 9l15 9H7Z"/>
+    <path d="M11 23v10m11-10v10m11-10v5M8 37h19"/>
+  </g>
+  <circle cx="35" cy="35" r="11" fill="#F5C842" stroke="#FFF" stroke-width="2"/>
+  <g stroke="#173D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M29 32h12l-3-3m3 9H29l3 3"/>
+  </g>
+</svg>

@@ -1,16 +1,21 @@
 <x-layout :catalogue-ready="$catalogueReady" :description="__($catalogueReady ? 'home.description_ready' : 'home.description')">
     <main id="main" class="home-page" tabindex="-1">
-        <section class="home-hero" aria-labelledby="hero-heading">
-            <img class="home-hero-image" src="/media/home/interieur-display.webp" width="1600" height="600" alt="{{ __('home.hero_alt') }}" fetchpriority="high" decoding="async">
-            <div class="shell home-hero-copy">
+        <section class="home-hero home-hero-editorial" aria-labelledby="hero-heading">
+            <div class="shell home-hero-layout">
+            <div class="home-hero-copy">
                 <p class="home-kicker">{{ __('home.eyebrow') }}</p>
                 <h1 id="hero-heading">{{ __('home.heading') }}<br>{{ __('home.heading_accent') }}</h1>
                 <p>{{ __('home.intro') }}</p>
                 <div class="home-hero-actions">
-                    <a class="home-button home-button-light" href="{{ route('catalogue', ['locale' => $locale, 'category' => 'chauffage-poeles-a-bois']) }}">{{ __('home.see_stoves') }} <span aria-hidden="true">→</span></a>
-                    <a class="home-button home-button-outline" href="{{ route('catalogue', ['locale' => $locale]) }}">{{ __('home.all_catalogue') }}</a>
+                    <a class="home-button home-button-yellow" href="{{ route('catalogue', ['locale' => $locale]) }}">{{ __('home.all_catalogue') }} <span aria-hidden="true">→</span></a>
+                    <a class="home-button home-button-outline" href="{{ route('catalogue', ['locale' => $locale, 'category' => 'chauffage-poeles-a-bois']) }}">{{ __('home.see_stoves') }}</a>
                     <a class="home-hero-guide" href="#choosing">{{ __('home.choose_help') }} <span aria-hidden="true">↗</span></a>
                 </div>
+            </div>
+            <div class="home-hero-visual">
+                <img class="home-hero-image" src="/media/home/open-salon-1600.webp" srcset="/media/home/open-salon-960.webp 960w, /media/home/open-salon-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 55vw" width="1600" height="1068" alt="{{ __('home.hero_alt') }}" fetchpriority="high" decoding="async">
+                <a class="home-photo-caption" href="#universes"><span>{{ __('home.universes_eyebrow') }}</span><strong>{{ __('home.explore') }} <span aria-hidden="true">↗</span></strong></a>
+            </div>
             </div>
         </section>
 
@@ -25,9 +30,9 @@
             <div class="shell">
                 <div class="home-section-heading"><h2 id="story-heading">{{ __('home.story_heading') }}</h2><p>{{ __('home.story_intro') }}</p></div>
                 <div class="home-story-grid">
-                    @foreach (['heating' => 'entrepot', 'appliances' => 'livraison'] as $universe => $photo)
+                    @foreach (['heating' => 'chauffage', 'appliances' => 'cuisine'] as $universe => $photo)
                         <article class="home-story-card">
-                            <img src="/media/home/{{ $photo }}-display.webp" width="1448" height="1086" loading="lazy" decoding="async" alt="{{ __('home.story.'.$universe.'.alt') }}">
+                            <img src="/media/home/open-{{ $photo }}-960.webp" width="960" height="640" loading="lazy" decoding="async" alt="{{ __('home.story.'.$universe.'.alt') }}">
                             <div><h3>{{ __('home.story.'.$universe.'.title') }}</h3><p>{{ __('home.story.'.$universe.'.detail') }}</p><a href="{{ route('catalogue', ['locale' => $locale, 'universe' => $universe]) }}">{{ __('catalogue.discover') }} <span aria-hidden="true">→</span></a></div>
                         </article>
                     @endforeach
@@ -44,7 +49,7 @@
                     @php($departmentFilters = $key === 'cooling' ? array_replace($department['filters'], ['q' => __('home.cooling_search')]) : $department['filters'])
                     <li id="{{ $department['id'] }}" tabindex="-1">
                         <a class="home-department" href="{{ route('catalogue', ['locale' => $locale] + $departmentFilters) }}">
-                            <div class="home-department-image"><img src="/media/home/{{ $department['image'] }}" alt="" width="{{ $department['width'] }}" height="{{ $department['height'] }}" loading="lazy" decoding="async"></div>
+                            <div class="home-department-image"><x-product-image :src="$departmentImages[$key]['local_url'] ?? null" :width="$departmentImages[$key]['width'] ?? null" :height="$departmentImages[$key]['height'] ?? null" alt="" sizes="(max-width: 599px) 45vw, (max-width: 959px) 30vw, 230px" /></div>
                             <div class="home-department-copy"><p class="home-department-label">{{ __('home.departments.'.$key.'.label') }}</p><h3>{{ __('home.departments.'.$key.'.name') }}</h3><p>{{ __('home.departments.'.$key.'.description') }}</p><span>{{ __('catalogue.discover') }} <span aria-hidden="true">→</span></span></div>
                         </a>
                     </li>
@@ -74,5 +79,6 @@
             </section>
 
         <section class="shell home-browse-banner" aria-labelledby="browse-heading"><div><h2 id="browse-heading">{{ __('home.browse_heading') }}</h2><p>{{ __('home.browse_intro') }}</p></div><a class="home-button home-button-yellow" href="{{ route('catalogue', ['locale' => $locale]) }}">{{ __('home.browse_action') }} <span aria-hidden="true">→</span></a></section>
+        <x-home-photo-credits />
     </main>
 </x-layout>

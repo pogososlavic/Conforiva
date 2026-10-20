@@ -106,11 +106,8 @@ class CatalogueController extends Controller
         }
         if ($selectedUniverse) {
             $department = collect(config('home.departments', []))->first(fn (array $entry) => ($entry['filters']['universe'] ?? null) === $selectedUniverse);
-            if ($department && is_file(public_path('media/home/'.$department['image']))) {
-                $catalogueIntro['image'] = ['local_url' => '/media/home/'.$department['image'], 'width' => $department['width'], 'height' => $department['height']];
-            } else {
-                $catalogueIntro['image'] = $universeProducts->first(fn (array $entry) => $entry['image'] !== null)['image'] ?? null;
-            }
+            $catalogueIntro['image'] = $universeProducts->firstWhere('slug', $department['product_slug'] ?? null)['image']
+                ?? $universeProducts->first(fn (array $entry) => $entry['image'] !== null)['image'] ?? null;
         }
         $browseCategories = $invalid ? collect() : $universeProducts->groupBy('category.slug')->map(function ($entries) use ($locale, $selectedUniverse) {
             $category = $entries->first()['category'];
