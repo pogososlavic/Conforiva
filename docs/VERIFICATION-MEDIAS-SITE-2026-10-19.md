@@ -1,5 +1,9 @@
 # Vérification des images et logos HOMYA — 19 octobre 2026
 
+> Mise à jour qualité : les deux photos de faible définition ont été remplacées par des visuels plus détaillés du modèle exact. Voir [le rapport des deux améliorations](AMELIORATION-2-PHOTOS-2026-10-19.md). Les réserves ci-dessous décrivent leur état antérieur.
+
+> Mise à jour : les 21 photos alors manquantes ont été installées et vérifiées. Couverture actuelle : 3 709/3 709. Voir [le complément documenté](PHOTOS-COMPLEMENTAIRES-2026-10-19.md). Les chiffres ci-dessous décrivent l’audit historique avant ce complément.
+
 Demande : rechercher les autres images et logos manquants et les réinstaller
 dans le périmètre du site local, en préservant les sources et données restaurées.
 

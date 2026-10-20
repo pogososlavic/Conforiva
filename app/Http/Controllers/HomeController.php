@@ -29,9 +29,11 @@ class HomeController extends Controller
 
         return view('home', [
             'locale' => $locale,
+            'navigationProducts' => $catalogueUnavailable ? collect() : $products,
             'catalogueReady' => ! $catalogueUnavailable && $products->isNotEmpty(),
             'catalogueUnavailable' => $catalogueUnavailable,
             'departments' => config('home.departments', []),
+            'freezerProduct' => $bySlug->get(config('home.freezer_product_slug')),
             'departmentImages' => $departmentImages,
             'featuredProducts' => $selection('featured'),
             'discoveryProducts' => $selection('discovery'),

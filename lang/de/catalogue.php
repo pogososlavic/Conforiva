@@ -1,10 +1,12 @@
 <?php
 
 return [
+    'scroll_sections_back' => 'Vorherige Produktbereiche anzeigen',
+    'scroll_sections' => 'Weitere Produktbereiche anzeigen',
     'variant_photo_notice' => 'Die Fotos zeigen das Modell; die Ausführung kann von Ihrer Auswahl abweichen.',
     'source_unavailable' => 'Der Katalog ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.',
     'back_home' => 'Zur Startseite',
-    'title' => 'Katalog', 'description' => 'Entdecken Sie den HOMYA-Katalog: Produkte, Bilder, Preise und technische Daten.',
+    'title' => 'Katalog', 'description' => 'Entdecken Sie den HOME CONFORT-Katalog: Produkte, Bilder, Preise und technische Daten.',
     'department_count' => '{1} :count Produkt in diesem Bereich|[0,*] :count Produkte in diesem Bereich', 'total_count' => '{1} :count Produkt im Katalog|[0,*] :count Produkte im Katalog',
     'browse_categories' => 'Kategorien entdecken', 'all_categories' => 'Alle Kategorien', 'category_count' => '{1} :count Produkt|[0,*] :count Produkte',
     'product_navigation' => 'Auf dieser Produktseite', 'product_description' => 'Produktbeschreibung',
@@ -13,7 +15,7 @@ return [
     'related_unavailable' => 'Die Produkte in dieser Kategorie sind in dieser Sprache vorübergehend nicht verfügbar.',
     'translation_catalogue_unavailable' => 'Der Katalog ist in dieser Sprache vorübergehend nicht verfügbar. Sie können die französische Version ansehen.',
     'explore' => 'Katalog entdecken', 'discover' => 'Entdecken', 'search_submit' => 'Suchen', 'search_help' => 'Produktname, Marke oder Artikelnummer.',
-    'preview_title' => 'Entdecken Sie den HOMYA-Katalog', 'preview_notice' => 'Der Katalog kann durchsucht werden. Einkäufe sind noch nicht möglich.',
+    'preview_title' => 'Entdecken Sie den HOME CONFORT-Katalog', 'preview_notice' => 'Der Katalog kann durchsucht werden. Einkäufe sind noch nicht möglich.',
     'incomplete' => 'Die Katalogerfassung läuft. Nur bereits erfasste Produktseiten werden angezeigt.',
     'breadcrumbs' => 'Brotkrümelnavigation', 'filters' => 'Filtern und sortieren', 'universe' => 'Bereich',
     'all' => 'Alle', 'other' => 'Weitere Bereiche', 'category' => 'Kategorie', 'brand' => 'Marke',

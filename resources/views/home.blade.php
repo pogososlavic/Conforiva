@@ -1,21 +1,18 @@
-<x-layout :catalogue-ready="$catalogueReady" :description="__($catalogueReady ? 'home.description_ready' : 'home.description')">
+<x-layout :catalogue-ready="$catalogueReady" :navigation-products="$navigationProducts" :description="__($catalogueReady ? 'home.description_ready' : 'home.description')">
     <main id="main" class="home-page" tabindex="-1">
-        <section class="home-hero home-hero-editorial" aria-labelledby="hero-heading">
+        <section class="home-hero" aria-labelledby="hero-heading">
+            <img class="home-hero-image" src="/media/home/open-salon-1600.webp" srcset="/media/home/open-salon-960.webp 960w, /media/home/open-salon-1600.webp 1600w" sizes="100vw" width="1600" height="1068" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
             <div class="shell home-hero-layout">
-            <div class="home-hero-copy">
-                <p class="home-kicker">{{ __('home.eyebrow') }}</p>
-                <h1 id="hero-heading">{{ __('home.heading') }}<br>{{ __('home.heading_accent') }}</h1>
-                <p>{{ __('home.intro') }}</p>
-                <div class="home-hero-actions">
-                    <a class="home-button home-button-yellow" href="{{ route('catalogue', ['locale' => $locale]) }}">{{ __('home.all_catalogue') }} <span aria-hidden="true">→</span></a>
-                    <a class="home-button home-button-outline" href="{{ route('catalogue', ['locale' => $locale, 'category' => 'chauffage-poeles-a-bois']) }}">{{ __('home.see_stoves') }}</a>
-                    <a class="home-hero-guide" href="#choosing">{{ __('home.choose_help') }} <span aria-hidden="true">↗</span></a>
+                <div class="home-hero-copy">
+                    <p class="home-kicker">{{ __('home.eyebrow') }}</p>
+                    <h1 id="hero-heading">{{ __('home.heading') }}<br>{{ __('home.heading_accent') }}</h1>
+                    <p>{{ __('home.intro') }}</p>
+                    <div class="home-hero-actions">
+                        <a class="home-button home-button-catalogue" href="{{ route('catalogue', ['locale' => $locale]) }}">{{ __('home.all_catalogue') }} <span aria-hidden="true">→</span></a>
+                        <a class="home-button home-button-outline" href="{{ route('catalogue', ['locale' => $locale, 'category' => 'chauffage-poeles-a-bois']) }}">{{ __('home.see_stoves') }}</a>
+                        <div class="home-hero-guide-row"><a class="home-hero-guide" href="#choosing">{{ __('home.choose_help') }} <span aria-hidden="true">↗</span></a></div>
+                    </div>
                 </div>
-            </div>
-            <div class="home-hero-visual">
-                <img class="home-hero-image" src="/media/home/open-salon-1600.webp" srcset="/media/home/open-salon-960.webp 960w, /media/home/open-salon-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 55vw" width="1600" height="1068" alt="{{ __('home.hero_alt') }}" fetchpriority="high" decoding="async">
-                <a class="home-photo-caption" href="#universes"><span>{{ __('home.universes_eyebrow') }}</span><strong>{{ __('home.explore') }} <span aria-hidden="true">↗</span></strong></a>
-            </div>
             </div>
         </section>
 
@@ -37,7 +34,6 @@
                         </article>
                     @endforeach
                 </div>
-                <p class="home-illustration-note">{{ __('home.illustrations') }}</p>
             </div>
         </section>
 
@@ -56,9 +52,18 @@
                 @endforeach
             </ul>
             <ul class="home-complementary-grid">
-                @foreach (['firewood', 'televisions'] as $slug)
+                @foreach (['firewood'] as $slug)
                     <li id="universe-{{ $slug }}" tabindex="-1"><a href="{{ route('catalogue', ['locale' => $locale, 'universe' => $slug]) }}">@if($universeImages[$slug])<img src="{{ $universeImages[$slug]['local_url'] }}" width="{{ $universeImages[$slug]['width'] }}" height="{{ $universeImages[$slug]['height'] }}" alt="" loading="lazy" decoding="async">@endif<div><h3>{{ __('home.categories.'.$slug.'.name') }}</h3><p>{{ __('home.categories.'.$slug.'.description') }}</p></div><span aria-hidden="true">→</span></a></li>
                 @endforeach
+                @if($freezerProduct)
+                    <li id="universe-freezers" tabindex="-1" data-home-freezer="{{ $freezerProduct['slug'] }}">
+                        <a href="{{ route('product', ['locale' => $locale, 'slug' => $freezerProduct['slug']]) }}">
+                            <x-product-image :src="$freezerProduct['image']['local_url'] ?? null" :width="$freezerProduct['image']['width'] ?? null" :height="$freezerProduct['image']['height'] ?? null" alt="" sizes="80px" />
+                            <div><h3>{{ __('home.freezer.name') }}</h3><p>{{ $freezerProduct['brand'] }} {{ $freezerProduct['reference'] }}</p><p>{{ __('home.freezer.description') }}</p></div>
+                            <span aria-hidden="true">→</span>
+                        </a>
+                    </li>
+                @endif
             </ul>
         </section>
 

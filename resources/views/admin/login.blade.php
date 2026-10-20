@@ -1,6 +1,6 @@
 <x-admin-layout title="Connexion administrateur" :guest="true">
 <section class="admin-card admin-login">
-<h2>Bienvenue sur votre espace HOMYA</h2><p>Consultez les commandes, les stocks et les demandes de retour.</p>
+<h2>Bienvenue sur votre espace HOME CONFORT</h2><p>Consultez les commandes, les stocks et les demandes de retour.</p>
 @if($configured)
 <form method="post" action="{{ route('admin.authenticate') }}">@csrf
 <label for="username">Identifiant</label><input id="username" name="username" autocomplete="username" required maxlength="80" value="{{ old('username') }}">

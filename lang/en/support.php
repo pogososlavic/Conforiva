@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'contact_notice' => 'Send your question in a private conversation and read HOMYA’s replies there. Keep its reference and access code. You can also use the email, telephone, WhatsApp or SMS details below.',
-    'title' => 'Contact HOMYA',
+    'contact_notice' => 'Send your question in a private conversation and read HOME CONFORT’s replies there. Keep its reference and access code. You can also use the email, telephone, WhatsApp or SMS details below.',
+    'title' => 'Contact HOME CONFORT',
     'intro' => 'Send your question and read replies in your private conversation.',
     'new' => 'New message',
     'new_help' => 'A question about a product, an order or a delivery?',
@@ -17,9 +17,9 @@ return [
     'reference' => 'Conversation reference',
     'code' => 'Private access code',
     'open' => 'Open my conversation',
-    'thread' => 'My conversation with HOMYA',
+    'thread' => 'My conversation with HOME CONFORT',
     'keep' => 'Keep the reference and code to access this conversation from another device. Do not share this code.',
-    'refresh' => 'HOMYA replies appear here.',
+    'refresh' => 'HOME CONFORT replies appear here.',
     'refresh_button' => 'Refresh conversation',
     'access_error' => 'Incorrect reference or access code.',
     'delivery' => 'Delivery tracking',

@@ -1,6 +1,6 @@
-# The repository may be deployed at Hostinger's public_html document root.
-# Route public requests into Laravel's public/ directory; never serve the
-# application source tree directly.
+# Defense in depth for local/legacy Apache entry points only.
+# Production must serve public/ with sources and secrets outside the webroot.
+# These rules are not a substitute for a correctly configured document root.
 Options -Indexes
 
 # These file protections do not depend on URL rewriting. Include compressed
@@ -11,6 +11,20 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    RewriteCond %{REMOTE_ADDR} =127.0.0.1 [OR]
+    RewriteCond %{REMOTE_ADDR} =::1
+    RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+    RewriteCond %{REQUEST_URI} ^/HOMECONFORT/(?:public/)?index\.php$ [NC]
+    RewriteRule ^(?:public/)?index\.php$ http://127.0.0.1:8080/fr [R=302,L]
+
+    # The bundled Apache PHP 8.2 cannot boot Laravel 13. Local browser entry
+    # points use the compatible PHP 8.5 runtime; private paths remain denied.
+    RewriteCond %{REMOTE_ADDR} =127.0.0.1 [OR]
+    RewriteCond %{REMOTE_ADDR} =::1
+    RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+    RewriteCond %{REQUEST_URI} ^/HOMECONFORT(?:/public)?(?:/(?:fr|en|de|admin)(?:/|$)|/?$) [NC]
+    RewriteRule ^(?:public/)?(.*)$ http://127.0.0.1:8080/$1 [R=302,L,NE]
 
     # Keep the existing local XAMPP entry point for the /HOMYA folder only.
     RewriteCond %{REMOTE_ADDR} =127.0.0.1 [OR]

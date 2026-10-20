@@ -1,9 +1,9 @@
-<x-layout :title="__('commerce.order').' — HOMYA'" :catalogue-ready="true">
+<x-layout :title="__('commerce.order').' — HOME CONFORT'" :catalogue-ready="true">
     <main id="main" class="shell commerce-page order-page" tabindex="-1">
         <x-checkout-steps current="confirmation" :locale="$locale" />
 
         <header class="order-page-heading">
-            <p class="order-eyebrow">HOMYA · {{ __('commerce.confirmation') }}</p>
+            <p class="order-eyebrow">HOME CONFORT · {{ __('commerce.confirmation') }}</p>
             <h1>{{ __('commerce.order') }}</h1>
         </header>
 

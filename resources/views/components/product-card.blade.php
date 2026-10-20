@@ -2,7 +2,7 @@
 <article class="product-card">
     <a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']] + $filters) }}" class="product-card-link">
         <div class="product-card-visual">
-            <x-product-image :src="$product['image']['local_url'] ?? null" :width="$product['image']['width'] ?? null" :height="$product['image']['height'] ?? null" alt="" />
+            <x-product-image framed :src="$product['image']['local_url'] ?? null" :width="$product['image']['width'] ?? null" :height="$product['image']['height'] ?? null" alt="" />
             @if($product['promotion'] ?? null)<span class="promotion-badge">−{{ $product['promotion']['percent'] }} %</span>@endif
         </div>
         <div class="product-card-copy">

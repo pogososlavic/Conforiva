@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'freezer_product_slug' => 'lg-gfm61mccsd-une-porte',
     'departments' => [
         ['key' => 'heating', 'id' => 'universe-heating', 'product_slug' => 'chauffage-pack-eworta11-poeles-a-bois', 'filters' => ['universe' => 'heating']],
         ['key' => 'furniture', 'id' => 'universe-furniture', 'product_slug' => 'mobilier-3292-tables-extensibles', 'filters' => ['universe' => 'furniture']],

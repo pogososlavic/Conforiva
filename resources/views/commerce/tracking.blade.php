@@ -1,6 +1,6 @@
-<x-layout :title="__('tracking.title').' — HOMYA'" :description="__('tracking.intro')" :catalogue-ready="true" :language-links="collect(config('homya.locales'))->mapWithKeys(fn ($language) => [$language => route('order.tracking', ['locale' => $language])])->all()">
+<x-layout :title="__('tracking.title').' — HOME CONFORT'" :description="__('tracking.intro')" :catalogue-ready="true" :language-links="collect(config('homya.locales'))->mapWithKeys(fn ($language) => [$language => route('order.tracking', ['locale' => $language])])->all()">
     <main id="main" class="shell commerce-page tracking-page" tabindex="-1">
-        <header class="information-heading"><p class="eyebrow">HOMYA</p><h1>{{ __('tracking.title') }}</h1><p>{{ __('tracking.intro') }}</p></header>
+        <header class="information-heading"><p class="eyebrow">HOME CONFORT</p><h1>{{ __('tracking.title') }}</h1><p>{{ __('tracking.intro') }}</p></header>
         <div class="commerce-grid">
             <section class="commerce-summary" aria-labelledby="tracking-form-heading">
                 <h2 id="tracking-form-heading">{{ __('tracking.lookup') }}</h2>
@@ -30,7 +30,7 @@
                     </section>
                 @endif
             </section>
-            <aside class="commerce-summary"><h2>{{ __('tracking.assistance') }}</h2><p>{{ __('tracking.assistance_help') }}</p><x-contact-actions /></aside>
+            <aside class="commerce-summary"><h2>{{ __('tracking.assistance') }}</h2><p>{{ __('tracking.assistance_help') }}</p><a class="button-primary" href="{{ route('support.form', ['locale' => $locale]) }}">{{ __('contact.chat_action') }}</a></aside>
         </div>
     </main>
 </x-layout>

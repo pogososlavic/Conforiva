@@ -3,14 +3,14 @@
 return [
     'currency' => 'Catalogue en euros',
     'languages' => 'Français · English · Deutsch',
-    'contact' => 'Contact HOMYA',
+    'contact' => 'Contact HOME CONFORT',
     'utility_navigation' => 'Liens utiles',
-    'services_navigation' => 'Services HOMYA',
+    'services_navigation' => 'Services HOME CONFORT',
     'utility' => [
         'conseiller' => 'Bien choisir',
         'provenance' => 'Catalogue & FAQ',
         'suivi' => 'Suivre ma commande',
-        'phone' => 'Téléphone HOMYA',
+        'phone' => 'Téléphone HOME CONFORT',
     ],
     'services' => [
         'conseiller' => 'Conseil',
@@ -23,7 +23,7 @@ return [
     'commerce_title' => 'Paiement & livraison',
     'payment_planned' => 'Paiement & livraison',
     'instant_transfer' => 'Virement instantané',
-    'commerce_detail' => 'Livraison gratuite en France, en Belgique et en Allemagne, en 3 à 7 jours par notre propre transporteur. Les modalités de paiement seront précisées avant l’ouverture des commandes.',
+    'commerce_detail' => 'Livraison gratuite en France, en Belgique et en Allemagne, en 3 à 7 jours ouvrés par notre propre transporteur. Les modalités de paiement seront précisées avant l’ouverture des commandes.',
     'discoveries_title' => 'À découvrir dans le catalogue',
     'categories' => [
         'catalogue' => 'Catalogue',

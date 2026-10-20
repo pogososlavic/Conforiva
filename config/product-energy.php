@@ -1,8 +1,7 @@
 <?php
 
-// EPREL documents checked against model identifiers on 17 October 2026.
-// Sources and document hashes: docs/CORRECTIONS-P0-HOMYA-20261017.md.
-return [
+// Previously audited documents remain the fallback; registry contains exact-model verified additions.
+$existing = [
     'froid-rb33b610esa-samsung-combines-congelateur-en-bas' => [
         'reference' => 'RB33B610ESA', 'class' => 'E', 'scale' => 'A–G', 'color' => '#FFB900',
         'eprel' => '1293184',
@@ -26,3 +25,9 @@ return [
         ],
     ],
 ];
+
+$path = resource_path('data/product-energy-labels.json');
+$verified = is_file($path) && ! is_link($path) && filesize($path) <= 4 * 1024 * 1024
+    ? json_decode((string) file_get_contents($path), true) : [];
+
+return is_array($verified) ? array_replace($existing, $verified) : $existing;

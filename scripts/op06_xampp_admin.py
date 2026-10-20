@@ -140,7 +140,8 @@ def grant(receipt, checker=inspect, writer=base.sql, recorder=lambda i, d: None)
 
 
 def confirm_wait(blocking, blocked):
-    require(blocking > 0 and blocked > 0 and blocking != blocked, 'WORKER_IDS')
+    require(type(blocking) is int and type(blocked) is int
+            and blocking > 0 and blocked > 0 and blocking != blocked, 'WORKER_IDS')
     ids = str(blocking) + ',' + str(blocked)
     workers = [json.loads(line) for line in base.sql("SELECT JSON_OBJECT('id',ID,'user',USER,'database',DB) FROM information_schema.PROCESSLIST WHERE ID IN (" + ids + ") ORDER BY ID").splitlines()]
     require(len(workers) == 2 and all(w['user'] == 'homya_test_import' and w['database'] == 'homya_test' for w in workers), 'WORKER_IDENTITIES')
@@ -168,6 +169,10 @@ def audit_result(run):
     require(state['counts'] == {'archive_lots': 5, 'archive_categories': 67, 'archive_products': 3711, 'archive_translations': 23890}, 'FINAL_COUNTS')
     fixtures = {r['scenario']: r['lot_key'] for r in json.loads((QA / 'op06-fixtures-proposees.json').read_text())['lots']}
     expected = {LOT: 'verified', fixtures['transport']: 'verified', fixtures['concurrency']: 'verified', fixtures['failure']: 'failed', fixtures['partial']: 'prepared'}
+    # The native mysql client has no binding API. Reject file-sourced values
+    # before composing SQL; only canonical SHA-256 lot identifiers are valid.
+    require(all(isinstance(key, str) and re.fullmatch(r'[0-9a-f]{64}', key)
+                for key in expected), 'LOT_KEY_INVALID')
     rows = [json.loads(line) for line in base.sql("SELECT JSON_OBJECT('key',lot_key,'state',load_state) FROM homya_test.archive_lots ORDER BY lot_key").splitlines()]
     require({r['key']: r['state'] for r in rows} == expected, 'FINAL_LOTS')
     for key, load_state in expected.items():

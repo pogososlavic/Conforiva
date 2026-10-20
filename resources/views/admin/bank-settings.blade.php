@@ -1,4 +1,4 @@
-<x-admin-layout title="RIB HOMYA">
+<x-admin-layout title="RIB HOME CONFORT">
 <p>Ajoutez ou mettez à jour les coordonnées bancaires affichées sur les devis et bons de commande. Elles sont stockées chiffrées dans l’espace privé de l’application.</p>
 <section class="admin-card"><h2>État du RIB</h2>
 @if($documentReady)
@@ -27,7 +27,7 @@
 <form class="admin-card admin-form" method="post" action="{{ route('admin.bank.settings.delete') }}">
 @csrf @method('DELETE')<input type="hidden" name="version" value="{{ $version }}">
 <h2>Supprimer le RIB</h2><p>Le RIB sera retiré des nouveaux devis et bons de commande. Les documents déjà émis et les commandes existantes resteront inchangés.</p>
-<label class="admin-check"><input type="checkbox" name="confirmed" value="1" required> Je confirme la suppression des coordonnées bancaires HOMYA.</label>
+<label class="admin-check"><input type="checkbox" name="confirmed" value="1" required> Je confirme la suppression des coordonnées bancaires HOME CONFORT.</label>
 <label>Mot de passe administrateur<input type="password" name="current_password" autocomplete="current-password" required maxlength="256"></label>
 <button class="admin-danger" type="submit">Supprimer le RIB</button>
 </form>

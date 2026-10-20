@@ -1,4 +1,4 @@
-<x-layout :title="__('commerce.bank_instructions').' — HOMYA'" :catalogue-ready="true">
+<x-layout :title="__('commerce.bank_instructions').' — HOME CONFORT'" :catalogue-ready="true">
     <main id="main" class="shell commerce-page bank-confirmation" tabindex="-1">
         <x-checkout-steps current="confirmation" :locale="$locale" />
         <h1>{{ __('commerce.bank_confirmation') }}</h1>

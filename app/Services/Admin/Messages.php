@@ -72,7 +72,7 @@ final class Messages
                 // Persist the attempt before handing off to SMTP; a repeated form nonce never sends again.
                 $db->table('commerce_admin_messages')->where('nonce', $nonce)->update(['email_status' => 'attempting']);
                 try {
-                    Mail::raw('HOMYA — Votre dossier '.$id."\n\n".$body, fn ($message) => $message->to($customer['email'])->subject('HOMYA — Réponse à votre message'));
+                    Mail::raw('HOME CONFORT — Votre dossier '.$id."\n\n".$body, fn ($message) => $message->to($customer['email'])->subject('HOME CONFORT — Réponse à votre message'));
                     $state = 'submitted'; // accepted by the transport, not proof of mailbox delivery
                 } catch (\Throwable) {
                     $state = 'unknown';

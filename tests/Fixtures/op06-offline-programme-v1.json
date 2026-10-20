@@ -1,0 +1,181 @@
+{
+    "fixture_version": 1,
+    "provenance": {
+        "kind": "static_reference_reconstructed_from_committed_offline_programme",
+        "git_commit": "e41f563e157939cb2bc5c9c74ab59d3dd9a27ec0",
+        "commit_date": "2026-10-11",
+        "reconstructed_on": "2026-10-19",
+        "historical_output_export_recovered": false,
+        "programme_document": "docs/OP-06-RECETTE-XAMPP-PREPARATION.md#5-jeux-persistance-et-conservation-proposés",
+        "marker": "OP06-v01-<scenario>",
+        "sql_executed": false,
+        "sources": [
+            {
+                "path": "app/Services/StrictJson.php",
+                "sha256": "75fc4a2520d5c97984fb7744bd6741ed4bde78a5b344b99c23243327b1ca6474"
+            },
+            {
+                "path": "app/Services/CatalogueCapsule.php",
+                "sha256": "e40cfdb12ab70dbfd0bc52e44bb556ef4923820a7872717a399fe3e8f1719018"
+            },
+            {
+                "path": "app/Services/CatalogueArchivePayload.php",
+                "sha256": "df2fa113bd7c986bc077bbd93492e125ab84a65cfc275f501a8cec05b40816c1"
+            },
+            {
+                "path": "tests/Support/CatalogueArchiveFixture.php",
+                "sha256": "1ebf9e486caa60f2fef8113f9f4f41f020fb53247a21645df67efaf7bfb45e1b"
+            },
+            {
+                "path": "tests/Support/Op06Recipe.php",
+                "sha256": "cfa4e7529662f953918ada234257cd9a345c8331bfbf6443ac14ede6af139f1e"
+            }
+        ]
+    },
+    "lots": [
+        {
+            "scenario": "integrity",
+            "lot_key": "f335eff33176900e8edf3df5bf021465078bbd92d83d27bd6241d89da9c18ebc",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "parent-a",
+            "lot_key": "9531899e435002927592f86f149dd41cde232aa2fdd999433855296c25079583",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "parent-b",
+            "lot_key": "0c1a5aba953a241497d04e4dba80fb7a0d6ce2ac74babc43076b75b5b3fd2366",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "transport",
+            "lot_key": "beeb8961d9679be2b753343026646ef9f87171b41e1598f6d317e45895a1ff79",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "failure",
+            "lot_key": "937d2b9ea7e26d4243de00533397cf7565692c9dc9c27c93f81472f39b2319f2",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "timeout",
+            "lot_key": "9d59158c167648ecadf423e0d2979649f1e890e64069a0967cabef5d95aa7097",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "concurrency",
+            "lot_key": "c1e11119140f6ed52239e35f4ca9075e4b27ed428dac7831cd4c54a3851b76ea",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "partial",
+            "lot_key": "7816478158464261908bd7102e7e171c58213ac46981d321be51427ed17d0b6c",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        },
+        {
+            "scenario": "hash-collision",
+            "lot_key": "9992991ed0ff44ccabc678c9c3200881976fd31724c4e1764203ce8fe340c1f2",
+            "counts": {
+                "lots": 1,
+                "categories": 1,
+                "products": 1,
+                "translations": 6,
+                "specifications": 1,
+                "variants": 1,
+                "gallery_associations": 0,
+                "overlays": 1,
+                "review_rows": 1,
+                "empty_brands": 1
+            }
+        }
+    ]
+}

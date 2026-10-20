@@ -96,8 +96,8 @@ class ContactButtonsTest extends TestCase
             @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
             $xpath = new DOMXPath($document);
             $links = $xpath->query('//a[@href="https://wa.me/33123456789"]');
-            $this->assertCount(5, $links);
-            foreach (['//nav[@class="utility-navigation"]', '//main//dl[@class="company-details"]', '//main//div[@class="contact-actions"]', '//footer', '//a[@class="whatsapp-chat"]'] as $location) {
+            $this->assertCount(4, $links);
+            foreach (['//main//dl[@class="company-details"]', '//main//div[@class="contact-actions"]', '//footer', '//a[@class="whatsapp-chat"]'] as $location) {
                 $this->assertSame(1, $xpath->query('('.$location.')/descendant-or-self::a[@href="https://wa.me/33123456789"]')->length);
             }
             foreach ($links as $link) {

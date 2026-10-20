@@ -13,6 +13,7 @@ use App\Services\Commerce\OrderStore;
 use App\Services\Commerce\OrderTerms;
 use App\Services\Commerce\TransferProof;
 use App\Services\Documents\DocumentStore;
+use App\Services\InternationalPhone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
@@ -66,6 +67,7 @@ final class CheckoutController extends CommerceController
             'terms_hash' => ['required', 'string', 'size:64'],
             'email' => ['required', 'email:rfc', 'max:254'], 'name' => ['required', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:30', 'regex:/\\A\\+?[0-9][0-9\\s().-]{5,28}[0-9]\\z/'],
+            'phone_region' => ['nullable', 'string', Rule::in(array_keys(app(InternationalPhone::class)->countries($locale)))],
             'address' => ['required', 'string', 'max:200'], 'postal_code' => ['required', 'string', 'max:12'],
             'city' => ['required', 'string', 'max:100'], 'country' => ['required', Rule::in(config('commerce.countries'))],
             'terms' => ['accepted'], 'privacy_acknowledged' => ['accepted'], 'shipping_acknowledged' => ['accepted'],
@@ -79,6 +81,7 @@ final class CheckoutController extends CommerceController
             'take_back' => ['nullable', 'array', 'max:100'],
             'take_back.*' => ['required', 'integer', 'min:0'],
         ]);
+        $data['phone'] = app(InternationalPhone::class)->normalize($data['phone'] ?? null, $data['phone_region'] ?? null);
         $quote = $cart->quote($request->session());
         if (! hash_equals((string) $request->session()->get('commerce.checkout_key', ''), $data['checkout_key'])
             || ! hash_equals((string) $request->session()->get('commerce.quote_hash', ''), $data['quote_hash'])) {
@@ -254,7 +257,7 @@ final class CheckoutController extends CommerceController
         }
 
         return response($pdf->render($order, $orders->items($id), $kind, $locale))->withHeaders([
-            'Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="HOMYA-'.$kind.'-'.$id.'.pdf"',
+            'Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="HOME-CONFORT-'.$kind.'-'.$id.'.pdf"',
         ]);
     }
 

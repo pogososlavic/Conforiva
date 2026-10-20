@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AdminAccess;
+use App\Services\AdminAuthenticationAudit;
 use App\Services\AdminDashboard;
 use App\Services\Commerce\AutomaticOrderQuote;
 use App\Services\Commerce\CheckoutReadiness;
@@ -37,8 +38,12 @@ final class AdminController extends Controller
     {
         $data = $request->validate(['username' => ['required', 'string', 'max:80'], 'password' => ['required', 'string', 'max:256']]);
         if (! $access->login($request, $data['username'], $data['password'])) {
+            app(AdminAuthenticationAudit::class)->record($request, 'failure', $data['username']);
+
             return back()->withErrors(['username' => 'Identifiant ou mot de passe incorrect.'])->withInput(['username' => $data['username']]);
         }
+
+        app(AdminAuthenticationAudit::class)->record($request, 'success', $data['username']);
 
         return redirect()->route('admin.dashboard');
     }
@@ -84,6 +89,7 @@ final class AdminController extends Controller
 
     public function logout(Request $request)
     {
+        app(AdminAuthenticationAudit::class)->record($request, 'logout', (string) $request->session()->get('admin.auth.username'));
         $request->session()->forget('admin.auth');
         $request->session()->regenerate();
         $request->session()->regenerateToken();

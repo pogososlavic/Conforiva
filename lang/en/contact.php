@@ -1,15 +1,15 @@
 <?php
 
 return [
-    'label' => 'Contact HOMYA',
+    'label' => 'Contact HOME CONFORT',
     'intro' => 'Have a question about a product or your project? Write to us.',
-    'instructions' => 'Contact HOMYA on WhatsApp or by SMS at the number below.',
+    'instructions' => 'Contact HOME CONFORT on WhatsApp or by SMS at the number below.',
     'whatsapp' => 'WhatsApp',
     'sms' => 'SMS',
     'application_help' => 'These buttons open WhatsApp or your SMS app. You choose and send your message yourself. If your device does not have the app, use the displayed number.',
     'advice_eyebrow' => 'Advice centre',
     'advice_heading' => 'Advice for your home.',
-    'advice_intro' => 'Have a question about a product, delivery or payment? Find useful information and ways to contact HOMYA.',
+    'advice_intro' => 'Have a question about a product, delivery or payment? Find useful information and ways to contact HOME CONFORT.',
     'advice_pending' => 'Contact channels are being prepared. Guides and purchase information remain available.',
     'advice_contact' => 'View contact options',
     'purchase_help_heading' => 'A question before you order?',

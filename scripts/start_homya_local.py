@@ -119,4 +119,9 @@ def main(argv=None):
         return 1
 
 
-if __name__ == '__main__': raise SystemExit(main())
+if __name__ == '__main__':
+    # Preserve the legacy implementation for installations with the original pool.
+    if not RUN.exists():
+        from start_home_confort_local import main as start_current
+        raise SystemExit(start_current())
+    raise SystemExit(main())

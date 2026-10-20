@@ -2,10 +2,10 @@
 
 return [
     'title' => 'Free take-back of your old appliance',
-    'policy' => 'When you buy electrical or electronic equipment, HOMYA takes back an old appliance of equivalent type and function free of charge at delivery, up to the number of appliances purchased, regardless of brand. This service is available for deliveries in France, Belgium and Germany.',
-    'preparation' => 'Select the quantity to collect in your order. If you did not make this choice, contact HOMYA to arrange take-back before delivery; this optional choice does not remove your rights. Empty the appliance and have it safely unplugged or disconnected; erase personal data where relevant. Report access difficulties or particular risks so appropriate collection can be arranged. Take-back is not an installation or dismantling service for your installation.',
-    'other_products' => 'Arrangements for other products, including furniture and heating appliances, depend on their category. Contact HOMYA for details before purchase; applicable legal take-back rights are not excluded.',
-    'contact' => 'Arrange take-back with HOMYA',
+    'policy' => 'When you buy electrical or electronic equipment, HOME CONFORT takes back an old appliance of equivalent type and function free of charge at delivery, up to the number of appliances purchased, regardless of brand. This service is available for deliveries in France, Belgium and Germany.',
+    'preparation' => 'Select the quantity to collect in your order. If you did not make this choice, contact HOME CONFORT to arrange take-back before delivery; this optional choice does not remove your rights. Empty the appliance and have it safely unplugged or disconnected; erase personal data where relevant. Report access difficulties or particular risks so appropriate collection can be arranged. Take-back is not an installation or dismantling service for your installation.',
+    'other_products' => 'Arrangements for other products, including furniture and heating appliances, depend on their category. Contact HOME CONFORT for details before purchase; applicable legal take-back rights are not excluded.',
+    'contact' => 'Arrange take-back with HOME CONFORT',
     'details' => 'Take-back arrangements',
     'quantity' => 'Equivalent old appliance(s) to collect',
     'none' => 'No take-back requested',

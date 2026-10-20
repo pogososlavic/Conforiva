@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'title' => 'HOMYA — La maison, tout simplement',
-    'description' => 'Découvrez bientôt HOMYA : bois et combustibles, chauffage, électroménager, mobilier et téléviseurs.',
-    'description_ready' => 'Explorez HOMYA : bois et combustibles, chauffage, électroménager, mobilier et téléviseurs. Catalogue consultable.',
+    'title' => 'HOME CONFORT — La maison, tout simplement',
+    'description' => 'Découvrez bientôt HOME CONFORT : bois et combustibles, chauffage, électroménager, mobilier et téléviseurs.',
+    'description_ready' => 'Explorez HOME CONFORT : bois et combustibles, chauffage, électroménager, mobilier et téléviseurs. Catalogue consultable.',
     'skip' => 'Aller au contenu',
     'language' => 'Choisir la langue',
     'language_names' => ['fr' => 'Français', 'en' => 'English', 'de' => 'Deutsch'],
@@ -26,11 +26,12 @@ return [
     'status_detail' => 'Le catalogue n’est pas encore publié. La recherche et les achats ne sont pas disponibles pour le moment.',
     'universes' => 'Nos univers',
     'topline' => 'Chauffage, confort et équipement de la maison',
+    'advice_alt' => 'Salon lumineux avec canapé gris et table basse en bois',
     'hero_alt' => 'Salon lumineux avec canapé bleu, mobilier en bois et plantes vertes',
     'see_stoves' => 'Voir les poêles',
     'all_catalogue' => 'Tout le catalogue',
     'choose_help' => 'Bien choisir son appareil',
-    'store_intro' => 'HOMYA réunit chauffage, électroménager, mobilier, bois et combustibles, et téléviseurs. Comparez les prix TTC, les photos et les caractéristiques pour choisir l’équipement adapté à votre maison.',
+    'store_intro' => 'HOME CONFORT réunit chauffage, électroménager, mobilier, bois et combustibles, et téléviseurs. Comparez les prix TTC, les photos et les caractéristiques pour choisir l’équipement adapté à votre maison.',
     'highlights' => [
         [
             'title' => 'Les grandes marques',
@@ -101,12 +102,13 @@ return [
     'guide_heating' => 'Explorer le chauffage',
     'guide_alt' => 'Illustration d’un intérieur avec appareils de chauffage et électroménager',
     'browse_heading' => 'Encore plus à découvrir',
-    'browse_intro' => 'Mobilier, appareils et accessoires : poursuivez votre visite dans le catalogue HOMYA.',
+    'browse_intro' => 'Mobilier, appareils et accessoires : poursuivez votre visite dans le catalogue HOME CONFORT.',
     'browse_action' => 'Explorer le catalogue',
-    'footer_intro' => 'HOMYA, revendeur indépendant d’appareils de chauffage, d’électroménagers et de mobiliers.',
+    'footer_intro' => 'HOME CONFORT, revendeur indépendant d’appareils de chauffage, d’électroménagers et de mobiliers.',
     'footer_collections' => 'Nos collections',
-    'footer_discover' => 'Découvrir HOMYA',
+    'footer_discover' => 'Découvrir HOME CONFORT',
     'catalogue_unavailable' => 'Le catalogue est momentanément indisponible. Réessayez dans quelques instants.',
+    'freezer' => ['name' => 'Congélateurs', 'description' => 'Découvrez ce modèle et ses caractéristiques.'],
     'categories' => [
         'firewood' => ['name' => 'Bois & combustibles', 'description' => 'Le bois de chauffage et les combustibles.'],
         'heating' => ['name' => 'Appareils de chauffage', 'description' => 'Les appareils pour chauffer la maison.'],

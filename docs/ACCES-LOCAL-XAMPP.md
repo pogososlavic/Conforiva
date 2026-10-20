@@ -1,5 +1,46 @@
 # HOMYA — accès local dans XAMPP
 
+## État actuel — remise en service du 20/10/2026
+
+Les sections suivantes décrivent l'installation historique. Le dossier privé de
+configuration Apache/FPM historique et `/opt/homebrew/sbin/php-fpm` sont absents
+du poste restauré. Le PHP 8.2 intégré à Apache ne peut pas démarrer Laravel 13.
+
+Le serveur PHP CLI 8.5.0 installé dans `~/.config/herd-lite/bin/php` sert maintenant
+uniquement `HOMECONFORT/public` sur `127.0.0.1:8080`. Son routeur local refuse
+fichiers cachés, sources, sauvegardes et scripts uploadés ; les liens vers des
+fichiers hors de `public/` ne sont pas servis. Le serveur reste réservé au poste
+local, conformément à la [documentation PHP](https://www.php.net/manual/en/features.commandline.webserver.php).
+
+Depuis la racine du dépôt :
+
+```sh
+python3 scripts/start_home_confort_local.py --start
+```
+
+Sans `--start`, la commande contrôle l'occupation du port. Un port déjà occupé
+n'entraîne aucun arrêt ni remplacement de processus. Les journaux sont privés
+dans `storage/app/private/local-runtime/`. L'ancien helper délègue au nouveau
+lorsque le pool historique est absent. Aucun agent de démarrage automatique
+HOME CONFORT n'est actuellement installé ; relancer la commande après reboot.
+
+L'entrée Apache locale `/HOMECONFORT/fr` et les autres langues/admin en GET/HEAD,
+ainsi que `/HOMECONFORT/public/index.php`, redirigent vers le runtime compatible.
+Les modifications restent dans le `.htaccess` du projet : aucune configuration
+globale XAMPP ni aucun service existant modifié/arrêté.
+
+Accueil et catalogue 200 constatés, marque HOME CONFORT présente. La sélection
+catalogue actuelle est `files`, conservée sans bascule SQL. Un SELECT de contrôle
+a confirmé MariaDB XAMPP 10.4.28, socket et datadir XAMPP, port **3306** actuel.
+Les références historiques au port 3307 ne décrivent donc plus ce poste.
+Aucune écriture SQL, migration, paiement ou email réel pendant la remise en service.
+
+Preuves de sécurité HTTP : `storage/app/private/audits/runtime-2026-10-20/`.
+Tests routeur isolé : `python3 -m unittest discover -s scripts -p test_local_runtime.py`.
+Ils utilisent exclusivement un dossier temporaire et un serveur local synthétique.
+
+## Historique conservé
+
 08/10/2026 — installation locale autorisée et vérifiée, DECISION-045/046.
 
 Le projet de travail reste `/Users/akm/Documents/ChatGPT/HOMYA`. L'utilisateur autorise la conservation de l'ancienne copie de7Go hors de `htdocs`, puis la copie intégrale du projet actuel dans `/Applications/XAMPP/xamppfiles/htdocs/HOMYA`. Aucune suppression, fusion aveugle ou écriture SQL. Les différences d'une prochaine copie devront être examinées ; ce n'est pas une synchronisation automatique bidirectionnelle.

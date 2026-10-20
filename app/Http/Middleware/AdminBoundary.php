@@ -19,7 +19,7 @@ final class AdminBoundary
         $localAllowed = $security->localRequest($request);
         $remoteAllowed = app()->environment('production')
             && config('admin.remote_enabled') === true
-            && $request->getHost() === ProductionSecurity::HOST
+            && $request->getHost() === ProductionSecurity::host()
             && $request->isSecure()
             && $request->getPort() === 443;
 

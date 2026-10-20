@@ -1,4 +1,4 @@
-<x-layout :title="__('support.title').' — HOMYA'" :catalogue-ready="true">
+<x-layout :title="__('support.title').' — HOME CONFORT'" :catalogue-ready="true">
     <main id="main" class="shell commerce-page support-page" tabindex="-1">
         <header class="support-heading">
             <h1>{{ __('support.title') }}</h1>

@@ -38,7 +38,7 @@ class HomeMerchandisingTest extends TestCase
         $image = "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', 500, 500, 8, 2, 0, 0, 0))
             .$chunk('IDAT', gzcompress(str_repeat("\x00".str_repeat("\x80", 1500), 500))).$chunk('IEND', '');
         File::put($this->directory.'/public/media/catalogue/'.str_repeat('a', 24).'.png', $image);
-        $this->slugs = array_merge(config('home.featured'), config('home.discovery'));
+        $this->slugs = array_merge(config('home.featured'), config('home.discovery'), [config('home.freezer_product_slug')]);
         $universes = ['firewood', 'heating', 'appliances', 'furniture', 'televisions'];
         $products = [];
         $translations = ['en' => ['Catégorie test' => 'Test category'], 'de' => ['Catégorie test' => 'Testkategorie']];
@@ -118,6 +118,29 @@ class HomeMerchandisingTest extends TestCase
             }
         }
         $this->assertSame($archiveHash, hash_file('sha256', $this->directory.'/index.json'));
+    }
+
+    public function test_home_freezer_uses_the_exact_shared_catalogue_product_in_each_language(): void
+    {
+        foreach (['fr', 'en', 'de'] as $locale) {
+            $response = $this->get('/'.$locale)->assertOk();
+            $product = $response->viewData('freezerProduct');
+            $this->assertSame(config('home.freezer_product_slug'), $product['slug']);
+            $xpath = $this->xpath($response->getContent());
+            $link = $xpath->query('//*[@id="universe-freezers"]/a')->item(0);
+            $this->assertSame('/'.$locale.'/produit/'.$product['slug'], parse_url($link->getAttribute('href'), PHP_URL_PATH));
+            $this->assertSame(__('home.freezer.name', [], $locale), $xpath->query('//*[@id="universe-freezers"]//h3')->item(0)->textContent);
+            $this->assertSame($product['image']['local_url'], $xpath->query('//*[@id="universe-freezers"]//img')->item(0)->getAttribute('src'));
+            $this->assertSame(0, $xpath->query('//*[contains(@class,"home-complementary-grid")]//*[@id="universe-televisions"]')->length);
+        }
+    }
+
+    public function test_missing_freezer_is_omitted_without_substituting_a_model(): void
+    {
+        config(['home.freezer_product_slug' => 'missing-freezer-model']);
+        $response = $this->get('/fr')->assertOk()->assertViewHas('freezerProduct', null);
+        $xpath = $this->xpath($response->getContent());
+        $this->assertSame(0, $xpath->query('//*[@id="universe-freezers"]')->length);
     }
 
     public function test_missing_selection_is_omitted_without_substituting_another_product(): void

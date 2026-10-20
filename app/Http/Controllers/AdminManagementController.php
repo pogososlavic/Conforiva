@@ -211,12 +211,12 @@ final class AdminManagementController extends Controller
             'bank_name' => $data['bank_name'],
         ], $data['version']);
         try {
-            app(Activity::class)->record('settings_saved', 'RIB HOMYA', null, (string) Str::uuid());
+            app(Activity::class)->record('settings_saved', 'RIB HOME CONFORT', null, (string) Str::uuid());
         } catch (\Throwable) {
             // The encrypted settings file is authoritative; activity history is supplementary.
         }
 
-        return to_route('admin.bank.settings')->with('admin_message', 'RIB HOMYA enregistré et chiffré. Il sera repris dans les prochains devis et bons de commande.');
+        return to_route('admin.bank.settings')->with('admin_message', 'RIB HOME CONFORT enregistré et chiffré. Il sera repris dans les prochains devis et bons de commande.');
     }
 
     public function deleteBankSettings(Request $request, BankDetailsSettings $settings)
@@ -225,7 +225,7 @@ final class AdminManagementController extends Controller
         $data = $request->validate(['version' => 'required|string|size:64', 'confirmed' => 'required|accepted']);
         $settings->delete($data['version']);
         try {
-            app(Activity::class)->record('settings_saved', 'RIB HOMYA supprimé', null, (string) Str::uuid());
+            app(Activity::class)->record('settings_saved', 'RIB HOME CONFORT supprimé', null, (string) Str::uuid());
         } catch (\Throwable) {
             // The encrypted settings file is authoritative; activity history is supplementary.
         }

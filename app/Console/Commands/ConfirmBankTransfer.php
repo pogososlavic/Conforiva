@@ -12,7 +12,7 @@ final class ConfirmBankTransfer extends Command
 {
     protected $signature = 'homya:confirm-bank-transfer {receipt : Absolute path to a private, merchant-verified JSON receipt} {--apply : Confirm a verified receipt and settle stock once}';
 
-    protected $description = 'Preview or apply a bank receipt verified by HOMYA. Never accepts a customer declaration.';
+    protected $description = 'Preview or apply a bank receipt verified by HOME CONFORT. Never accepts a customer declaration.';
 
     public function handle(OrderStore $orders): int
     {

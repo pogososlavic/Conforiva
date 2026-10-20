@@ -69,7 +69,7 @@ final class OrderPdf
                 $lines[] = '';
             }
             if ($address !== null) {
-                $lines[] = __('legal.return_address').' : HOMYA, '.$address;
+                $lines[] = __('legal.return_address').' : HOME CONFORT, '.$address;
             }
             if ($mediator !== null && $mediator['membership_active']) {
                 $lines[] = '';
@@ -127,12 +127,12 @@ final class OrderPdf
             $id = 4 + $index * 2;
             $kids[] = "$id 0 R";
             $objects[$id] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents '.($id + 1).' 0 R >>';
-            $stream = "q 1 0.82 0.32 rg 48 775 500 4 re f Q BT /F1 20 Tf 48 805 Td (HOMYA) Tj ET\nBT /F1 11 Tf 16 TL 48 740 Td\n";
+            $stream = "q 1 0.82 0.32 rg 48 775 500 4 re f Q BT /F1 20 Tf 48 805 Td (HOME CONFORT) Tj ET\nBT /F1 11 Tf 16 TL 48 740 Td\n";
             foreach ($rows as $row) {
                 $escaped = strtr($row, ['\\' => '\\\\', '(' => '\\(', ')' => '\\)']);
                 $stream .= '('.$escaped.") Tj T*\n";
             }
-            $stream .= 'ET BT /F1 9 Tf 48 35 Td (HOMYA - '.($index + 1).' / '.count($pages).') Tj ET';
+            $stream .= 'ET BT /F1 9 Tf 48 35 Td (HOME CONFORT - '.($index + 1).' / '.count($pages).') Tj ET';
             $objects[$id + 1] = '<< /Length '.strlen($stream).">>\nstream\n".$stream."\nendstream";
         }
         $objects[2] = '<< /Type /Pages /Count '.count($pages).' /Kids ['.implode(' ', $kids).'] >>';

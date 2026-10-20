@@ -2,10 +2,10 @@
 
 return [
     'title' => 'Reprise gratuite de votre ancien appareil',
-    'policy' => 'Pour l’achat d’un équipement électrique ou électronique, HOMYA reprend gratuitement lors de la livraison un ancien appareil de type et de fonction équivalents, dans la limite du nombre d’appareils achetés, quelle que soit sa marque. Ce service est proposé pour les livraisons en France, en Belgique et en Allemagne.',
-    'preparation' => 'Indiquez la quantité à reprendre dans votre commande. Si vous n’avez pas fait ce choix, contactez HOMYA pour organiser la reprise avant la livraison ; ce choix facultatif ne supprime pas vos droits. Videz l’appareil et faites le débrancher ou déconnecter en sécurité ; effacez vos données personnelles lorsque cela concerne l’appareil. Signalez les difficultés d’accès ou un risque particulier pour organiser une reprise adaptée. La reprise ne constitue pas une prestation d’installation ou de démontage de votre installation.',
-    'other_products' => 'Les modalités concernant les autres produits, notamment le mobilier et les appareils de chauffage, dépendent de leur catégorie. Contactez HOMYA pour les faire préciser avant l’achat ; aucun droit légal de reprise applicable n’est exclu.',
-    'contact' => 'Organiser une reprise avec HOMYA',
+    'policy' => 'Pour l’achat d’un équipement électrique ou électronique, HOME CONFORT reprend gratuitement lors de la livraison un ancien appareil de type et de fonction équivalents, dans la limite du nombre d’appareils achetés, quelle que soit sa marque. Ce service est proposé pour les livraisons en France, en Belgique et en Allemagne.',
+    'preparation' => 'Indiquez la quantité à reprendre dans votre commande. Si vous n’avez pas fait ce choix, contactez HOME CONFORT pour organiser la reprise avant la livraison ; ce choix facultatif ne supprime pas vos droits. Videz l’appareil et faites le débrancher ou déconnecter en sécurité ; effacez vos données personnelles lorsque cela concerne l’appareil. Signalez les difficultés d’accès ou un risque particulier pour organiser une reprise adaptée. La reprise ne constitue pas une prestation d’installation ou de démontage de votre installation.',
+    'other_products' => 'Les modalités concernant les autres produits, notamment le mobilier et les appareils de chauffage, dépendent de leur catégorie. Contactez HOME CONFORT pour les faire préciser avant l’achat ; aucun droit légal de reprise applicable n’est exclu.',
+    'contact' => 'Organiser une reprise avec HOME CONFORT',
     'details' => 'Modalités de reprise',
     'quantity' => 'Ancien(s) appareil(s) équivalent(s) à reprendre',
     'none' => 'Aucune reprise demandée',

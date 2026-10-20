@@ -446,7 +446,8 @@ class GoogleSeoMerchantTest extends TestCase
         $node = array_values(array_filter($graph, fn ($entry) => $entry['@type'] === 'Product'))[0];
 
         $this->assertSame(['@type' => 'Offer', 'url' => 'https://homya-store.com/fr/produit/fixture-product',
-            'price' => '123.45', 'priceCurrency' => 'EUR', 'itemCondition' => 'https://schema.org/NewCondition'], $node['offers']);
+            'price' => '123.45', 'priceCurrency' => 'EUR', 'seller' => ['@id' => 'https://homya-store.com/#organization'],
+            'itemCondition' => 'https://schema.org/NewCondition'], $node['offers']);
     }
 
     public function test_feed_uses_the_localized_store_hierarchy_and_only_reviewed_taxonomy_ids(): void
@@ -561,6 +562,19 @@ class GoogleSeoMerchantTest extends TestCase
         $review = $this->review($contradiction) + ['essential_details_verified' => true];
         $this->assertContains('catalogue_issues_require_review', $merchant->problems($contradiction, $review, 'fr'));
         $this->assertSame(['missing_specifications'], $merchant->warnings($contradiction, $review));
+    }
+
+    public function test_a_review_cannot_override_an_exact_model_energy_document_reservation(): void
+    {
+        $product = $this->product();
+        $merchant = app(MerchantProducts::class);
+        $review = array_replace($this->review($product), ['energy_label_required' => true, 'eprel_code' => '123456']);
+        config(['product-energy.'.$product['slug'] => ['reference' => $product['reference'], 'price_display' => false]]);
+        $this->assertContains('energy_documents_require_correction', $merchant->problems($product, $review, 'fr'));
+        config(['product-energy.'.$product['slug'].'.reference' => 'A-DIFFERENT-MODEL']);
+        $this->assertNotContains('energy_documents_require_correction', $merchant->problems($product, $review, 'fr'));
+        config(['product-energy.'.$product['slug'] => ['reference' => $product['reference'], 'price_display' => true]]);
+        $this->assertNotContains('energy_documents_require_correction', $merchant->problems($product, $review, 'fr'));
     }
 
     public function test_google_energy_lookup_requires_explicit_opt_in_and_reviewed_manufacturer_identifiers(): void
@@ -688,6 +702,84 @@ class GoogleSeoMerchantTest extends TestCase
         $this->assertNull($checks['checkout_payment_ready']);
         foreach (array_diff_key($checks, ['checkout_payment_ready' => true]) as $value) {
             $this->assertTrue($value);
+        }
+    }
+
+    public function test_store_identity_uses_the_same_legal_and_contact_facts_without_invented_locations(): void
+    {
+        $this->production();
+        app()->setLocale('fr');
+        config(['legal.company.name' => 'Fixture legal entity', 'legal.company.siret' => '123 456 789 01234',
+            'legal.company.vat' => 'FR00123456789', 'legal.founded_on' => '2024-10-29',
+            'legal.address_structured' => ['street' => 'Fixture street', 'postal_code' => '97354',
+                'city' => 'Fixture city', 'country' => 'GF'],
+            'contact.phone' => '+33712345678', 'contact.email' => 'fixture@example.com']);
+        $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => 'fixture-product']),
+            'Fixture title', 'Fixture description', ['available' => true]);
+        $graph = json_decode($metadata['json'], true)['@graph'];
+        $organization = array_values(array_filter($graph, fn ($node) => $node['@type'] === 'OnlineStore'))[0];
+        $website = array_values(array_filter($graph, fn ($node) => $node['@type'] === 'WebSite'))[0];
+        $this->assertSame('HOME CONFORT', $organization['name']);
+        $this->assertSame('Fixture legal entity', $organization['legalName']);
+        $this->assertSame('FR00123456789', $organization['vatID']);
+        $this->assertSame('12345678901234', $organization['identifier']['value']);
+        $this->assertSame('GF', $organization['address']['addressCountry']);
+        $this->assertSame('Fixture street', $organization['address']['streetAddress']);
+        $this->assertSame('2024-10-29', $organization['foundingDate']);
+        $this->assertSame('fixture@example.com', $organization['email']);
+        $this->assertSame('+33712345678', $organization['telephone']);
+        $this->assertSame($organization['@id'], $website['publisher']['@id']);
+        $this->assertArrayNotHasKey('openingHours', $organization);
+        $this->assertArrayNotHasKey('geo', $organization);
+        $this->assertArrayNotHasKey('aggregateRating', $organization);
+
+        config(['contact.phone' => 'invalid', 'contact.email' => 'invalid', 'legal.founded_on' => '2024-02-31']);
+        $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => 'fixture-product']),
+            'Fixture title', 'Fixture description', ['available' => true]);
+        $organization = json_decode($metadata['json'], true)['@graph'][0];
+        foreach (['telephone', 'email', 'foundingDate'] as $property) {
+            $this->assertArrayNotHasKey($property, $organization);
+        }
+    }
+
+    public function test_single_page_product_variants_have_canonical_language_alternates(): void
+    {
+        $this->production();
+        app()->setLocale('fr');
+        $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => 'fixture-product'], '?variant=v1'),
+            'Fixture title', 'Fixture description', ['available' => true, 'variant' => 'v1']);
+        $this->assertSame('https://homya-store.com/fr/produit/fixture-product', $metadata['canonical']);
+        foreach (['fr', 'en', 'de'] as $locale) {
+            $this->assertSame('https://homya-store.com/'.$locale.'/produit/fixture-product', $metadata['alternates'][$locale]);
+        }
+        $this->assertSame($metadata['canonical'], $metadata['alternates']['x-default']);
+    }
+
+    public function test_eprel_markup_and_feed_share_the_reviewed_code_and_reject_stale_or_invalid_reviews(): void
+    {
+        $this->production();
+        app()->setLocale('fr');
+        $product = $this->product();
+        $review = $this->review($product) + ['eprel_code' => '1444805'];
+        foreach ([$review, array_replace($review, ['approved' => false]),
+            array_replace($review, ['eprel_code' => 'invalid']),
+            array_replace($review, ['fingerprints' => ['fr' => str_repeat('0', 64)]])] as $index => $candidate) {
+            File::put($this->reviewsPath, json_encode([$product['slug'] => $candidate]));
+            $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => $product['slug']]),
+                $product['name'], $product['description'], ['available' => true, 'product' => $product]);
+            $graph = json_decode($metadata['json'], true)['@graph'];
+            $node = array_values(array_filter($graph, fn ($entry) => $entry['@type'] === 'Product'))[0];
+            if ($index !== 0) {
+                $this->assertArrayNotHasKey('hasCertification', $node);
+
+                continue;
+            }
+            $this->assertSame(['@type' => 'Certification',
+                'issuedBy' => ['@type' => 'Organization', 'name' => 'European_Commission'],
+                'name' => 'EPREL', 'certificationIdentification' => '1444805'], $node['hasCertification']);
+            $xml = app(MerchantProducts::class)->xml([[$product, $candidate, true]], 'fr');
+            $this->assertStringContainsString('<g:certification_code>'.$node['hasCertification']['certificationIdentification'].'</g:certification_code>', $xml);
+            $this->assertArrayNotHasKey('offers', $node);
         }
     }
 }

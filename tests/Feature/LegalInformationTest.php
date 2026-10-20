@@ -239,7 +239,9 @@ class LegalInformationTest extends TestCase
             foreach (['mentions-legales', 'cgv', 'confidentialite', 'contact'] as $page) {
                 $response = $this->get('/'.$locale.'/'.$page)->assertOk();
                 foreach (config('legal.company') as $value) {
-                    $response->assertSee($value);
+                    if (is_string($value) && trim($value) !== '') {
+                        $response->assertSee($value);
+                    }
                 }
                 $response->assertSee(__('legal.contact_pending', [], $locale))
                     ->assertDontSee('contact@homeconfort.com', false)
@@ -249,8 +251,23 @@ class LegalInformationTest extends TestCase
                 $seller = $page === 'mentions-legales' ? '//section[@aria-labelledby="legal-editeur"]' : '//article';
                 $this->assertSame(0, $xpath->query($seller.'//dl[@class="company-details"]//a')->length);
                 $this->assertSame(1, $xpath->query($seller.'//dl[@class="company-details"]')->length);
-                $this->assertSame(13, $xpath->query($seller.'//dl[@class="company-details"]/div')->length);
+                $this->assertSame(12, $xpath->query($seller.'//dl[@class="company-details"]/div')->length);
             }
+        }
+    }
+
+    public function test_new_seller_identity_replaces_old_legal_claims_in_every_language(): void
+    {
+        foreach (['fr', 'en', 'de'] as $locale) {
+            foreach (['mentions-legales', 'cgv', 'confidentialite', 'contact'] as $page) {
+                $this->get('/'.$locale.'/'.$page)->assertOk()
+                    ->assertSee('93475731100014')->assertSee('FR05934757311')
+                    ->assertSee('RAPHAEL RUIZ')->assertSee('29/10/2024')
+                    ->assertDontSee('751 035 122')->assertDontSee('Morigny-Champigny')
+                    ->assertDontSee('David Marechal')->assertDontSee('EURL');
+            }
+            $this->get('/'.$locale.'/retractation')->assertOk()
+                ->assertSee(app(LegalInformation::class)->returnAddress())->assertDontSee('Morigny-Champigny');
         }
     }
 
@@ -306,6 +323,7 @@ class LegalInformationTest extends TestCase
 
     public function test_confirmed_return_destination_is_shared_and_does_not_invent_a_carrier_or_contact(): void
     {
+        config(['legal.returns_at_registered_office' => true]);
         foreach (['fr', 'en', 'de'] as $locale) {
             $html = $this->get('/'.$locale.'/retractation')->assertOk()->getContent();
             $xpath = $this->xpath($html);
@@ -317,7 +335,7 @@ class LegalInformationTest extends TestCase
             $this->assertStringNotContainsString('Michel', $html);
         }
         $before = app(OrderTerms::class)->hash();
-        config(['legal.returns_at_registered_office' => false]);
+        config(['legal.returns_at_registered_office' => false, 'shipping.returns.verified' => false]);
         $this->assertNull(app(LegalInformation::class)->returnAddress());
         $this->assertNotSame($before, app(OrderTerms::class)->hash());
     }

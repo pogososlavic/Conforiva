@@ -49,12 +49,36 @@ final class CatalogueProductCorrections
 
     public static function apply(array $source, array $product, string $locale): array
     {
+        $product = self::correctSupraOscarMaterialClaim($source, $product, $locale);
+
         if ($locale === 'fr') {
             $product = self::correctFrenchLgProducts($source, $product);
             $product = self::correctFrenchLgFridgeTitles($source, $product);
         }
 
         return self::correctBoschCapacity($source, $product, $locale);
+    }
+
+    /** SUPRA OSCAR technical sheet: steel structure with cast-iron inner parts. */
+    private static function correctSupraOscarMaterialClaim(array $source, array $product, string $locale): array
+    {
+        $names = [
+            'fr' => 'Poêle à bois étanche en fonte – SUPRA Oscar 4.8 kW',
+            'en' => 'Room-sealed wood-burning stove in cast iron – SUPRA Oscar 4.8 kW',
+            'de' => 'Raumluftunabhängiger Holzofen In Gusseisen – SUPRA Oscar 4.8 kW',
+        ];
+        if (($source['slug'] ?? null) !== 'poele-a-bois-etanche-en-fonte-supra-oscar-4-8-kw'
+            || ($source['reference'] ?? null) !== '44294'
+            || ($source['name'] ?? null) !== $names['fr']
+            || ($source['has_variants'] ?? null) !== false
+            || ($source['variants'] ?? []) !== []
+            || ! isset($names[$locale]) || ($product['name'] ?? null) !== $names[$locale]) {
+            return $product;
+        }
+        $product['name'] = str_replace([' en fonte', ' in cast iron', ' In Gusseisen'], '', $product['name']);
+        $product['title_source'] = 'trained_algorithmic_media';
+
+        return $product;
     }
 
     private static function correctFrenchLgProducts(array $source, array $product): array

@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'contact_notice' => 'Senden Sie Ihre Frage in einem privaten Gespräch und lesen Sie dort die Antworten von HOMYA. Bewahren Sie Referenz und Zugangscode auf. Sie können auch die unten angegebenen E-Mail-, Telefon-, WhatsApp- oder SMS-Kontaktdaten nutzen.',
-    'title' => 'HOMYA kontaktieren',
+    'contact_notice' => 'Senden Sie Ihre Frage in einem privaten Gespräch und lesen Sie dort die Antworten von HOME CONFORT. Bewahren Sie Referenz und Zugangscode auf. Sie können auch die unten angegebenen E-Mail-, Telefon-, WhatsApp- oder SMS-Kontaktdaten nutzen.',
+    'title' => 'HOME CONFORT kontaktieren',
     'intro' => 'Senden Sie Ihre Frage und lesen Sie Antworten in Ihrem privaten Gespräch.',
     'new' => 'Neue Nachricht',
     'new_help' => 'Eine Frage zu einem Produkt, einer Bestellung oder einer Lieferung?',
@@ -17,9 +17,9 @@ return [
     'reference' => 'Gesprächsreferenz',
     'code' => 'Privater Zugangscode',
     'open' => 'Gespräch öffnen',
-    'thread' => 'Mein Gespräch mit HOMYA',
+    'thread' => 'Mein Gespräch mit HOME CONFORT',
     'keep' => 'Bewahren Sie Referenz und Code auf, um das Gespräch auf einem anderen Gerät zu öffnen. Teilen Sie den Code nicht.',
-    'refresh' => 'HOMYA-Antworten erscheinen hier.',
+    'refresh' => 'HOME CONFORT-Antworten erscheinen hier.',
     'refresh_button' => 'Gespräch aktualisieren',
     'access_error' => 'Referenz oder Zugangscode ist falsch.',
     'delivery' => 'Lieferverfolgung',

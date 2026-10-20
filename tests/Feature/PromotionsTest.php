@@ -192,7 +192,8 @@ class PromotionsTest extends TestCase
     {
         foreach (['fr', 'en', 'de'] as $locale) {
             $source = Mockery::mock(CatalogueSource::class);
-            $source->shouldReceive('archive')->once()->andThrow(new RuntimeException('PRIVATE_PROMO_SENTINEL mysql://private SQL'));
+            // Shared page components may resolve their own catalogue instance.
+            $source->shouldReceive('archive')->atLeast()->once()->andThrow(new RuntimeException('PRIVATE_PROMO_SENTINEL mysql://private SQL'));
             $this->app->instance(CatalogueSource::class, $source);
             $this->get('/'.$locale.'/promotions')->assertStatus(503)->assertSee(__('catalogue.source_unavailable', [], $locale))
                 ->assertDontSee('PRIVATE_PROMO_SENTINEL')->assertDontSee('mysql://private')->assertDontSee('Équipement témoin');

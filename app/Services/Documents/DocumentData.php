@@ -161,7 +161,7 @@ final class DocumentData
             }
         }
         if (! $allowMissingBankDetails && in_array($data['type'], ['quote', 'purchase_order'], true) && empty($data['bank_details'])) {
-            $errors[] = 'Renseignez un RIB HOMYA valide dans le dashboard avant d’émettre ce document.';
+            $errors[] = 'Renseignez un RIB HOME CONFORT valide dans le dashboard avant d’émettre ce document.';
         }
         if (in_array($data['tax_mode'], ['exempt', 'reverse'], true) && empty($data['tax_note'])) {
             $errors[] = 'Renseignez le fondement légal de l’exonération ou de l’autoliquidation.';
@@ -217,10 +217,11 @@ final class DocumentData
         return array_unique($errors);
     }
 
-    public function issuer(): array
+    public function issuer(bool $requireComplete = true): array
     {
         $company = config('legal.company');
-        foreach (['name', 'form', 'capital', 'address', 'siren', 'vat', 'rcs'] as $key) {
+        $required = $requireComplete ? ['name', 'form', 'capital', 'address', 'siren', 'vat', 'rcs'] : ['name', 'form', 'address', 'siren', 'siret'];
+        foreach ($required as $key) {
             if (empty($company[$key])) {
                 throw ValidationException::withMessages(['issuer' => 'Les informations légales du vendeur sont incomplètes.']);
             }

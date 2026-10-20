@@ -1,5 +1,7 @@
 """Offline integrity tests; fixtures never enter HOMYA's public catalogue."""
 import json
+import io
+from email.message import Message
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,7 +10,61 @@ from unittest.mock import patch
 import collect_damdam as collector
 
 
+class FixtureSourceHandler(collector.urllib.request.BaseHandler):
+    """Exercise urllib's real redirect processing without opening sockets."""
+    handler_order = 100
+    def __init__(self, destinations):
+        self.destinations = destinations
+        self.contacted = []
+
+    def https_open(self, request):
+        self.contacted.append(request.full_url)
+        status, location = self.destinations[request.full_url]
+        headers = Message()
+        headers['Content-Type'] = 'text/html'
+        if location:
+            headers['Location'] = location
+        response = collector.urllib.response.addinfourl(io.BytesIO(b'fixture'), headers,
+                                                       request.full_url, status)
+        response.msg = 'fixture'
+        return response
+
+
 class CatalogueCollectorTest(unittest.TestCase):
+    def setUp(self):
+        network = patch('socket.create_connection', side_effect=AssertionError('Network forbidden'))
+        network.start()
+        self.addCleanup(network.stop)
+
+    def test_redirects_validate_every_hop_before_contact(self):
+        start = 'https://www.damdam.fr/start'
+        middle = 'https://www.damdam.fr/middle'
+        for target in ('https://127.0.0.1/private', 'http://www.damdam.fr/private',
+                       'https://unapproved.example/private',
+                       'https://www.damdam.fr:8443/private',
+                       'https://user:password@www.damdam.fr/private'):
+            with self.subTest(target=target):
+                transport = FixtureSourceHandler({start: (302, middle), middle: (302, target)})
+                build_opener = collector.urllib.request.build_opener
+                with patch.object(collector.urllib.request, 'build_opener',
+                                  side_effect=lambda handler: build_opener(transport, handler)), \
+                        patch.object(collector.time, 'sleep'):
+                    with self.assertRaises(ValueError):
+                        collector.fetch(start)
+                self.assertEqual(transport.contacted, [start, middle] * 3)
+
+    def test_authorized_relative_and_media_redirects_succeed(self):
+        for start, location, final, media in (
+                ('https://www.damdam.fr/start', '/final', 'https://www.damdam.fr/final', False),
+                ('https://damdam.b-cdn.net/start', 'https://res.cloudinary.com/final',
+                 'https://res.cloudinary.com/final', True)):
+            transport = FixtureSourceHandler({start: (302, location), final: (200, None)})
+            build_opener = collector.urllib.request.build_opener
+            with patch.object(collector.urllib.request, 'build_opener',
+                              side_effect=lambda handler: build_opener(transport, handler)):
+                self.assertEqual(collector.fetch(start, media), (b'fixture', 'text/html'))
+            self.assertEqual(transport.contacted, [start, final])
+
     def product(self):
         return {'slug': 'fixture-produit', 'title': 'Produit de test', 'price': 12345,
                 'sku': 'FIXTURE', 'stock': 999, 'reviews': [{'name': 'Do not retain'}],

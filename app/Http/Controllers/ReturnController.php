@@ -14,7 +14,11 @@ final class ReturnController extends CommerceController
     {
         $request->session()->put('returns.nonce', (string) Str::uuid());
 
-        return view('returns.form', ['locale' => $locale, 'review' => false, 'data' => $this->draft($request)]);
+        $lastId = $request->session()->get('returns.last.id');
+        $lastReceiptId = is_string($lastId) && Str::isUuid($lastId)
+            && $request->session()->get('returns.access.'.$lastId) === true ? $lastId : null;
+
+        return view('returns.form', ['locale' => $locale, 'review' => false, 'data' => $this->draft($request), 'lastReceiptId' => $lastReceiptId]);
     }
 
     public function review(Request $request, string $locale)
@@ -23,6 +27,7 @@ final class ReturnController extends CommerceController
             'name' => 'required|string|max:150',
             'contract' => 'required|string|max:500',
             'email' => 'nullable|email:rfc|max:254',
+            'phone' => ['nullable', 'string', 'max:40', 'regex:/\A(?=(?:\D*\d){6,})[+0-9 ().-]{6,40}\z/'],
             'method' => 'required|in:download',
             'logistics' => 'nullable|in:parcel,bulky,unknown',
             'notes' => 'nullable|string|max:1000',
@@ -38,7 +43,7 @@ final class ReturnController extends CommerceController
         abort_unless(is_string($nonce) && $request->session()->get('returns.nonce') === $nonce, 419);
         $previous = $request->session()->get('returns.last');
         if (is_array($previous) && $previous['nonce'] === $nonce) {
-            return to_route('returns.receipt', ['locale' => $locale, 'id' => $previous['id']]);
+            return $this->download($request, $requests, $locale, $previous['id']);
         }
         $data = $this->draft($request);
         abort_unless($data !== [], 419);
@@ -51,7 +56,7 @@ final class ReturnController extends CommerceController
         $request->session()->put('returns.access.'.$record['id'], true);
         $request->session()->forget('returns.draft');
 
-        return to_route('returns.receipt', ['locale' => $locale, 'id' => $record['id']]);
+        return $this->download($request, $requests, $locale, $record['id']);
     }
 
     public function receipt(Request $request, ReturnRequests $requests, string $locale, string $id)
@@ -69,7 +74,7 @@ final class ReturnController extends CommerceController
 
         return response()->view('returns.document', compact('record', 'locale'))
             ->header('Content-Type', 'text/html; charset=UTF-8')
-            ->header('Content-Disposition', 'attachment; filename="HOMYA-retractation-'.$id.'.html"')
+            ->header('Content-Disposition', 'attachment; filename="HOME-CONFORT-retractation-'.$id.'.html"')
             ->header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; sandbox");
     }
 

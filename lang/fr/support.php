@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'Contacter HOMYA',
+    'title' => 'Contacter HOME CONFORT',
     'intro' => 'Envoyez votre question et consultez les réponses dans votre dossier privé.',
     'new' => 'Nouveau message',
     'new_help' => 'Une question sur un produit, une commande ou une livraison ?',
@@ -12,14 +12,14 @@ return [
     'send' => 'Envoyer mon message',
     'privacy' => 'Vos coordonnées et messages servent à traiter votre demande.',
     'privacy_link' => 'Politique de confidentialité',
-    'contact_notice' => 'Envoyez votre question dans un dossier privé et retrouvez-y les réponses de HOMYA. Conservez sa référence et son code d’accès. Vous pouvez également utiliser l’e-mail, le téléphone, WhatsApp ou SMS ci-dessous.',
+    'contact_notice' => 'Envoyez votre question dans un dossier privé et retrouvez-y les réponses de HOME CONFORT. Conservez sa référence et son code d’accès. Vous pouvez également utiliser l’e-mail, le téléphone, WhatsApp ou SMS ci-dessous.',
     'resume' => 'Reprendre une conversation',
     'reference' => 'Référence du dossier',
     'code' => 'Code d’accès privé',
     'open' => 'Ouvrir mon dossier',
-    'thread' => 'Ma conversation avec HOMYA',
+    'thread' => 'Ma conversation avec HOME CONFORT',
     'keep' => 'Conservez la référence et le code pour retrouver cette conversation depuis un autre appareil. Ne partagez pas ce code.',
-    'refresh' => 'Les réponses de HOMYA apparaissent ici.',
+    'refresh' => 'Les réponses de HOME CONFORT apparaissent ici.',
     'refresh_button' => 'Actualiser la conversation',
     'access_error' => 'Référence ou code incorrect.',
     'delivery' => 'Suivi de livraison',

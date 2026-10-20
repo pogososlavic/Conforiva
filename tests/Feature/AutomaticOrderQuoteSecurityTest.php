@@ -20,6 +20,7 @@ final class AutomaticOrderQuoteSecurityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['legal.company.capital' => 'Capital synthétique de test', 'legal.company.rcs' => 'Immatriculation synthétique de test']);
         config([
             'commerce.quote_email.enabled' => true,
             'database.connections.commerce' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''],

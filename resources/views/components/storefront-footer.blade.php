@@ -33,7 +33,7 @@
             <a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'confidentialite']) }}">{{ __('pages.entries.confidentialite.title') }}</a>
             <x-analytics-consent compact />
             <a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'retractation']) }}">{{ __('footer.withdrawal') }}</a>
-            <span class="footer-copyright">© {{ date('Y') }} HOMYA</span>
+            <span class="footer-copyright">© {{ date('Y') }} HOME CONFORT</span>
         </nav>
     </div>
 </footer>

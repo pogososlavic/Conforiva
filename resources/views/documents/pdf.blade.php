@@ -10,12 +10,12 @@
     @php($validityDate = \Illuminate\Support\Carbon::parse($data['valid_until_at'])->setTimezone('Europe/Paris'))
     @php($quoteValidity = match ($language) { 'en' => $validityDate->format('d/m/Y H:i').' (Paris time)', 'de' => $validityDate->format('d.m.Y H:i').' Uhr (Pariser Zeit)', default => $validityDate->format('d/m/Y à H:i').' (heure de Paris)' })
 @endif
-<table class="head"><tr><td width="30%">@if($logo)<img class="brand" src="{{ $logo }}" alt="HOMYA">@else<strong>HOMYA</strong>@endif</td><td width="70%" class="right"><h1>{{ $text('types.'.$data['type']) }}</h1><strong>{{ $record['number'] ?? $text('no_number') }}</strong><p>{{ $text('date') }} : {{ isset($record['issued_at']) ? substr($record['issued_at'], 0, 10) : $text('draft') }}</p></td></tr></table>
+<table class="head"><tr><td width="30%">@if($logo)<img class="brand" src="{{ $logo }}" alt="HOME CONFORT">@else<strong>HOME CONFORT</strong>@endif</td><td width="70%" class="right"><h1>{{ $text('types.'.$data['type']) }}</h1><strong>{{ $record['number'] ?? $text('no_number') }}</strong><p>{{ $text('date') }} : {{ isset($record['issued_at']) ? substr($record['issued_at'], 0, 10) : $text('draft') }}</p></td></tr></table>
 @if($record['status'] === 'draft')<div class="draft">{{ $text('draft_notice') }}</div>@endif
 <table class="parties"><tr><td>
 <h2>{{ $text('issuer') }}</h2>
 <strong>{{ $issuer['name'] }}</strong>
-<p>{{ $issuer['form'] }}<br>{{ $text('capital') }} : {{ $issuer['capital'] }}</p>
+<p>{{ $issuer['form'] }}@if($issuer['capital'] ?? null)<br>{{ $text('capital') }} : {{ $issuer['capital'] }}@endif</p>
 <p>{{ $text('registered_office') }} : {{ $issuer['address'] }}</p>
 @if($issuer['email'] ?? null)<p>{{ $text('email') }} : {{ $issuer['email'] }}</p>@endif
 @if($issuer['phone'] ?? null)<p>{{ $text('phone') }} : {{ $issuer['phone'] }}</p>@endif
@@ -40,7 +40,7 @@
 @if($data['type'] === 'quote')<p>{{ $text('quote_acceptance') }}</p>@endif
 @if($data['type'] === 'purchase_order')<p>{{ $text('purchase_order_validation') }}</p>@endif
 <div class="identity">
-<strong>{{ $issuer['name'] }}</strong> · {{ $issuer['rcs'] }}
+<strong>{{ $issuer['name'] }}</strong>@if($issuer['rcs'] ?? null) · {{ $issuer['rcs'] }}@endif
 @if($issuer['rcs_registered_on'] ?? null)<br>{{ $text('registered_on_rcs') }} : {{ $issuer['rcs_registered_on'] }}@endif
 @if($issuer['rne_registered_on'] ?? null) · {{ $text('registered_on_rne') }} : {{ $issuer['rne_registered_on'] }}@endif
 @if($issuer['manager'] ?? null)<br>{{ $text('manager') }} : {{ $issuer['manager'] }}@endif

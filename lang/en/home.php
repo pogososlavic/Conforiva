@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'title' => 'HOMYA — Home, made simple',
-    'description' => 'Coming soon to HOMYA: firewood and fuels, heating, home appliances, furniture and televisions.',
-    'description_ready' => 'Explore HOMYA: firewood and fuels, heating, home appliances, furniture and televisions. Browse the catalogue.',
+    'title' => 'HOME CONFORT — Home, made simple',
+    'description' => 'Coming soon to HOME CONFORT: firewood and fuels, heating, home appliances, furniture and televisions.',
+    'description_ready' => 'Explore HOME CONFORT: firewood and fuels, heating, home appliances, furniture and televisions. Browse the catalogue.',
     'skip' => 'Skip to content',
     'language' => 'Choose your language',
     'language_names' => ['fr' => 'Français', 'en' => 'English', 'de' => 'Deutsch'],
@@ -26,11 +26,12 @@ return [
     'status_detail' => 'The catalogue has not been published yet. Search and shopping are currently unavailable.',
     'universes' => 'Our collections',
     'topline' => 'Heating, comfort and equipment for your home',
+    'advice_alt' => 'Bright lounge with a grey sofa and wooden coffee table',
     'hero_alt' => 'Bright living room with a blue sofa, wooden furniture and green plants',
     'see_stoves' => 'Explore stoves',
     'all_catalogue' => 'Browse the full catalogue',
     'choose_help' => 'Choosing your appliance',
-    'store_intro' => 'HOMYA brings together heating, appliances, furniture, wood and fuels, and televisions. Compare prices including tax, photos and specifications to find the right equipment for your home.',
+    'store_intro' => 'HOME CONFORT brings together heating, appliances, furniture, wood and fuels, and televisions. Compare prices including tax, photos and specifications to find the right equipment for your home.',
     'highlights' => [
         [
             'title' => 'Leading brands',
@@ -101,12 +102,13 @@ return [
     'guide_heating' => 'Explore heating',
     'guide_alt' => 'Illustration of an interior with heating and home appliances',
     'browse_heading' => 'More to discover',
-    'browse_intro' => 'Furniture, appliances and accessories: continue exploring the HOMYA catalogue.',
+    'browse_intro' => 'Furniture, appliances and accessories: continue exploring the HOME CONFORT catalogue.',
     'browse_action' => 'Explore the catalogue',
-    'footer_intro' => 'HOMYA is an independent retailer of heating equipment, home appliances and furniture.',
+    'footer_intro' => 'HOME CONFORT is an independent retailer of heating equipment, home appliances and furniture.',
     'footer_collections' => 'Our collections',
-    'footer_discover' => 'Discover HOMYA',
+    'footer_discover' => 'Discover HOME CONFORT',
     'catalogue_unavailable' => 'The catalogue is temporarily unavailable. Please try again shortly.',
+    'freezer' => ['name' => 'Freezers', 'description' => 'Explore this model and its specifications.'],
     'categories' => [
         'firewood' => ['name' => 'Firewood & fuels', 'description' => 'Firewood and fuels for the home.'],
         'heating' => ['name' => 'Heating appliances', 'description' => 'Appliances for heating your home.'],

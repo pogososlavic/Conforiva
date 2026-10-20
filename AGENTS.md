@@ -1,8 +1,8 @@
-# HOMYA — règles locales
+# HOME CONFORT — règles locales
 
 Appliquer les instructions globales `/Users/akm/.codex/AGENTS.md` et les modules pertinents indiqués par `/Users/akm/Codex-Workspace/.codex/workflows/README.md`.
 
-- Projet confirmé : ce dépôt HOMYA ; Laravel et base locale XAMPP.
+- Projet confirmé : ce dépôt HOME CONFORT (anciennement HOMYA) ; Laravel et base locale XAMPP.
 - Lire `docs/CADRAGE-HOMYA.md` et `docs/ENVIRONNEMENT-LOCAL.md` avant les changements structurants.
 - Utiliser PHP 8.3 minimum pour Laravel 13 ; PHP 8.5 est installé localement. Le PHP 8.2 de XAMPP est incompatible avec cette version Laravel.
 - La base cible est MariaDB de XAMPP. Ne pas assimiler le service MySQL Homebrew sur le port 3306 à XAMPP.
@@ -11,3 +11,5 @@ Appliquer les instructions globales `/Users/akm/.codex/AGENTS.md` et les modules
 - Utiliser les composants Blade et les styles partagés. Les prix, stocks, avis et promesses commerciales ne doivent pas être inventés.
 - Vérifier chaque phase proportionnellement ; distinguer tests sans base, vérification MariaDB et fonctionnalités commerciales.
 - Les arbitrages confirmés sont consignés dans le registre central Specification, filtré sur HOMYA ; aucun registre général parallèle.
+
+- Marque de travail actuelle confirmée le 19/10/2026 : HOME CONFORT. HOMYA et HOME SHOP ne sont plus des marques affichées. Conserver les identifiants techniques, contacts confirmés, raison sociale légale et archives historiques tant qu’une migration distincte n’est pas demandée.

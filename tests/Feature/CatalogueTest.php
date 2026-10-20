@@ -350,7 +350,7 @@ class CatalogueTest extends TestCase
             $this->get('/'.$locale.'/retractation')->assertOk()->assertSee('14');
             $terms = __('legal.entries.retractation.sections', [], $locale);
             $this->assertStringContainsString('14', $terms[2]['paragraphs'][0]);
-            $this->assertStringContainsString('HOMYA', $terms[2]['paragraphs'][4]);
+            $this->assertStringContainsString('HOME CONFORT', $terms[2]['paragraphs'][4]);
         }
     }
 
@@ -371,7 +371,7 @@ class CatalogueTest extends TestCase
             }
             $response->assertSee('REF-1')->assertSee('20 cm')->assertSee('Marque test')->assertDontSee('Équipement test')->assertDontSee('Largeur');
             $xpath = $this->xpath($response->getContent());
-            $this->assertSame($expected[0].' — HOMYA', $xpath->query('//title')->item(0)->textContent);
+            $this->assertSame($expected[0].' — HOME CONFORT', $xpath->query('//title')->item(0)->textContent);
             $this->assertStringStartsWith($expected[2], $xpath->query('//meta[@name="description"]')->item(0)->getAttribute('content'));
             $this->get('/'.$locale.'/catalogue?q='.urlencode($expected[5]))->assertOk()->assertSee($expected[1])->assertSee($expected[0])->assertDontSee('Équipement test');
             $this->get('/'.$locale.'/catalogue?q=equipement')->assertOk()->assertSee($expected[0])->assertDontSee('Équipement test');
@@ -406,10 +406,12 @@ class CatalogueTest extends TestCase
             $data = json_decode(File::get($file), true);
             $data['strings'] += $extra;
             File::put($file, json_encode($data));
-            $this->get('/'.$locale.'/produit/test-produit-001')->assertOk()->assertSee($extra['Acier blanc'])->assertSee('REF-1-ACIER-BLANC')
+            $response = $this->get('/'.$locale.'/produit/test-produit-001')->assertOk()->assertSee($extra['Acier blanc'])->assertSee('REF-1-ACIER-BLANC')
                 ->assertDontSee('damdam', false)->assertDontSee('<del>', false)->assertDontSee('b-cdn.net', false);
+            $this->assertSame(str_replace('HOMYA', 'HOME CONFORT', $extra['HOMYA test']), $this->xpath($response->getContent())->query('//h1')->item(0)->textContent);
         }
         $this->assertSame('DAMDAM', json_decode(File::get($path), true)['brand']);
+        $this->assertSame('DAMDAM test', json_decode(File::get($path), true)['name']);
     }
 
     public function test_unresolved_description_is_not_rendered_or_replaced_with_invented_prose(): void

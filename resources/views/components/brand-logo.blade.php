@@ -1,1 +1,1 @@
-<img {{ $attributes->merge(['class' => 'brand-logo-image']) }} src="{{ asset('branding/homya-logo-v1.webp') }}" width="720" height="240" alt="HOMYA" decoding="async">
+<img {{ $attributes->merge(['class' => 'brand-logo-image']) }} src="{{ asset('branding/home-confort-logo-v1.svg') }}" width="900" height="300" alt="HOME CONFORT" decoding="async">

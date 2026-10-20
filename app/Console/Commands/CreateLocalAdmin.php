@@ -46,7 +46,7 @@ final class CreateLocalAdmin extends Command
             $this->privateWrite($directory.'/env-before-'.$stamp, $before);
             // The handoff file is private, never returned in the command output or HTTP responses.
             if ($generated) {
-                $this->privateWrite($directory.'/access-'.$stamp.'.txt', "HOMYA — Administration locale\n\nLien : ".rtrim(config('app.url'), '/')."/admin\nIdentifiant : ".$username."\nMot de passe : ".$password."\n\nFichier privé. Conservez ces accès dans votre gestionnaire de mots de passe.\n");
+                $this->privateWrite($directory.'/access-'.$stamp.'.txt', "HOME CONFORT — Administration locale\n\nLien : ".rtrim(config('app.url'), '/')."/admin\nIdentifiant : ".$username."\nMot de passe : ".$password."\n\nFichier privé. Conservez ces accès dans votre gestionnaire de mots de passe.\n");
             }
             $after = $before;
             foreach (['HOMYA_ADMIN_USERNAME' => $username, 'HOMYA_ADMIN_PASSWORD_HASH' => Hash::make($password)] as $key => $value) {

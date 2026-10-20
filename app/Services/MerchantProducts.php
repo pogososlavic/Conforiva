@@ -70,7 +70,7 @@ final class MerchantProducts
     public static function fingerprint(array $product): string
     {
         $facts = [];
-        foreach (['slug', 'reference', 'name', 'description', 'brand', 'universe', 'category', 'manufacturer', 'condition', 'price_cents', 'currency', 'has_variants', 'variants', 'images', 'specifications', 'specification_reviews', 'issues', 'variant_id', 'variant_attributes', 'title_source', 'description_source'] as $key) {
+        foreach (['slug', 'reference', 'name', 'description', 'brand', 'universe', 'category', 'manufacturer', 'condition', 'price_cents', 'currency', 'has_variants', 'variants', 'images', 'specifications', 'specification_reviews', 'issues', 'variant_id', 'variant_attributes', 'title_source', 'description_source', 'sales_pack'] as $key) {
             $facts[$key] = $product[$key] ?? null;
         }
 
@@ -88,6 +88,49 @@ final class MerchantProducts
         }
 
         return (10 - $sum % 10) % 10 === (int) substr($gtin, -1);
+    }
+
+    /** Owner-confirmed retailer lots; all prices and stock remain per complete lot. */
+    public static function salesPack(array $product): ?array
+    {
+        $pack = $product['sales_pack'] ?? null;
+        if (! is_array($pack) || ($pack['type'] ?? null) !== 'merchant_multipack'
+            || ($pack['identifier_scope'] ?? null) !== 'unit_bag'
+            || ! is_int($pack['count'] ?? null) || $pack['count'] < 2 || $pack['count'] > 1000
+            || ! is_int($pack['unit_weight_kg'] ?? null) || $pack['unit_weight_kg'] < 1 || $pack['unit_weight_kg'] > 1000
+            || ! is_string($pack['owner_confirmed_on'] ?? null)
+            || ! preg_match('/\A\d{4}-\d{2}-\d{2}\z/', $pack['owner_confirmed_on'])) {
+            return null;
+        }
+
+        return ['multipack' => $pack['count'], 'unit_pricing_measure' => ($pack['count'] * $pack['unit_weight_kg']).'kg',
+            'unit_pricing_base_measure' => '1kg'];
+    }
+
+    /** Only reviewed gallery URLs; an unknown URL cannot introduce a remote image. */
+    public function reviewedImages(array $product, array $review): array
+    {
+        $images = $product['images'] ?? [];
+        if (! array_key_exists('approved_google_image_urls', $review)) {
+            return $images;
+        }
+        $urls = $review['approved_google_image_urls'];
+        if (! is_array($urls) || ! array_is_list($urls) || $urls === [] || count($urls) > 11
+            || count(array_filter($urls, 'is_string')) !== count($urls)
+            || count(array_unique($urls)) !== count($urls)
+            || ($urls[0] ?? null) !== ($images[0]['local_url'] ?? null)) {
+            return [];
+        }
+        $selected = [];
+        foreach ($urls as $url) {
+            $matches = array_values(array_filter($images, static fn (array $image): bool => ($image['local_url'] ?? null) === $url));
+            if (count($matches) !== 1) {
+                return [];
+            }
+            $selected[] = $matches[0];
+        }
+
+        return $selected;
     }
 
     public static function condition(array $product): ?string
@@ -130,6 +173,13 @@ final class MerchantProducts
         }
         if (! ($product['has_variants'] ?? false)
             && array_intersect(config('merchant.target_countries', []), self::EU_COUNTRIES) !== []) {
+            // A feed review cannot override an unresolved reservation on the exact
+            // model's supplier documents (for example the Aquaflam fiche typo).
+            $documents = config('product-energy.'.($product['slug'] ?? ''));
+            if (is_array($documents) && ($documents['reference'] ?? null) === ($product['reference'] ?? null)
+                && ($documents['price_display'] ?? true) === false) {
+                $problems[] = 'energy_documents_require_correction';
+            }
             // Obligation is a reviewed product fact, never inferred from a broad store category.
             if (! is_bool($review['energy_label_required'] ?? null)) {
                 $problems[] = 'energy_label_review_required';
@@ -196,6 +246,32 @@ final class MerchantProducts
                 }
             } elseif (! self::validGtin($gtin) && ! (is_string($mpn) && trim($mpn) !== '' && ! empty($product['brand']))) {
                 $problems[] = 'manufacturer_identifiers_required';
+            }
+        }
+        if (array_key_exists('approved_google_image_urls', $review) && $this->reviewedImages($product, $review) === []) {
+            $problems[] = 'image_review_required';
+        }
+        if (isset($product['sales_pack']) || isset($review['multipack'])
+            || ($review['identifier_scope'] ?? null) === 'unit_bag') {
+            $pack = self::salesPack($product);
+            if ($pack === null || ($review['multipack'] ?? null) !== $pack['multipack']
+                || ($review['identifier_scope'] ?? null) !== 'unit_bag') {
+                $problems[] = 'multipack_review_required';
+            }
+            if (($review['identifier_exists'] ?? null) === false) {
+                $problems[] = 'multipack_identifiers_required';
+            }
+            foreach (['gtin', 'mpn'] as $identifier) {
+                if (isset($review[$identifier]) && (($product['manufacturer']['identifier_scope'] ?? null) !== 'unit_bag'
+                    || $review[$identifier] !== ($product['manufacturer'][$identifier] ?? null))) {
+                    $problems[] = 'multipack_identifier_mismatch';
+                }
+            }
+        }
+        foreach ($this->reviewedImages($product, $review) as $image) {
+            if ((is_int($image['width'] ?? null) && $image['width'] < 500)
+                || (is_int($image['height'] ?? null) && $image['height'] < 500)) {
+                $problems[] = 'image_resolution_below_preparation_target';
             }
         }
         // AI provenance must be confirmed, not guessed from the language or source.
@@ -406,9 +482,9 @@ final class MerchantProducts
         $xml->writeAttribute('version', '2.0');
         $xml->writeAttribute('xmlns:g', 'http://base.google.com/ns/1.0');
         $xml->startElement('channel');
-        $xml->writeElement('title', 'HOMYA');
+        $xml->writeElement('title', 'HOME CONFORT');
         $xml->writeElement('link', $this->seo->url('home', compact('locale')));
-        $xml->writeElement('description', 'HOMYA — '.strtoupper($locale));
+        $xml->writeElement('description', 'HOME CONFORT — '.strtoupper($locale));
         foreach ($items as [$product, $review, $inStock]) {
             $xml->startElement('item');
             // Internal feed ID, stable across languages, never a fabricated GTIN/MPN.
@@ -430,13 +506,33 @@ final class MerchantProducts
                 }
             }
             $this->attribute($xml, 'link', $this->seo->url('product', ['locale' => $locale, 'slug' => $product['slug']] + (isset($product['variant_id']) ? ['variant' => $product['variant_id']] : [])));
-            foreach ($product['images'] as $index => $image) {
+            $reviewedImages = $this->reviewedImages($product, $review);
+            if (array_key_exists('approved_google_image_urls', $review) && $reviewedImages === []) {
+                throw new \RuntimeException('Invalid reviewed product images.');
+            }
+            foreach ($reviewedImages as $image) {
+                if ((is_int($image['width'] ?? null) && $image['width'] < 500)
+                    || (is_int($image['height'] ?? null) && $image['height'] < 500)) {
+                    throw new \RuntimeException('Product image below preparation target.');
+                }
+            }
+            foreach ($reviewedImages as $index => $image) {
                 if ($index > 10) {
                     break;
                 }
                 $this->attribute($xml, $index === 0 ? 'image_link' : 'additional_image_link', $this->seo->origin().$image['local_url']);
             }
             $this->attribute($xml, 'price', number_format($product['price_cents'] / 100, 2, '.', '').' EUR');
+            if ($pack = self::salesPack($product)) {
+                if (($review['multipack'] ?? null) !== $pack['multipack'] || ($review['identifier_scope'] ?? null) !== 'unit_bag') {
+                    throw new \RuntimeException('Unreviewed retailer multipack.');
+                }
+                foreach ($pack as $attribute => $value) {
+                    $this->attribute($xml, $attribute, (string) $value);
+                }
+            } elseif (isset($product['sales_pack']) || isset($review['multipack'])) {
+                throw new \RuntimeException('Invalid retailer multipack.');
+            }
             $this->attribute($xml, 'availability', $inStock ? 'in_stock' : 'out_of_stock');
             $this->attribute($xml, 'condition', self::condition($product));
             if ($type = self::productType($product, $locale)) {

@@ -115,14 +115,18 @@ final class Seo
         $alternates = [];
         if ($canonical !== null) {
             foreach (config('homya.locales') as $language) {
-                $alternates[$language] = $this->url($route, array_replace($parameters, ['locale' => $language]) + ($route === 'product' && ! empty($context['variant']) ? ['variant' => $context['variant']] : []));
+                $alternates[$language] = $this->url($route, array_replace($parameters, ['locale' => $language]));
             }
             $alternates['x-default'] = $alternates['fr'];
         }
         $graph = [];
         $image = null;
         if ($canonical !== null) {
-            $graph[] = ['@type' => 'WebSite', '@id' => $this->url('home', ['locale' => 'fr']).'#website', 'url' => $this->url('home', ['locale' => 'fr']), 'name' => 'HOMYA'];
+            $organization = $this->organization($request);
+            $graph[] = $organization;
+            $graph[] = ['@type' => 'WebSite', '@id' => $this->url('home', ['locale' => 'fr']).'#website',
+                'url' => $this->url('home', ['locale' => 'fr']), 'name' => 'HOME CONFORT',
+                'publisher' => ['@id' => $organization['@id']], 'inLanguage' => config('homya.locales')];
             if ($route !== 'home') {
                 $breadcrumbs = [['@type' => 'ListItem', 'position' => 1, 'name' => __('home.home'), 'item' => $this->url('home', ['locale' => $locale])]];
                 if ($route === 'product') {
@@ -154,9 +158,19 @@ final class Seo
                                 $node[$identifier] = $review[$identifier];
                             }
                         }
+                        if ($code = MerchantProducts::eprelCode($review['eprel_code'] ?? null)) {
+                            $node['hasCertification'] = $this->eprelCertification($code);
+                        }
                     }
                 }
-                $images = array_column($product['images'] ?? [], 'local_url');
+                $images = array_column(app(MerchantProducts::class)->reviewedImages($product, $review ?? []), 'local_url');
+                if ($pack = MerchantProducts::salesPack($product)) {
+                    $node['additionalProperty'] = [['@type' => 'PropertyValue',
+                        'name' => match ($locale) {
+                            'fr' => 'Nombre de sacs par lot', 'en' => 'Bags per lot', 'de' => 'Säcke pro Los'
+                        },
+                        'value' => $pack['multipack']]];
+                }
                 if ($images) {
                     $node['image'] = array_map(fn ($path) => ($this->origin() ?? $request->getSchemeAndHttpHost()).$path, $images);
                     $image = $node['image'][0];
@@ -168,7 +182,8 @@ final class Seo
                     && $product['price_cents'] > 0 && $product['price_cents'] <= config('commerce.max_total_cents')
                     && ($product['currency'] ?? null) === 'EUR' && $images) {
                     $node['offers'] = ['@type' => 'Offer', 'url' => $canonical,
-                        'price' => number_format($product['price_cents'] / 100, 2, '.', ''), 'priceCurrency' => 'EUR'];
+                        'price' => number_format($product['price_cents'] / 100, 2, '.', ''), 'priceCurrency' => 'EUR',
+                        'seller' => ['@id' => $organization['@id']]];
                     if (is_int($context['available_stock'] ?? null) && $context['available_stock'] >= 0) {
                         $node['offers']['availability'] = 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock');
                     }
@@ -188,15 +203,19 @@ final class Seo
                             $variantUrl = $this->url('product', ['locale' => $locale, 'slug' => $product['slug'], 'variant' => $variant['variant_id']]);
                             $child = ['@type' => 'Product', '@id' => $variantUrl.'#product', 'url' => $variantUrl,
                                 'name' => $variant['name'], 'description' => $variant['description'], 'sku' => MerchantProducts::id($variant),
-                                'image' => array_map(fn ($entry) => $this->origin().$entry['local_url'], $variant['images'])] + $variant['variant_attributes'];
+                                'image' => array_map(fn ($entry) => $this->origin().$entry['local_url'], $merchant->reviewedImages($variant, $variantReview))] + $variant['variant_attributes'];
                             foreach (['gtin', 'mpn'] as $identifier) {
                                 if (isset($variantReview[$identifier])) {
                                     $child[$identifier] = $variantReview[$identifier];
                                 }
                             }
+                            if ($code = MerchantProducts::eprelCode($variantReview['eprel_code'] ?? null)) {
+                                $child['hasCertification'] = $this->eprelCertification($code);
+                            }
                             if ($indexable && ($readiness->bankReady() || $readiness->cardReady())) {
                                 $child['offers'] = ['@type' => 'Offer', 'url' => $variantUrl, 'priceCurrency' => 'EUR',
-                                    'price' => number_format($variant['price_cents'] / 100, 2, '.', '')];
+                                    'price' => number_format($variant['price_cents'] / 100, 2, '.', ''),
+                                    'seller' => ['@id' => $organization['@id']]];
                                 if (is_int($context['available_stock'] ?? null) && $context['available_stock'] >= 0) {
                                     $child['offers']['availability'] = 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock');
                                 }
@@ -215,5 +234,58 @@ final class Seo
             'robots' => $robots, 'canonical' => $canonical, 'alternates' => $alternates, 'image' => $image,
             'type' => $route === 'product' ? 'product' : 'website',
             'json' => $graph ? json_encode(['@context' => 'https://schema.org', '@graph' => $graph], JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null];
+    }
+
+    /** Corporate facts share the same configuration as the visible legal pages. */
+    private function organization(Request $request): array
+    {
+        $origin = $this->origin() ?? $request->getSchemeAndHttpHost();
+        $node = ['@type' => 'OnlineStore', '@id' => $origin.'/#organization',
+            'name' => 'HOME CONFORT', 'url' => $this->url('home', ['locale' => 'fr']),
+            'logo' => ['@type' => 'ImageObject', 'url' => $origin.'/branding/home-confort-logo-v1.svg',
+                'width' => 900, 'height' => 300]];
+        foreach (['name' => 'legalName', 'vat' => 'vatID'] as $source => $property) {
+            $value = config('legal.company.'.$source);
+            if (is_string($value) && trim($value) !== '') {
+                $node[$property] = trim($value);
+            }
+        }
+        $siret = preg_replace('/\s+/u', '', (string) config('legal.company.siret'));
+        if (preg_match('/\A[0-9]{14}\z/', $siret)) {
+            $node['identifier'] = ['@type' => 'PropertyValue', 'propertyID' => 'SIRET', 'value' => $siret];
+        }
+        $address = ['@type' => 'PostalAddress'];
+        foreach (['street' => 'streetAddress', 'postal_code' => 'postalCode', 'city' => 'addressLocality',
+            'country' => 'addressCountry'] as $source => $property) {
+            $value = config('legal.address_structured.'.$source);
+            if (is_string($value) && trim($value) !== '') {
+                $address[$property] = trim($value);
+            }
+        }
+        if (count($address) === 5) {
+            $node['address'] = $address;
+        } elseif (is_string($value = config('legal.company.address')) && trim($value) !== '') {
+            $node['address'] = trim($value);
+        }
+        $founded = config('legal.founded_on');
+        if (is_string($founded) && preg_match('/\A[0-9]{4}-[0-9]{2}-[0-9]{2}\z/', $founded)
+            && ($date = date_create_immutable($founded)) !== false && $date->format('Y-m-d') === $founded) {
+            $node['foundingDate'] = $founded;
+        }
+        $contacts = app(ContactChannels::class);
+        if ($phone = $contacts->phone()) {
+            $node['telephone'] = $phone;
+        }
+        if ($email = $contacts->email()) {
+            $node['email'] = $email;
+        }
+
+        return $node;
+    }
+
+    private function eprelCertification(string $code): array
+    {
+        return ['@type' => 'Certification', 'issuedBy' => ['@type' => 'Organization', 'name' => 'European_Commission'],
+            'name' => 'EPREL', 'certificationIdentification' => $code];
     }
 }

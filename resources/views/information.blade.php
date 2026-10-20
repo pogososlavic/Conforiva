@@ -1,4 +1,4 @@
-<x-layout :title="$content['title'].' — HOMYA'" :description="$content['intro']" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :seo-context="['pending' => $content['pending'], 'name' => $content['title']]">
+<x-layout :title="$content['title'].' — HOME CONFORT'" :description="$content['intro']" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :seo-context="['pending' => $content['pending'], 'name' => $content['title']]">
     @php($isLegal = $content['legal'] ?? false)
     @php($isCommerceInfo = $isLegal || in_array($page, ['livraison', 'paiement', 'contact'], true))
     <main id="main" class="shell information-page {{ $isLegal ? 'information-page--legal' : '' }} {{ ['conseiller' => 'advice-page', 'contact' => 'contact-page', 'livraison' => 'delivery-page', 'paiement' => 'payment-information-page', 'retractation' => 'returns-information-page', 'cgv' => 'terms-information-page', 'confidentialite' => 'privacy-information-page', 'cookies' => 'cookies-information-page', 'mentions-legales' => 'notices-information-page', 'a-propos' => 'about-information-page', 'provenance' => 'products-information-page'][$page] ?? '' }}" tabindex="-1">
@@ -6,7 +6,7 @@
         @if($page === 'conseiller')<x-advice-panel :locale="$locale" :standalone="true" heading-id="information-advice-heading" />@endif
         <div class="information-layout">
             <article>
-                @unless($page === 'conseiller')<header class="information-heading"><p class="eyebrow">HOMYA · {{ __('pages.information') }}</p><h1>{{ $content['title'] }}</h1><p>{{ $content['intro'] }}</p></header>@endunless
+                @unless($page === 'conseiller')<header class="information-heading"><p class="eyebrow">HOME CONFORT · {{ __('pages.information') }}</p><h1>{{ $content['title'] }}</h1><p>{{ $content['intro'] }}</p></header>@endunless
                 @if($page === 'a-propos')<img class="information-image" src="{{ asset('media/home/open-salon-1600.webp') }}" srcset="{{ asset('media/home/open-salon-960.webp') }} 960w, {{ asset('media/home/open-salon-1600.webp') }} 1600w" sizes="(max-width: 959px) 100vw, 850px" width="1600" height="1068" alt="{{ __('home.hero_alt') }}" decoding="async">@endif
                 @if($isLegal)
                     @if($page === 'retractation')<x-return-overview :locale="$locale" />@endif

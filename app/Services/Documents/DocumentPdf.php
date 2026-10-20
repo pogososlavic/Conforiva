@@ -28,12 +28,12 @@ final class DocumentPdf
         $options->set('fontCache', $directory);
         $options->set('chroot', [public_path('branding'), base_path('vendor/dompdf'), $directory]);
         $pdf = new Dompdf($options);
-        $logo = public_path('branding/homya-logo-v1.png');
+        $logo = public_path('branding/home-confort-logo-v1.png');
         $logoData = is_file($logo) ? 'data:image/png;base64,'.base64_encode(file_get_contents($logo)) : null;
         $pdf->loadHtml(view('documents.pdf', ['record' => $record, 'data' => $record['data'], 'issuer' => $record['issuer'], 'logo' => $logoData, 'language' => $language])->render(), 'UTF-8');
         $pdf->setPaper('A4', 'portrait');
         $pdf->render();
-        $pdf->getCanvas()->page_text(35, 812, 'HOMYA · '.__('documents.types.'.$record['data']['type'], [], $language).' · '.($record['number'] ?? __('documents.draft', [], $language)), $pdf->getFontMetrics()->getFont('DejaVu Sans'), 8, [0.25, 0.25, 0.25]);
+        $pdf->getCanvas()->page_text(35, 812, 'HOME CONFORT · '.__('documents.types.'.$record['data']['type'], [], $language).' · '.($record['number'] ?? __('documents.draft', [], $language)), $pdf->getFontMetrics()->getFont('DejaVu Sans'), 8, [0.25, 0.25, 0.25]);
         $pdf->getCanvas()->page_text(490, 812, '{PAGE_NUM} / {PAGE_COUNT}', $pdf->getFontMetrics()->getFont('DejaVu Sans'), 8, [0.25, 0.25, 0.25]);
 
         return $pdf->output();

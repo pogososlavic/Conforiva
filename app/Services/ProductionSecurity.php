@@ -7,7 +7,13 @@ use Illuminate\Http\Request;
 
 final class ProductionSecurity
 {
-    public const HOST = 'homya.eu';
+    public static function host(): string
+    {
+        $host = config('deployment.host');
+
+        return is_string($host) && preg_match('/\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\z/D', $host)
+            ? $host : '';
+    }
 
     public function localRequest(Request $request): bool
     {
@@ -69,8 +75,8 @@ final class ProductionSecurity
         return [
             'environment_production' => app()->environment('production'),
             'debug_disabled' => config('app.debug') === false,
-            'url_https_homya_eu' => is_array($url) && ($url['scheme'] ?? '') === 'https'
-                && ($url['host'] ?? '') === self::HOST && ($url['port'] ?? 443) === 443
+            'url_https_production_host' => self::host() !== '' && is_array($url) && ($url['scheme'] ?? '') === 'https'
+                && ($url['host'] ?? '') === self::host() && ($url['port'] ?? 443) === 443
                 && in_array($url['path'] ?? '', ['', '/'], true)
                 && ! array_intersect(['user', 'pass', 'query', 'fragment'], array_keys($url)),
             'encryption_key_valid' => Encrypter::supported($key, config('app.cipher')),

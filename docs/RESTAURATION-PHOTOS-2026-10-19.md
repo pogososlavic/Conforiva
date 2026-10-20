@@ -1,5 +1,9 @@
 # Restauration des photos HOMYA — 19 octobre 2026
 
+> Mise à jour qualité : les deux photos de faible définition ont été remplacées par des visuels plus détaillés du modèle exact. Voir [le rapport des deux améliorations](AMELIORATION-2-PHOTOS-2026-10-19.md). Les réserves ci-dessous décrivent leur état antérieur.
+
+> Mise à jour : les 21 photos alors manquantes ont été installées et vérifiées. Couverture actuelle : 3 709/3 709. Voir [le complément documenté](PHOTOS-COMPLEMENTAIRES-2026-10-19.md). Les chiffres ci-dessous décrivent l’audit historique avant ce complément.
+
 Demande utilisateur : récupérer les photos des produits depuis les liens conservés
 dans le catalogue restauré afin de retrouver l'affichage local.
 

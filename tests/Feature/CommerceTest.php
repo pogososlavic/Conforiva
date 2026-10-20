@@ -70,6 +70,28 @@ class CommerceTest extends TestCase
         $this->bankConfiguration();
     }
 
+    public function test_confirmed_initial_inventory_installs_500_per_parent_and_never_replenishes(): void
+    {
+        config(['database.connections.commerce' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '', 'foreign_key_constraints' => true]]);
+        DB::purge('commerce');
+        (require database_path('migrations/commerce/2026_10_09_000001_create_commerce_tables.php'))->up();
+        $inventory = app(InitialInventory::class);
+        $orders = app(OrderStore::class);
+        $manifest = $inventory->prepareConfirmedActivation(app(Catalogue::class));
+        $this->assertSame('user_confirmed_initial_quantity_500', $manifest['source']);
+        $summary = $inventory->install($manifest, app(Catalogue::class), $orders);
+        $this->assertSame(1000, $summary['initial_units']);
+        $this->assertSame(2, $orders->connection()->table('commerce_inventory')->count());
+        $this->assertSame(500, (int) $orders->connection()->table('commerce_inventory')->where('slug', 'test-options')->value('quantity'));
+        $orders->connection()->table('commerce_inventory')->where('slug', 'test-unit')->update(['quantity' => 499]);
+        try {
+            $inventory->install($manifest, app(Catalogue::class), $orders);
+            $this->fail('A second initial import must never replenish inventory.');
+        } catch (\RuntimeException) {
+            $this->assertSame(499, (int) $orders->connection()->table('commerce_inventory')->where('slug', 'test-unit')->value('quantity'));
+        }
+    }
+
     public function test_removed_card_preview_is_not_exposed_in_any_language(): void
     {
         DB::shouldReceive('connection')->never();

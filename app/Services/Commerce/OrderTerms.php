@@ -46,6 +46,17 @@ final class OrderTerms
             $content['sections'][] = ['id' => 'reprise', 'title' => __('takeback.section'),
                 'paragraphs' => [__('takeback.policy'), __('takeback.preparation'), __('takeback.other_products')]];
         }
+        $legal = app(LegalInformation::class);
+        $addresses = [
+            ':dispatch_address' => $legal->dispatchAddress() ?? __('legal.dispatch_destination_pending'),
+            ':return_address' => $legal->returnAddress() ?? __('legal.return_destination_pending'),
+        ];
+        // Apply after policy overrides so every displayed translation uses the same source.
+        array_walk_recursive($content, function (&$value) use ($addresses): void {
+            if (is_string($value)) {
+                $value = strtr($value, $addresses);
+            }
+        });
         $readiness = app(CheckoutReadiness::class);
         if (! $readiness->deferredReady() || $readiness->cardReady() || $readiness->bankReady()) {
             return $content;
@@ -75,6 +86,8 @@ final class OrderTerms
         $terms['seller'] = config('legal.company');
         $terms['hosting'] = config('legal.hosting');
         $terms['returns_address'] = app(LegalInformation::class)->returnAddress();
+        $terms['dispatch_address'] = app(LegalInformation::class)->dispatchAddress();
+        $terms['operational_addresses'] = config('shipping');
         $terms['mediator'] = app(LegalInformation::class)->mediator();
         $terms['contact'] = [
             'phone' => app(ContactChannels::class)->phone(),

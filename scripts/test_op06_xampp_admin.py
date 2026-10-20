@@ -184,5 +184,29 @@ class Op06EnvelopeTests(unittest.TestCase):
                 self.assertEqual(json.loads(result.stdout)['status'], 'STOP_STATUS_TO_INSPECT')
 
 
+class Op06SqlInputTests(unittest.TestCase):
+    def test_worker_ids_are_strict_integers_before_any_sql(self):
+        for invalid in (True, 1.5, '1 OR 1=1', None, 0, -1):
+            with self.subTest(invalid=invalid), patch.object(recipe.base, 'sql') as sql:
+                with self.assertRaisesRegex(RuntimeError, 'WORKER_IDS'):
+                    recipe.confirm_wait(invalid, 2)
+                sql.assert_not_called()
+
+    def test_file_sourced_lot_key_cannot_reach_sql(self):
+        counts = dict(zip(recipe.base.TABLES, (5, 67, 3711, 23890)))
+        for key in ("' OR 1=1 --", 'a' * 63, 'A' * 64):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / 'recipe-result.json').write_text(json.dumps({'status': 'RECIPE_COMPLETED_NOT_ACTIVATED'}))
+                lots = [{'scenario': name, 'lot_key': key} for name in ('transport', 'concurrency', 'failure', 'partial')]
+                (root / 'op06-fixtures-proposees.json').write_text(json.dumps({'lots': lots}))
+                with patch.object(recipe, 'QA', root), patch.object(recipe, 'validate_run'), \
+                        patch.object(recipe, 'inspect', return_value={'counts': counts}), \
+                        patch.object(recipe.base, 'sql') as sql:
+                    with self.assertRaisesRegex(RuntimeError, 'LOT_KEY_INVALID'):
+                        recipe.audit_result(root)
+                    sql.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

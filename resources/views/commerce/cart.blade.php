@@ -1,4 +1,4 @@
-<x-layout :title="__('commerce.cart').' — HOMYA'" :language-links="$languageLinks" :catalogue-ready="true">
+<x-layout :title="__('commerce.cart').' — HOME CONFORT'" :language-links="$languageLinks" :catalogue-ready="true">
     <main id="main" class="shell commerce-page cart-page" tabindex="-1">
         <h1>{{ __('commerce.cart') }}</h1>
         <x-checkout-steps current="cart" :locale="$locale" />
@@ -12,7 +12,7 @@
                 <section class="cart-items" aria-label="{{ __('commerce.items') }}">
                     @foreach($quote['lines'] as $line)<article class="cart-line" aria-labelledby="cart-product-{{ $loop->index }}">
                         @if($line['product'])<x-product-image :src="$line['product']['image']['local_url'] ?? null" :alt="$line['product']['name']" sizes="100px" />@endif
-                        <div class="cart-product-copy"><h2 id="cart-product-{{ $loop->index }}">@if($line['product'])<a href="{{ route('product', ['locale' => $locale, 'slug' => $line['slug']]) }}">{{ $line['product']['name'] }}</a>@else{{ __('commerce.unavailable_product') }}@endif</h2>
+                        <div class="cart-product-copy"><h2 id="cart-product-{{ $loop->index }}">@if($line['product'])<a href="{{ route('product', ['locale' => $locale, 'slug' => $line['slug']] + ($line['variant_id'] !== '' ? ['variant' => $line['variant_id']] : [])) }}">{{ $line['product']['name'] }}</a>@else{{ __('commerce.unavailable_product') }}@endif</h2>
                             @if($line['variant_name'])<p class="cart-product-meta">{{ $line['variant_name'] }}</p>@endif
                             @if($line['product'])<p class="cart-product-meta">{{ __('catalogue.reference') }} {{ $line['product']['reference'] }}</p>@endif
                             @if($line['stock_problem'])<p class="checkout-field-error" role="alert">{{ $line['available'] === null ? __('commerce.unavailable_product') : __('commerce.insufficient_stock') }}</p>@endif
@@ -33,7 +33,7 @@
                         @if($line['product'])<x-purchase-information :locale="$locale" :product-name="$line['product']['name']" />@endif
                     </article>@endforeach
                 </section>
-                    @if($checkoutReady && !$bankReady)<section class="checkout-panel"><h2>{{ __('commerce.status.pending_payment_details') }}</h2><p>{{ __('commerce.deferred_notice') }}</p></section>@else<x-bank-transfer-guide :locale="$locale" :ready="$bankReady" />@endif
+                    @if($checkoutReady && !$bankReady)<section class="checkout-panel"><h2>{{ __('commerce.deferred_method') }}</h2><p>{{ __('commerce.deferred_notice') }}</p></section>@else<x-bank-transfer-guide :locale="$locale" :ready="$bankReady" />@endif
                 </div>
                 <aside class="commerce-summary cart-summary" aria-labelledby="cart-summary-heading"><h2 id="cart-summary-heading">{{ __('commerce.summary') }}</h2>
                     @if($quote['valid'])<dl class="checkout-totals"><div><dt>{{ __('commerce.subtotal') }}</dt><dd>{{ \App\Services\Catalogue::money($quote['subtotal_cents'], $locale) }}</dd></div><div><dt>{{ __('commerce.delivery') }}</dt><dd class="cart-free-shipping">{{ __('commerce.free_delivery') }}</dd></div><div class="checkout-total"><dt>{{ __('commerce.total_tax_included') }}</dt><dd>{{ \App\Services\Catalogue::money($quote['total_cents'], $locale) }}</dd></div></dl>@endif

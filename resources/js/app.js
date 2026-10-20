@@ -1,3 +1,4 @@
+import {initializeImageFraming} from './product-image-framing';
 import './catalogue-variants';
 import './analytics-consent';
 
@@ -77,6 +78,8 @@ document.querySelectorAll('[data-product-media]').forEach((media) => {
     if (image.complete && image.naturalWidth === 0) showFailure();
 });
 
+document.querySelectorAll('[data-product-media][data-image-framing]').forEach(media => initializeImageFraming(media));
+
 document.querySelectorAll('[data-gallery]').forEach((gallery) => {
     const image = gallery.querySelector('[data-product-image]');
     const caption = gallery.querySelector('[data-gallery-caption]');
@@ -96,7 +99,13 @@ document.querySelectorAll('[data-gallery]').forEach((gallery) => {
         const srcset = button.dataset.gallerySrcset;
         if (srcset) image.setAttribute('srcset', srcset);
         else image.removeAttribute('srcset');
+        const media = image.closest('[data-product-media]');
+        if (media.hasAttribute('data-image-framing')) {
+            media.dataset.imageFraming = button.dataset.galleryFraming || 'null';
+            image.setAttribute('sizes', image.dataset.framingSizes);
+        }
         image.src = button.dataset.gallerySrc;
+        media.dispatchEvent(new Event('product-image-source-change'));
         caption.textContent = caption.dataset.template.replace(':current', button.dataset.galleryNumber).replace(':total', caption.dataset.total);
     }));
     gallery.querySelectorAll('[data-gallery-step]').forEach((arrow) => {
@@ -401,4 +410,84 @@ document.querySelectorAll('[data-address-lookup]').forEach((lookup) => {
     automatic.addEventListener('change', () => { if (automatic.checked) schedule(); else clear(); });
     search.addEventListener('click', () => { address.focus(); lookupAddress(); });
     clear();
+});
+
+// Make horizontally scrollable product sections discoverable on small screens.
+const sectionLinks = document.querySelector('.product-section-navigation');
+const sectionNext = document.querySelector('[data-section-next]');
+const sectionPrevious = document.querySelector('[data-section-previous]');
+if (sectionLinks && sectionNext && sectionPrevious) {
+    const sectionMobile = window.matchMedia('(max-width: 599px)');
+    const updateSectionHint = () => {
+        sectionNext.hidden = !sectionMobile.matches || sectionLinks.scrollWidth <= sectionLinks.clientWidth + 2;
+        sectionPrevious.hidden = sectionNext.hidden || sectionLinks.scrollLeft <= 2;
+        sectionNext.disabled = sectionLinks.scrollLeft + sectionLinks.clientWidth >= sectionLinks.scrollWidth - 2;
+    };
+    sectionNext.addEventListener('click', () => {
+        sectionLinks.scrollBy({ left: sectionLinks.clientWidth * .7, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    });
+    sectionPrevious.addEventListener('click', () => {
+        sectionLinks.scrollBy({ left: -sectionLinks.clientWidth * .7, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    });
+    sectionLinks.addEventListener('scroll', updateSectionHint, { passive: true });
+    new ResizeObserver(updateSectionHint).observe(sectionLinks);
+    sectionMobile.addEventListener('change', updateSectionHint);
+    updateSectionHint();
+}
+
+// Native category disclosures also close with Escape or a click outside navigation.
+const categoryDisclosures = document.querySelectorAll('.category-dropdown');
+let categoryEscapeClosing = false;
+document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    categoryEscapeClosing = true;
+    const active = Array.from(categoryDisclosures).find(detail => detail.open && detail.contains(document.activeElement));
+    categoryDisclosures.forEach(detail => { detail.open = false; });
+    active?.querySelector('summary')?.focus();
+    categoryEscapeClosing = false;
+});
+document.addEventListener('click', event => {
+    if (event.target.closest('#primary-navigation')) return;
+    categoryDisclosures.forEach(detail => { detail.open = false; });
+});
+
+const desktopCategoryHover = window.matchMedia('(min-width: 960px) and (hover: hover) and (pointer: fine)');
+categoryDisclosures.forEach(detail => {
+    let opening;
+    let closing;
+    const cancelTimers = () => { clearTimeout(opening); clearTimeout(closing); };
+    const openCategory = () => {
+        categoryDisclosures.forEach(other => { if (other !== detail) other.open = false; });
+        detail.open = true;
+    };
+    detail.addEventListener('pointerenter', () => {
+        if (!desktopCategoryHover.matches) return;
+        cancelTimers();
+        opening = setTimeout(openCategory, 100);
+    });
+    detail.addEventListener('pointerleave', () => {
+        if (!desktopCategoryHover.matches) return;
+        cancelTimers();
+        closing = setTimeout(() => {
+            if (!detail.contains(document.activeElement)) detail.open = false;
+        }, 180);
+    });
+    detail.addEventListener('focusin', () => {
+        if (categoryEscapeClosing || !desktopCategoryHover.matches) return;
+        cancelTimers();
+        openCategory();
+    });
+    detail.addEventListener('focusout', event => {
+        if (!desktopCategoryHover.matches || detail.contains(event.relatedTarget)) return;
+        cancelTimers();
+        detail.open = false;
+    });
+    detail.querySelector('summary').addEventListener('click', event => {
+        if (!desktopCategoryHover.matches || event.detail === 0) return;
+        event.preventDefault();
+        cancelTimers();
+        openCategory();
+    });
+    desktopCategoryHover.addEventListener('change', () => { cancelTimers(); detail.open = false; });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') cancelTimers(); });
 });

@@ -49,11 +49,7 @@ class StorefrontChromeTest extends TestCase
             $response = $this->get('/'.$locale.'/contact')->assertOk()
                 ->assertDontSee('chrome.', false)->assertDontSee('damdam', false);
             $xpath = $this->xpath($response->getContent());
-            $contact = $xpath->query('//a[@class="utility-contact"]')->item(0);
-            $this->assertNotNull($contact);
-            $this->assertSame('mailto:support@example.test', $contact->getAttribute('href'));
-            $this->assertSame('support@example.test', trim($contact->textContent));
-            foreach (['utility-navigation' => ['suivi'], 'storefront-actions' => ['conseiller', 'suivi', 'panier']] as $class => $pages) {
+            foreach (['storefront-actions' => ['conseiller', 'suivi', 'panier']] as $class => $pages) {
                 $nav = $xpath->query('//nav[@class="'.$class.'"]')->item(0);
                 $this->assertNotNull($nav);
                 $this->assertNotEmpty($nav->getAttribute('aria-label'));
@@ -63,7 +59,7 @@ class StorefrontChromeTest extends TestCase
                     $link = $links->item($index);
                     $path = $this->localPath($link->getAttribute('href'), $locale);
                     $this->assertSame('/'.$locale.'/'.$page, $path);
-                    $key = $class === 'utility-navigation' ? 'utility' : 'services';
+                    $key = 'services';
                     $this->assertSame(__('chrome.'.$key.'.'.$page, [], $locale), trim($link->textContent));
                     $this->get($path)->assertOk();
                 }

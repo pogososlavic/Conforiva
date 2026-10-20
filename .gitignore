@@ -50,6 +50,7 @@ Thumbs.db
 /public/media/energy/*
 !/public/media/energy/*.pdf
 !/public/media/energy/*.png
+!/public/media/energy/*.jpg
 /storage/app/catalogue/
 __pycache__/
 *.py[cod]

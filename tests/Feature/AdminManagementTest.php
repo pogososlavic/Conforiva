@@ -466,7 +466,7 @@ final class AdminManagementTest extends TestCase
             $data['bic'] = 'FIXTFRPP';
             $this->post('/admin/parametres/rib', $data)->assertSessionHasErrors('iban');
             $this->assertSame("PROTECTED_FIXTURE=before\n", File::get($this->temporary.'/.env'));
-            $this->get('/admin/parametres')->assertOk()->assertSee('Vendeur HOMYA')->assertDontSee('fixture-private-password');
+            $this->get('/admin/parametres')->assertOk()->assertSee('Vendeur HOME CONFORT')->assertDontSee('fixture-private-password');
         } finally {
             $this->app->useEnvironmentPath($original);
         }

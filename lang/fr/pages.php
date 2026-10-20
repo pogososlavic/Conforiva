@@ -12,13 +12,13 @@ return [
     'entries' => [
         'cookies' => $legalPages['entries']['cookies'],
         'a-propos' => [
-            'title' => 'À propos de HOMYA',
+            'title' => 'À propos de HOME CONFORT',
             'intro' => 'Depuis 2012, une histoire de famille autour de la chaleur et du confort de la maison.',
             'paragraphs' => [],
             'sections' => [
                 [
                     'title' => 'Notre histoire',
-                    'paragraph' => 'HOMYA, c’est avant tout une histoire de famille. Fondée en 2012, notre entreprise familiale s’est construite sur des valeurs simples : la confiance, la qualité et le sens du service. Aujourd’hui, notre boutique en ligne répond à deux besoins essentiels de la maison : la chaleur et le confort.',
+                    'paragraph' => 'HOME CONFORT, c’est avant tout une histoire de famille. Fondée en 2012, notre entreprise familiale s’est construite sur des valeurs simples : la confiance, la qualité et le sens du service. Aujourd’hui, notre boutique en ligne répond à deux besoins essentiels de la maison : la chaleur et le confort.',
                 ],
                 [
                     'title' => 'Du bois pour votre chauffage',
@@ -33,7 +33,7 @@ return [
                     'paragraph' => 'Des informations claires sur les produits et les conditions de vente vous aident à préparer votre achat.',
                     'items' => [
                         'Livraison gratuite en France, en Belgique et en Allemagne, selon les modalités de notre page Livraison.',
-                        'Pour un autre pays, contactez HOMYA avant toute commande : la faisabilité, les frais d’expédition et le délai doivent être confirmés. Ces destinations ne sont pas proposées dans le parcours de commande en ligne.',
+                        'Pour un autre pays, contactez HOME CONFORT avant toute commande : la faisabilité, les frais d’expédition et le délai doivent être confirmés. Ces destinations ne sont pas proposées dans le parcours de commande en ligne.',
                         'Bois issu de forêts gérées durablement.',
                         'Livraison annoncée en 3 à 7 jours ouvrés à compter du paiement confirmé pour la France, la Belgique et l’Allemagne. Consultez les modalités et les informations propres au produit.',
                         'Garantie légale de conformité de 2 ans pour nos appareils neufs. Une éventuelle garantie commerciale du fabricant est distincte et s’applique uniquement selon les conditions indiquées pour le produit.',
@@ -41,12 +41,12 @@ return [
                     ],
                 ],
                 [
-                    'title' => 'Pourquoi choisir HOMYA ?',
+                    'title' => 'Pourquoi choisir HOME CONFORT ?',
                     'paragraph' => 'Plus de dix ans d’histoire familiale, une sélection de produits pour la maison et le sens du service guident notre activité. Nous croyons qu’une maison agréable commence par de bons produits et un service en lequel on peut avoir confiance. Merci de faire partie de notre histoire.',
                 ],
                 [
-                    'title' => 'L’équipe HOMYA et l’entreprise',
-                    'paragraph' => 'HOMYA est dirigée par le gérant identifié ci-dessous. Notre entreprise intervient en tant que revendeur indépendant : les marques restent la propriété de leurs titulaires, sans affiliation officielle revendiquée avec les fabricants. Retrouvez notre identité légale, notre siège et nos coordonnées ci-dessous.',
+                    'title' => 'L’équipe HOME CONFORT et l’entreprise',
+                    'paragraph' => 'HOME CONFORT est dirigée par le gérant identifié ci-dessous. Notre entreprise intervient en tant que revendeur indépendant : les marques restent la propriété de leurs titulaires, sans affiliation officielle revendiquée avec les fabricants. Retrouvez notre identité légale, notre siège et nos coordonnées ci-dessous.',
                     'company_details' => true,
                 ],
             ],
@@ -55,8 +55,8 @@ return [
         ],
         'provenance' => [
             'title' => 'Nos produits',
-            'intro' => 'Les repères pour explorer HOMYA en toute clarté.',
-            'paragraphs' => ['Consultez les photos, les caractéristiques et les options de chaque produit pour préparer votre achat.', 'HOMYA est un revendeur indépendant. Nos appareils sont neufs sous scellé, avec une garantie légale de conformité de 2 ans et une facture à votre nom.'],
+            'intro' => 'Les repères pour explorer HOME CONFORT en toute clarté.',
+            'paragraphs' => ['Consultez les photos, les caractéristiques et les options de chaque produit pour préparer votre achat.', 'HOME CONFORT est un revendeur indépendant. Nos appareils sont neufs sous scellé, avec une garantie légale de conformité de 2 ans et une facture à votre nom.'],
             'pending' => false,
         ],
         'conseiller' => [
@@ -67,21 +67,21 @@ return [
         ],
         'contact' => [
             'title' => 'Contact',
-            'intro' => 'Une question sur un produit, la livraison, votre commande ou un retour ? Retrouvez les coordonnées HOMYA.',
-            'paragraphs' => ['Indiquez l’objet de votre demande et, si nécessaire, la référence du produit ou de la commande.', 'Contactez HOMYA par e-mail, téléphone, WhatsApp ou SMS aux coordonnées ci-dessous.', 'Le siège reçoit également les produits retournés, y compris les biens volumineux. Consultez Retours & rétractation pour les modalités.'],
+            'intro' => 'Une question sur un produit, la livraison, votre commande ou un retour ? Retrouvez les coordonnées HOME CONFORT.',
+            'paragraphs' => ['Indiquez l’objet de votre demande et, si nécessaire, la référence du produit ou de la commande.', 'Contactez HOME CONFORT par e-mail, téléphone, WhatsApp ou SMS aux coordonnées ci-dessous.', 'Les marchandises retournées, y compris les biens volumineux, sont reçues à l’adresse suivante : :return_address. Le siège social reste l’adresse de correspondance et de notification. Consultez Retours & rétractation pour les modalités.'],
             'pending' => false,
         ],
         'livraison' => [
             'title' => 'Livraison',
             'intro' => 'Livraison gratuite en France, en Belgique et en Allemagne.',
-            'paragraphs' => ['Vos appareils sont livrés par notre propre transporteur en 3 à 7 jours ouvrés à compter du paiement confirmé.', 'Les commandes sont expédiées depuis la France. Le délai global de livraison comprend 1 à 2 jours ouvrés de préparation après confirmation du paiement, puis 2 à 5 jours ouvrés de transport.', 'Les jours ouvrés sont du lundi au vendredi. L’heure limite de prise en compte est 14 h, heure de Paris (Europe/Paris).', 'La livraison est gratuite en France, en Belgique et en Allemagne.', 'Pour les meubles et appareils volumineux, indiquez les conditions d’accès afin d’organiser la livraison avec HOMYA.', 'Les retours sont gratuits pour les rétractations notifiées dans les 14 jours après réception. Consultez Retours & rétractation pour l’adresse et l’organisation du retour.'],
+            'paragraphs' => ['Vos appareils sont livrés par notre propre transporteur en 3 à 7 jours ouvrés à compter du paiement confirmé.', 'Les commandes sont expédiées depuis la France, à l’adresse suivante : :dispatch_address. Le délai global de livraison comprend 1 à 2 jours ouvrés de préparation après confirmation du paiement, puis 2 à 5 jours ouvrés de transport.', 'Les jours ouvrés sont du lundi au vendredi. L’heure limite de prise en compte est 14 h, heure de Paris (Europe/Paris).', 'La livraison est gratuite en France, en Belgique et en Allemagne.', 'Pour les meubles et appareils volumineux, indiquez les conditions d’accès afin d’organiser la livraison avec HOME CONFORT.', 'Les retours sont gratuits pour les rétractations notifiées dans les 14 jours après réception. Consultez Retours & rétractation pour l’adresse et l’organisation du retour.'],
             'pending' => false,
         ],
         'retractation' => $legalPages['entries']['retractation'],
         'paiement' => [
             'title' => 'Paiement',
             'intro' => 'Retrouvez les informations utiles pour régler votre commande.',
-            'paragraphs' => ['Validez votre panier et vos coordonnées pour enregistrer votre commande. Les instructions de règlement sont associées à votre référence de commande.', 'Le récapitulatif présente les articles, les quantités et le montant total en euros, toutes taxes comprises. La livraison est gratuite en France, en Belgique et en Allemagne.', 'Vos articles sont réservés pendant 72 heures après validation. Le traitement de la commande se poursuit après confirmation du règlement.', 'Pour toute question concernant votre règlement, contactez HOMYA en indiquant votre numéro de commande.'],
+            'paragraphs' => ['Validez votre panier et vos coordonnées pour enregistrer votre commande. Les instructions de règlement sont associées à votre référence de commande.', 'Le récapitulatif présente les articles, les quantités et le montant total en euros, toutes taxes comprises. La livraison est gratuite en France, en Belgique et en Allemagne.', 'Vos articles sont réservés pendant 72 heures après validation. Le traitement de la commande se poursuit après confirmation du règlement.', 'Pour toute question concernant votre règlement, contactez HOME CONFORT en indiquant votre numéro de commande.'],
             'pending' => false,
         ],
         'suivi' => [

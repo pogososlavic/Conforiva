@@ -255,7 +255,7 @@ final class DocumentStore
                 $prefix = (string) config('documents.numbering.prefix');
                 $first = (int) config('documents.numbering.first_sequence');
                 if ($prefix !== 'HOMYA' || empty($numbering['series_confirmed']) || (int) ($numbering['first_sequence'] ?? 0) !== $first) {
-                    throw ValidationException::withMessages(['numbering' => 'La série globale HOMYA doit commencer au numéro confirmé et ne peut être modifiée dans un brouillon.']);
+                    throw ValidationException::withMessages(['numbering' => 'La série globale historique doit commencer au numéro confirmé et ne peut être modifiée dans un brouillon.']);
                 }
                 $series = ['scope' => config('documents.numbering.scope'), 'prefix' => $prefix, 'sequence' => $first, 'confirmed_at' => now()->toIso8601String()];
             }
@@ -271,7 +271,7 @@ final class DocumentStore
             $number = $series['prefix'].'/'.$languageCode.'-'.str_pad((string) $series['sequence'], $digits, '0', STR_PAD_LEFT);
             foreach ($records as $other) {
                 if (($other['number'] ?? null) === $number) {
-                    throw ValidationException::withMessages(['numbering' => 'Ce numéro existe déjà dans les archives HOMYA.']);
+                    throw ValidationException::withMessages(['numbering' => 'Ce numéro existe déjà dans les archives commerciales.']);
                 }
             }
             $record['data'] = $data;
@@ -308,7 +308,7 @@ final class DocumentStore
                 }
                 $record['data']['document_language'] = $previewLanguage;
             }
-            $record['issuer'] = app(DocumentData::class)->issuer();
+            $record['issuer'] = app(DocumentData::class)->issuer(requireComplete: false);
 
             return app(DocumentPdf::class)->render($record);
         }

@@ -1,4 +1,4 @@
-<x-layout :title="__('commerce.card_form.title').' — HOMYA'" :catalogue-ready="true">
+<x-layout :title="__('commerce.card_form.title').' — HOME CONFORT'" :catalogue-ready="true">
     <main id="main" class="shell commerce-page card-payment-page" tabindex="-1">
         <p class="eyebrow">{{ __('commerce.card_method') }}</p>
         <h1>{{ __('commerce.card_form.title') }}</h1>

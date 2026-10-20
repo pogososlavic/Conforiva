@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'title' => 'HOMYA — Zuhause, ganz einfach',
-    'description' => 'Bald bei HOMYA: Brennholz und Brennstoffe, Heizgeräte, Haushaltsgeräte, Möbel und Fernseher.',
-    'description_ready' => 'Entdecken Sie HOMYA: Brennholz und Brennstoffe, Heizgeräte, Haushaltsgeräte, Möbel und Fernseher. Durchsuchen Sie den Katalog.',
+    'title' => 'HOME CONFORT — Zuhause, ganz einfach',
+    'description' => 'Bald bei HOME CONFORT: Brennholz und Brennstoffe, Heizgeräte, Haushaltsgeräte, Möbel und Fernseher.',
+    'description_ready' => 'Entdecken Sie HOME CONFORT: Brennholz und Brennstoffe, Heizgeräte, Haushaltsgeräte, Möbel und Fernseher. Durchsuchen Sie den Katalog.',
     'skip' => 'Zum Inhalt springen',
     'language' => 'Sprache auswählen',
     'language_names' => ['fr' => 'Français', 'en' => 'English', 'de' => 'Deutsch'],
@@ -26,11 +26,12 @@ return [
     'status_detail' => 'Der Katalog ist noch nicht veröffentlicht. Die Suche und der Einkauf sind derzeit nicht verfügbar.',
     'universes' => 'Unsere Sortimente',
     'topline' => 'Heizung, Komfort und Ausstattung für Ihr Zuhause',
+    'advice_alt' => 'Heller Wohnraum mit grauem Sofa und Couchtisch aus Holz',
     'hero_alt' => 'Helles Wohnzimmer mit blauem Sofa, Holzmöbeln und grünen Pflanzen',
     'see_stoves' => 'Öfen entdecken',
     'all_catalogue' => 'Zum gesamten Katalog',
     'choose_help' => 'Das passende Gerät finden',
-    'store_intro' => 'HOMYA vereint Heizung, Haushaltsgeräte, Möbel, Holz und Brennstoffe sowie Fernseher. Vergleichen Sie Preise inklusive Steuern, Fotos und technische Daten für die passende Ausstattung Ihres Zuhauses.',
+    'store_intro' => 'HOME CONFORT vereint Heizung, Haushaltsgeräte, Möbel, Holz und Brennstoffe sowie Fernseher. Vergleichen Sie Preise inklusive Steuern, Fotos und technische Daten für die passende Ausstattung Ihres Zuhauses.',
     'highlights' => [
         [
             'title' => 'Bekannte Marken',
@@ -101,12 +102,13 @@ return [
     'guide_heating' => 'Heizgeräte entdecken',
     'guide_alt' => 'Illustration eines Innenraums mit Heiz- und Haushaltsgeräten',
     'browse_heading' => 'Noch mehr entdecken',
-    'browse_intro' => 'Möbel, Geräte und Zubehör: Entdecken Sie weitere Produkte im HOMYA Katalog.',
+    'browse_intro' => 'Möbel, Geräte und Zubehör: Entdecken Sie weitere Produkte im HOME CONFORT Katalog.',
     'browse_action' => 'Katalog entdecken',
-    'footer_intro' => 'HOMYA ist ein unabhängiger Händler für Heizgeräte, Haushaltsgeräte und Möbel.',
+    'footer_intro' => 'HOME CONFORT ist ein unabhängiger Händler für Heizgeräte, Haushaltsgeräte und Möbel.',
     'footer_collections' => 'Unsere Sortimente',
-    'footer_discover' => 'HOMYA entdecken',
+    'footer_discover' => 'HOME CONFORT entdecken',
     'catalogue_unavailable' => 'Der Katalog ist vorübergehend nicht verfügbar. Bitte versuchen Sie es in Kürze erneut.',
+    'freezer' => ['name' => 'Gefrierschränke', 'description' => 'Entdecken Sie dieses Modell und seine technischen Daten.'],
     'categories' => [
         'firewood' => ['name' => 'Brennholz & Brennstoffe', 'description' => 'Brennholz und Brennstoffe für Zuhause.'],
         'heating' => ['name' => 'Heizgeräte', 'description' => 'Geräte zum Heizen Ihres Zuhauses.'],

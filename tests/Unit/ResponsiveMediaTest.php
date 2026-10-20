@@ -20,7 +20,7 @@ class ResponsiveMediaTest extends TestCase
         $this->fixture = sys_get_temp_dir().'/homya-responsive-'.bin2hex(random_bytes(8));
         File::makeDirectory($this->fixture.'/media/catalogue-display', 0700, true);
         File::makeDirectory($this->fixture.'/media/catalogue', 0700, true);
-        $bytes = file_get_contents(public_path('media/home/interieur-display.webp'));
+        $bytes = file_get_contents(public_path('media/home/open-salon-960.webp'));
         $this->app->usePublicPath($this->fixture);
         File::put(public_path(ltrim($this->original, '/')), $bytes);
         $hash = hash('sha256', $bytes);

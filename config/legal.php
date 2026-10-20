@@ -1,8 +1,15 @@
 <?php
 
 return [
-    // Company facts supplied by the user on 2026-10-09; not a legal certification.
-    'reviewed_on' => '2026-10-13',
+    // HOME CONFORT identity supplied by the owner on 2026-10-20; no registry certification.
+    'reviewed_on' => '2026-10-20',
+    'founded_on' => '2024-10-29',
+    'address_structured' => [
+        'street' => '1010 A ROUTE DU MAHURY',
+        'postal_code' => '97354',
+        'city' => 'RÉMIRE-MONTJOLY',
+        'country' => 'GF',
+    ],
     // Hosting details supplied by the user on 2026-10-13.
     'hosting' => [
         'name' => 'HOSTINGER operations, UAB',
@@ -12,9 +19,10 @@ return [
         'email' => 'domains@hostinger.com',
         'website' => 'https://www.hostinger.fr/',
     ],
-    // User confirmed receipt of returns at the registered office, including bulky goods.
-    'returns_at_registered_office' => true,
-    // CM2C public details verified; effective membership confirmed by the user on 2026-10-09.
+    // Goods are returned to the dedicated verified address in config/shipping.php.
+    // The registered office continues to receive correspondence and withdrawal notices.
+    'returns_at_registered_office' => false,
+    // CM2C membership of HOME CONFORT confirmed by the owner on 2026-10-20.
     'mediator' => [
         'verified' => true,
         'membership_active' => true,
@@ -25,17 +33,16 @@ return [
         'phone' => '+33189470014',
     ],
     'company' => [
-        'name' => 'HOMYA',
-        'form' => 'EURL — entreprise unipersonnelle à responsabilité limitée',
-        'capital' => '20 000,00 €',
-        'address' => '18 Route de la Grange des Noyers, 91150 Morigny-Champigny, France',
-        'siren' => '751 035 122',
-        'siret' => '751 035 122 00017',
-        'vat' => 'FR48751035122',
-        'rcs' => '751 035 122 R.C.S. Évry',
-        'rcs_registered_on' => '20/04/2012',
-        'rne_registered_on' => '20/04/2012',
-        'manager' => 'David Marechal',
+        'name' => 'HOME CONFORT',
+        'form' => 'Société par actions simplifiée (SAS)',
+        'capital' => '500,00 €',
+        'address' => '1010 A ROUTE DU MAHURY, 97354 RÉMIRE-MONTJOLY',
+        'siren' => '934757311',
+        'siret' => '93475731100014',
+        'vat' => 'FR05934757311',
+        'rcs' => '934757311 R.C.S. Cayenne',
+        'created_on' => '29/10/2024',
+        'manager' => 'RAPHAEL RUIZ',
     ],
     'sources' => [
         'fr-notice' => 'https://www.economie.gouv.fr/entreprises/developper-son-entreprise/innover-et-numeriser-son-entreprise/mentions-sur-votre-site-internet-les-obligations-respecter',

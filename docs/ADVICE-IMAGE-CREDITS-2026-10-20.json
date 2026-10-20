@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-20",
+  "asset": "public/media/home/open-conseil-1200.webp",
+  "title": "Cozy interior with a sofa (Unsplash).jpg",
+  "author": "Breather",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Cozy_interior_with_a_sofa_(Unsplash).jpg",
+  "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/02/Cozy_interior_with_a_sofa_%28Unsplash%29.jpg",
+  "license": "CC0 1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "rights_evidence": "Commons file description verified 2026-10-20; CC0 license review by Majora dated 2018-01-14.",
+  "original_sha256": "413b8023f74507dbbe08f5035698c6f7a9d58abf8f6ef602f1af5ea5f5bed0ec",
+  "output_sha256": "ba8dbc6cd56f4eedffc9bccb9942754deceb17abb0424810653f16cbe9a714f0",
+  "bytes": 57722,
+  "dimensions": [
+    1200,
+    816
+  ],
+  "transformation": "EXIF orientation normalized; crop (650,2250,4400,4800); Lanczos downsize; WebP quality84 method6; no AI.",
+  "visual_review": "Bright grey sofa with coffee table, no people or visible brand; ambiance image, not a product sold."
+}

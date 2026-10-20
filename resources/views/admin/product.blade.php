@@ -14,7 +14,7 @@
 </div>
 <p class="admin-muted">{{ $product['reserved'] ?? 0 }} unité(s) réservée(s) en interne. Ces quantités ne sont pas affichées dans la boutique.</p>
 <fieldset><legend>Identifiants fabricant pour Google Merchant</legend>
-<p class="admin-muted">Renseignez uniquement les identifiants confirmés par le fabricant ou votre fournisseur. La référence interne HOMYA ne permet pas de déduire un MPN. Ces informations alimentent la revue privée du catalogue ; la validation complète pour Google Merchant reste une étape distincte.</p>
+<p class="admin-muted">Renseignez uniquement les identifiants confirmés par le fabricant ou votre fournisseur. La référence interne HOME CONFORT ne permet pas de déduire un MPN. Ces informations alimentent la revue privée du catalogue ; la validation complète pour Google Merchant reste une étape distincte.</p>
 @if($product['has_variants'] ?? false)<p class="admin-muted">Ce produit possède des variantes. Chaque variante doit disposer de ses propres identifiants et d’une vérification distincte ; les identifiants saisis ici ne sont pas repris automatiquement pour les variantes.</p>@endif
 <div class="admin-form-grid">
 <label>GTIN (EAN, UPC, …)<input name="gtin" inputmode="numeric" maxlength="14" pattern="[0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14}" value="{{ $product['manufacturer']['gtin'] ?? '' }}"><span class="admin-muted">8, 12, 13 ou 14 chiffres. Conservez les zéros initiaux.</span></label>

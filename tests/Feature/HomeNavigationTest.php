@@ -47,6 +47,7 @@ class HomeNavigationTest extends TestCase
                         'https://commons.wikimedia.org/wiki/File:Living_room_(Unsplash).jpg',
                         'https://commons.wikimedia.org/wiki/File:Blue_white_kitchen_interior_(Unsplash).jpg',
                         'https://commons.wikimedia.org/wiki/File:2016-366-319_On_Fire_(25358789789).jpg',
+                        'https://commons.wikimedia.org/wiki/File:Cozy_interior_with_a_sofa_(Unsplash).jpg',
                         'https://creativecommons.org/publicdomain/zero/1.0/',
                     ]);
                     $this->assertSame(1, $xpath->query('ancestor::details[contains(@class,"home-photo-credits")]', $link)->length);

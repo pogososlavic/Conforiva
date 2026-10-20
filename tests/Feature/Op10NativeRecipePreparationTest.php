@@ -20,12 +20,12 @@ class Op10NativeRecipePreparationTest extends TestCase
     public function test_native_default_and_missing_receipt_refuse_before_bootstrap(): void
     {
         foreach (['op10_catalogue_native.php', 'op10_candidate.php'] as $name) {
-            $process = new Process(['/opt/homebrew/bin/php', base_path('scripts/'.$name)]);
+            $process = new Process([PHP_BINARY, base_path('scripts/'.$name)]);
             $process->mustRun();
             $this->assertStringContainsString('PREPARED', $process->getOutput());
             $this->assertSame('', $process->getErrorOutput());
         }
-        $process = new Process(['/opt/homebrew/bin/php', base_path('scripts/op10_catalogue_native.php'), '--receipt=/private/tmp/no-homya-native-receipt']);
+        $process = new Process([PHP_BINARY, base_path('scripts/op10_catalogue_native.php'), '--receipt='.sys_get_temp_dir().'/home-confort-missing-receipt-'.bin2hex(random_bytes(16))]);
         $process->run();
         $this->assertSame(1, $process->getExitCode());
         $this->assertStringContainsString('STOP_INSPECT_NO_RETRY', $process->getOutput());

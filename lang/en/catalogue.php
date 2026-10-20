@@ -1,11 +1,13 @@
 <?php
 
 return [
+    'scroll_sections_back' => 'Show previous product sections',
+    'scroll_sections' => 'Show more product sections',
     'variant_photo_notice' => 'The photos show the model; the finish may differ from your selected option.',
     'source_unavailable' => 'The catalogue is temporarily unavailable. Please try again later.',
     'back_home' => 'Back to home',
     'title' => 'Catalogue',
-    'description' => 'Explore the HOMYA catalogue: products, images, prices and specifications.',
+    'description' => 'Explore the HOME CONFORT catalogue: products, images, prices and specifications.',
     'department_count' => '{1} :count product in this department|[0,*] :count products in this department', 'total_count' => '{1} :count product in the catalogue|[0,*] :count products in the catalogue',
     'browse_categories' => 'Explore categories', 'all_categories' => 'All categories', 'category_count' => '{1} :count product|[0,*] :count products',
     'product_navigation' => 'On this product page', 'product_description' => 'Product description',
@@ -15,7 +17,7 @@ return [
     'translation_catalogue_unavailable' => 'The catalogue is temporarily unavailable in this language. You can view the French version.',
     'explore' => 'Explore the catalogue', 'discover' => 'Discover',
     'search_submit' => 'Search', 'search_help' => 'Product name, brand or reference.',
-    'preview_title' => 'Discover the HOMYA catalogue', 'preview_notice' => 'Browse the catalogue. Purchasing is not available yet.',
+    'preview_title' => 'Discover the HOME CONFORT catalogue', 'preview_notice' => 'Browse the catalogue. Purchasing is not available yet.',
     'incomplete' => 'Catalogue collection is in progress. Only product pages already collected are shown.',
     'breadcrumbs' => 'Breadcrumbs', 'filters' => 'Filter and sort', 'universe' => 'Department',
     'all' => 'All', 'other' => 'Other departments', 'category' => 'Category', 'brand' => 'Brand',

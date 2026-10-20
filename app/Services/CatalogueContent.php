@@ -37,10 +37,16 @@ final class CatalogueContent
         }
         $specifications = [];
         $conflicts = [];
-        foreach ($groups as $values) {
+        foreach ($groups as $sourceLabel => $values) {
             $first = array_key_first($values);
             $spec = $product['specifications'][$first];
-            if (count(array_unique($values)) > 1) {
+            if (count(array_unique($values)) > 1 && self::isReviewedCookingList($source, $sourceLabel, $values)) {
+                // Recover a cumulative list already explicit in these exact source titles.
+                // This structural correction is not a manufacturer verification.
+                $spec['value'] = implode(' / ', array_map(
+                    static fn ($index) => $product['specifications'][$index]['value'],
+                    array_keys($values)));
+            } elseif (count(array_unique($values)) > 1) {
                 $conflicts[] = ['label' => $spec['label'], 'values' => array_values(array_unique($values))];
                 // Do not publicly present two incompatible values as established facts.
                 $spec['value'] = match ($locale) {
@@ -83,6 +89,69 @@ final class CatalogueContent
         }
         $product['issues'] = array_values(array_unique($product['issues']));
 
+        return self::completeVerifiedSupraOscarSpecifications($source, $product, $locale);
+    }
+
+    /** Exact OSCAR technical sheet, https://supra.fr/?jet_download=23545, reviewed 20.10.2026. */
+    private static function completeVerifiedSupraOscarSpecifications(array $source, array $product, string $locale): array
+    {
+        if (($source['slug'] ?? null) !== 'poele-a-bois-etanche-en-fonte-supra-oscar-4-8-kw'
+            || ($source['reference'] ?? null) !== '44294'
+            || ($source['name'] ?? null) !== 'Poêle à bois étanche en fonte – SUPRA Oscar 4.8 kW'
+            || ($source['has_variants'] ?? null) !== false || ($source['variants'] ?? []) !== []
+            || ($source['specifications'] ?? null) !== [] || ($product['specifications'] ?? null) !== []
+            || ! in_array($locale, ['fr', 'en', 'de'], true)) {
+            return $product;
+        }
+        $product['specifications'] = match ($locale) {
+            'fr' => [
+                ['label' => 'Matériau principal', 'value' => 'Acier'],
+                ['label' => 'Poids net', 'value' => '75 kg'],
+                ['label' => 'Poids brut', 'value' => '85 kg'],
+                ['label' => 'Dimensions (largeur × hauteur × profondeur)', 'value' => '44,7 × 63,6 × 36,9 cm'],
+            ],
+            'en' => [
+                ['label' => 'Main material', 'value' => 'Steel'],
+                ['label' => 'Net weight', 'value' => '75 kg'],
+                ['label' => 'Gross weight', 'value' => '85 kg'],
+                ['label' => 'Dimensions (width × height × depth)', 'value' => '44.7 × 63.6 × 36.9 cm'],
+            ],
+            'de' => [
+                ['label' => 'Hauptmaterial', 'value' => 'Stahl'],
+                ['label' => 'Nettogewicht', 'value' => '75 kg'],
+                ['label' => 'Bruttogewicht', 'value' => '85 kg'],
+                ['label' => 'Abmessungen (Breite × Höhe × Tiefe)', 'value' => '44,7 × 63,6 × 36,9 cm'],
+            ],
+        };
+        $product['issues'] = array_values(array_diff($product['issues'], ['missing_specifications']));
+
         return $product;
+    }
+
+    /** Only the two reviewed Olympia sources explicitly state both cooking facilities. */
+    private static function isReviewedCookingList(array $source, string $label, array $values): bool
+    {
+        $models = [
+            'chauffage-olympia-conf-poeles-a-bois' => [
+                'reference' => 'olympia_conf',
+                'name' => 'Poêle à bois avec four et plaque de cuisson Olympia Plus · 13 Kw',
+            ],
+            'chauffage-olympia-pierreollaire-poeles-a-bois' => [
+                'reference' => 'Olympia-PierreOllaire',
+                'name' => 'Poêle à bois avec four et plaque de cuisson Olympia Pierre Ollaire · 12,2 Kw',
+            ],
+        ];
+        $model = $models[$source['slug'] ?? ''] ?? null;
+        if ($model === null || ($source['reference'] ?? null) !== $model['reference']
+            || ($source['name'] ?? null) !== $model['name']
+            || ($source['has_variants'] ?? null) !== false || ($source['variants'] ?? []) !== []
+            || ($source['universe'] ?? null) !== 'heating' || $label !== 'Option de cuisson') {
+            return false;
+        }
+        // No unknown/negative choice, repeated option or neighboring model is generalized.
+        $values = array_values($values);
+        sort($values);
+
+        return $values === ['Avec four', 'Avec plaque de cuisson'];
     }
 }

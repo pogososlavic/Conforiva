@@ -112,37 +112,40 @@ class Catalogue
     private function text(string $source): ?string
     {
         $source = preg_replace('/https?:\/\/\S*damdam\S*/i', '', $source);
+        // Historical dictionary and editorial keys remain stable; branding is a display projection.
         $source = trim(preg_replace('/damdam/i', 'HOMYA', $source));
+        $displaySource = preg_replace('/(?<![a-z0-9_@.])homya(?![a-z0-9_.])/i', 'HOME CONFORT', $source);
         if (preg_match('/\A\$[a-z0-9]+\z/i', $source)) {
             // Unresolved source payload references are not product prose.
             return '';
         }
         $locale = app()->getLocale();
         if ($locale === 'fr' || $source === '') {
-            return $source;
+            return $displaySource;
         }
         if (! array_key_exists($locale, $this->translations)) {
             $this->translations[$locale] = $this->read(fn () => $this->source->dictionary($locale), []);
         }
-        $translated = $this->translations[$locale][$source] ?? null;
+        $translated = $this->translations[$locale][$source] ?? $this->translations[$locale][$displaySource] ?? null;
         if (! is_string($translated) || trim($translated) === '') {
             $this->translationFailure = true;
 
             return null;
         }
 
-        return CatalogueTextCorrections::apply($source, $locale, $translated);
+        return preg_replace('/(?<![a-z0-9_@.])(?:damdam|homya)(?![a-z0-9_.])/i', 'HOME CONFORT', CatalogueTextCorrections::apply($source, $locale, $translated));
     }
 
-    private function image(?array $image): ?array
+    private function image(?array $image, int $minimumDimension = 500): ?array
     {
         $url = $image['local_url'] ?? '';
         if (! preg_match('/\A\/media\/catalogue\/[a-f0-9]{24}\.(?:jpg|png|webp|avif|gif)\z/', $url) || ! is_file(public_path(ltrim($url, '/')))) {
             return null;
         }
 
-        if (array_key_exists($url, $this->images)) {
-            return $this->images[$url];
+        $cacheKey = $minimumDimension.':'.$url;
+        if (array_key_exists($cacheKey, $this->images)) {
+            return $this->images[$cacheKey];
         }
         $path = public_path(ltrim($url, '/'));
         $dimensions = @getimagesize($path);
@@ -150,13 +153,13 @@ class Catalogue
         // This technical gate does not certify visual quality or Google approval.
         $extension = pathinfo($path, PATHINFO_EXTENSION);
         $expectedType = ['jpg' => IMAGETYPE_JPEG, 'png' => IMAGETYPE_PNG, 'webp' => IMAGETYPE_WEBP, 'gif' => IMAGETYPE_GIF];
-        if (! $dimensions || $dimensions[0] < 500 || $dimensions[1] < 500
+        if (! $dimensions || $dimensions[0] < $minimumDimension || $dimensions[1] < $minimumDimension
             || $dimensions[0] * $dimensions[1] > 64_000_000 || filesize($path) > 16_000_000
             || ($expectedType[$extension] ?? null) !== $dimensions[2]) {
-            return $this->images[$url] = null;
+            return $this->images[$cacheKey] = null;
         }
 
-        return $this->images[$url] = ['local_url' => $url, 'width' => $dimensions[0], 'height' => $dimensions[1]];
+        return $this->images[$cacheKey] = ['local_url' => $url, 'width' => $dimensions[0], 'height' => $dimensions[1]];
     }
 
     private function replacement(array $source): ?array
@@ -170,7 +173,22 @@ class Catalogue
             return null;
         }
 
-        return is_array($entry['image'] ?? null) ? $this->image($entry['image']) : null;
+        $image = $entry['image'] ?? null;
+        $minimumDimension = 500;
+        // A signed exact native photograph may improve the storefront while remaining blocked for Google.
+        if (($entry['quality_status'] ?? null) === 'verified_native_below_preparation_target' && is_array($image)) {
+            $url = $image['local_url'] ?? null;
+            $sha = $image['sha256'] ?? null;
+            if (is_string($url) && preg_match('~\A/media/catalogue/[a-f0-9]{24}\.(?:jpg|png|webp|gif)\z~', $url)
+                && is_string($sha) && preg_match('/\A[a-f0-9]{64}\z/', $sha)) {
+                $path = public_path(ltrim($url, '/'));
+                if (is_file($path) && ! is_link($path) && hash_equals($sha, hash_file('sha256', $path))) {
+                    $minimumDimension = 100;
+                }
+            }
+        }
+
+        return is_array($image) ? $this->image($image, $minimumDimension) : null;
     }
 
     private function sourceProduct(string $slug): ?array
@@ -191,7 +209,7 @@ class Catalogue
         if ($quote !== null) {
             $product['price_cents'] = $quote['price_cents'];
         }
-        $product['brand'] = preg_replace('/damdam/i', 'HOMYA', $source['brand']);
+        $product['brand'] = preg_replace('/(?:damdam|homya)/i', 'HOME CONFORT', $source['brand']);
         $product['name'] = $this->text($source['name']);
         $product['category'] = ['slug' => $source['category']['slug'], 'name' => $this->text($source['category']['name'])];
         if ($product['name'] === null || $product['category']['name'] === null) {
@@ -249,7 +267,21 @@ class Catalogue
 
         $product = CatalogueProductCorrections::apply($source, $product, app()->getLocale());
 
-        $product = CatalogueSafetyCorrections::apply($source, CatalogueContent::apply($source, $product, app()->getLocale()), app()->getLocale());
+        $product = CatalogueContent::apply($source, $product, app()->getLocale());
+        $officialSource = $source;
+        if (CatalogueOfficialFacts::requiresCompleteSource($source)) {
+            $fullSource = $this->sourceProduct($source['slug']);
+            $identityKeys = array_flip(['name', 'reference', 'brand', 'price_cents', 'currency', 'has_variants']);
+            $sameIdentity = $fullSource !== null;
+            foreach ($identityKeys as $key => $_) {
+                $sameIdentity = $sameIdentity && ($source[$key] ?? null) === ($fullSource[$key] ?? null);
+            }
+            if ($sameIdentity) {
+                $officialSource = $fullSource;
+            }
+        }
+        $product = CatalogueOfficialFacts::apply($officialSource, $product, app()->getLocale());
+        $product = CatalogueSafetyCorrections::apply($source, $product, app()->getLocale());
 
         return app(ProductManager::class)->decorate($product);
     }

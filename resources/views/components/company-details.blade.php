@@ -1,7 +1,7 @@
 @inject('channels', 'App\Services\ContactChannels')
 @php($contactLinks = $channels->links())
 <dl class="company-details">
-    @foreach(config('legal.company') as $field => $value)
+    @foreach(array_filter(config('legal.company'), fn($value) => is_string($value) && trim($value) !== '') as $field => $value)
         <div><dt>{{ __('legal.company_labels.'.$field) }}</dt><dd>{{ $value }}</dd></div>
     @endforeach
     <div><dt>{{ __('legal.company_labels.email') }}</dt><dd>@if($channels->email())<a href="mailto:{{ $channels->email() }}">{{ $channels->email() }}</a>@else{{ __('legal.contact_pending') }}@endif</dd></div>

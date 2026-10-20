@@ -46,15 +46,34 @@ def atomic(path,data):
     temp=path.with_suffix(path.suffix+'.tmp');temp.write_text(json.dumps(data,ensure_ascii=False,separators=(',',':')))
     temp.replace(path)
 
+def validate_source_url(url, allowed):
+    parsed = urllib.parse.urlsplit(url)
+    if (parsed.scheme != 'https' or parsed.hostname not in allowed
+            or parsed.username is not None or parsed.password is not None
+            or parsed.port not in (None, 443)):
+        raise ValueError('Unapproved public source host')
+
+
+class SourceRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def __init__(self, allowed):
+        self.allowed = allowed
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # urllib follows redirects before returning the response to fetch().
+        # Validate here so an untrusted Location is never contacted.
+        validate_source_url(newurl, self.allowed)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def fetch(url,media=False):
     allowed={'www.damdam.fr'} if not media else {'damdam.b-cdn.net','res.cloudinary.com'}
-    if urllib.parse.urlparse(url).scheme!='https' or urllib.parse.urlparse(url).hostname not in allowed:
-        raise ValueError('Unapproved public source host')
+    validate_source_url(url, allowed)
+    opener = urllib.request.build_opener(SourceRedirectHandler(allowed))
     for attempt in range(3):
         try:
             request=urllib.request.Request(url,headers={'User-Agent':'HOMYA authorized catalogue collection','Accept':'image/*' if media else 'text/html'})
-            with urllib.request.urlopen(request,timeout=25) as r:
-                if urllib.parse.urlparse(r.url).hostname not in allowed:raise ValueError('Unapproved redirect')
+            with opener.open(request,timeout=25) as r:
+                validate_source_url(r.url, allowed)
                 limit=15000000 if media else 4000000
                 data=r.read(limit+1)
                 if len(data)>limit:raise ValueError('Response exceeds inspection limit')

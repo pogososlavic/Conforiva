@@ -21,11 +21,25 @@ class CatalogueSchemaPreparationTest extends TestCase
 
     private string $accessDirectory;
 
+    private string $sourceRoot;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->app->detectEnvironment(fn () => 'local');
         $this->fixture = new CatalogueCapsuleFixture;
+        $this->sourceRoot = base_path();
+        // Keep the real guard and file digest, but isolate synthetic access files entirely.
+        $reviewedFiles = array_merge(array_map(fn ($name) => 'database/migrations/catalogue/'.$name, CatalogueArchiveSchema::MIGRATIONS), [
+            'app/Services/CatalogueArchiveSchema.php', 'app/Services/ArchiveDatabaseGuard.php', 'app/Services/PrivateLocalFiles.php',
+            'app/Console/Commands/PrepareCatalogueSchema.php', 'config/database.php', 'config/homya.php', 'composer.lock',
+        ]);
+        foreach ($reviewedFiles as $relative) {
+            $this->fixture->write($relative, file_get_contents($this->sourceRoot.'/'.$relative));
+        }
+        $this->app->setBasePath($this->fixture->root);
+        config(['homya.database_access_path' => $this->fixture->root.'/storage/app/private/database-access']);
+        mkdir(config('homya.database_access_path'), 0700);
         $path = $this->fixture->root.'/db.sock';
         $this->socket = stream_socket_server('unix://'.$path);
         $this->assertIsResource($this->socket);
@@ -40,14 +54,15 @@ class CatalogueSchemaPreparationTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (isset($this->access) && is_file($this->access)) {
-            unlink($this->access);
-            rmdir($this->accessDirectory);
-        }
         if (is_resource($this->socket)) {
             fclose($this->socket);
         }
-        $this->fixture->destroy();
+        if (isset($this->sourceRoot)) {
+            $this->app->setBasePath($this->sourceRoot);
+        }
+        if (isset($this->fixture)) {
+            $this->fixture->destroy();
+        }
         parent::tearDown();
     }
 

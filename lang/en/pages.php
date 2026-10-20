@@ -12,13 +12,13 @@ return [
     'entries' => [
         'cookies' => $legalPages['entries']['cookies'],
         'a-propos' => [
-            'title' => 'About HOMYA',
+            'title' => 'About HOME CONFORT',
             'intro' => 'A family story since 2012, focused on warmth and comfort at home.',
             'paragraphs' => [],
             'sections' => [
                 [
                     'title' => 'Our story',
-                    'paragraph' => 'HOMYA is first and foremost a family story. Founded in 2012, our family business was built on simple values: trust, quality and service. Today, our online shop addresses two essential needs at home: warmth and comfort.',
+                    'paragraph' => 'HOME CONFORT is first and foremost a family story. Founded in 2012, our family business was built on simple values: trust, quality and service. Today, our online shop addresses two essential needs at home: warmth and comfort.',
                 ],
                 [
                     'title' => 'Wood fuels for your heating',
@@ -33,7 +33,7 @@ return [
                     'paragraph' => 'Clear product information and terms of sale help you prepare your purchase.',
                     'items' => [
                         'Free delivery to France, Belgium and Germany, under the terms set out on our Delivery page.',
-                        'For another country, contact HOMYA before ordering: feasibility, shipping charges and delivery time must be confirmed. These destinations are not available in the online checkout.',
+                        'For another country, contact HOME CONFORT before ordering: feasibility, shipping charges and delivery time must be confirmed. These destinations are not available in the online checkout.',
                         'Wood sourced from sustainably managed forests.',
                         'Delivery is stated as 3 to 7 business days after confirmed payment for France, Belgium and Germany. Please check the delivery terms and product-specific information.',
                         'A 2-year legal guarantee of conformity for our new appliances. Any manufacturer’s commercial guarantee is separate and applies only under the conditions specified for the product.',
@@ -41,12 +41,12 @@ return [
                     ],
                 ],
                 [
-                    'title' => 'Why choose HOMYA?',
+                    'title' => 'Why choose HOME CONFORT?',
                     'paragraph' => 'More than ten years of family history, a selection of products for the home and a focus on service guide our business. We believe a welcoming home starts with good products and service you can trust. Thank you for being part of our story.',
                 ],
                 [
-                    'title' => 'The HOMYA team and company',
-                    'paragraph' => 'HOMYA is managed by the person identified below. We operate as an independent retailer: trademarks remain the property of their respective owners, with no official manufacturer affiliation claimed. Find our legal identity, registered office and contact details below.',
+                    'title' => 'The HOME CONFORT team and company',
+                    'paragraph' => 'HOME CONFORT is managed by the person identified below. We operate as an independent retailer: trademarks remain the property of their respective owners, with no official manufacturer affiliation claimed. Find our legal identity, registered office and contact details below.',
                     'company_details' => true,
                 ],
             ],
@@ -55,8 +55,8 @@ return [
         ],
         'provenance' => [
             'title' => 'Our products',
-            'intro' => 'Clear guidance for exploring HOMYA.',
-            'paragraphs' => ['Browse the photos, specifications and options for each product to prepare your purchase.', 'HOMYA is an independent retailer. Our appliances are new and sealed, with a 2-year statutory conformity guarantee and an invoice in your name.'],
+            'intro' => 'Clear guidance for exploring HOME CONFORT.',
+            'paragraphs' => ['Browse the photos, specifications and options for each product to prepare your purchase.', 'HOME CONFORT is an independent retailer. Our appliances are new and sealed, with a 2-year statutory conformity guarantee and an invoice in your name.'],
             'pending' => false,
         ],
         'conseiller' => [
@@ -67,21 +67,21 @@ return [
         ],
         'contact' => [
             'title' => 'Contact',
-            'intro' => 'A question about a product, delivery, your order or a return? Find HOMYA contact details here.',
-            'paragraphs' => ['State your enquiry and, where relevant, the product or order reference.', 'Contact HOMYA by email, telephone, WhatsApp or SMS using the details below.', 'The registered office also receives returned goods, including bulky items. See Returns & withdrawal for the arrangements.'],
+            'intro' => 'A question about a product, delivery, your order or a return? Find HOME CONFORT contact details here.',
+            'paragraphs' => ['State your enquiry and, where relevant, the product or order reference.', 'Contact HOME CONFORT by email, telephone, WhatsApp or SMS using the details below.', 'Returned goods, including bulky items, are received at: :return_address. The registered office remains the address for correspondence and notices. See Returns & withdrawal for the arrangements.'],
             'pending' => false,
         ],
         'livraison' => [
             'title' => 'Delivery',
             'intro' => 'Free delivery in France, Belgium and Germany.',
-            'paragraphs' => ['Your appliances are delivered by our own carrier in 3 to 7 business days after payment is confirmed.', 'Orders are dispatched from France. The overall delivery period includes 1 to 2 business days for preparation after payment confirmation, followed by 2 to 5 business days for transport.', 'Business days are Monday to Friday. The cut-off time is 2 p.m., Paris time (Europe/Paris).', 'Delivery is free in France, Belgium and Germany.', 'For furniture and bulky appliances, share access details to arrange delivery with HOMYA.', 'Returns are free for withdrawal notified within 14 days of receipt. See Returns & withdrawal for the address and return arrangements.'],
+            'paragraphs' => ['Your appliances are delivered by our own carrier in 3 to 7 business days after payment is confirmed.', 'Orders are dispatched from France, from this address: :dispatch_address. The overall delivery period includes 1 to 2 business days for preparation after payment confirmation, followed by 2 to 5 business days for transport.', 'Business days are Monday to Friday. The cut-off time is 2 p.m., Paris time (Europe/Paris).', 'Delivery is free in France, Belgium and Germany.', 'For furniture and bulky appliances, share access details to arrange delivery with HOME CONFORT.', 'Returns are free for withdrawal notified within 14 days of receipt. See Returns & withdrawal for the address and return arrangements.'],
             'pending' => false,
         ],
         'retractation' => $legalPages['entries']['retractation'],
         'paiement' => [
             'title' => 'Payment',
             'intro' => 'Find the information you need to pay for your order.',
-            'paragraphs' => ['Confirm your basket and contact details to register your order. Payment instructions are associated with your order reference.', 'The summary lists your items, quantities and total in euros including taxes. Delivery is free in France, Belgium and Germany.', 'Your items are reserved for 72 hours after confirmation. Order processing continues once payment is confirmed.', 'For payment enquiries, contact HOMYA with your order number.'],
+            'paragraphs' => ['Confirm your basket and contact details to register your order. Payment instructions are associated with your order reference.', 'The summary lists your items, quantities and total in euros including taxes. Delivery is free in France, Belgium and Germany.', 'Your items are reserved for 72 hours after confirmation. Order processing continues once payment is confirmed.', 'For payment enquiries, contact HOME CONFORT with your order number.'],
             'pending' => false,
         ],
         'suivi' => [

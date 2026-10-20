@@ -20,7 +20,7 @@ class ExampleTest extends TestCase
             $this->get('/'.$locale)
                 ->assertOk()
                 ->assertSee('lang="'.$locale.'"', false)
-                ->assertSee('HOMYA');
+                ->assertSee('HOME CONFORT');
         }
     }
 

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\HtmlString;
 use Throwable;
 
-/** Creates one immutable official quote and submits its PDF to the configured HOMYA support mailer. */
+/** Creates one immutable official quote and submits its PDF to the configured HOME CONFORT support mailer. */
 final class AutomaticOrderQuote
 {
     public function sendFor(object $order): void
@@ -98,6 +98,12 @@ final class AutomaticOrderQuote
             $data['valid_until_at'] = $deadline->toIso8601String();
             $data['payment_terms'] = __('documents.order_quote_payment_terms', [], $language);
             $data['delivery_terms'] = __('documents.order_quote_delivery_terms', [], $language);
+            if (! empty($source['customer']['take_back'])) {
+                $data['delivery_terms'] .= "\n\n".__('takeback.recorded', [], $language)."\n".implode("\n", array_map(
+                    fn (array $collection) => $collection['name'].' — '.$collection['reference'].' : '.$collection['quantity'],
+                    $source['customer']['take_back'],
+                ));
+            }
             $data['eco_reviewed'] = true;
             $data['guarantee_reviewed'] = true;
 
@@ -164,7 +170,7 @@ final class AutomaticOrderQuote
                 'text' => new HtmlString($textBody),
             ], [], function ($message) use ($email, $record, $pdf, $safeNumber, $language) {
                 $message->to($email)
-                    ->from(config('contact.email'), 'HOMYA')
+                    ->from(config('contact.email'), 'HOME CONFORT')
                     ->subject(__('documents.order_quote_email_subject', ['number' => $record['number']], $language))
                     ->attachData($pdf, $safeNumber.'.pdf', ['mime' => 'application/pdf']);
             });

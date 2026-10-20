@@ -1,7 +1,7 @@
-<x-layout :title="__('promotions.title').' — HOMYA'" :description="__('promotions.description')" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :search-query="$filters['q'] ?? ''" :seo-context="['filters' => $filters, 'available' => !$invalid && $products->isNotEmpty()]">
+<x-layout :title="__('promotions.title').' — HOME CONFORT'" :description="__('promotions.description')" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :search-query="$filters['q'] ?? ''" :seo-context="['filters' => $filters, 'available' => !$invalid && $products->isNotEmpty()]">
     <main id="main" class="shell catalogue-page promotions-page" tabindex="-1">
         <nav class="breadcrumbs" aria-label="{{ __('catalogue.breadcrumbs') }}"><a href="{{ route('home', ['locale' => $locale]) }}">{{ __('home.home') }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ __('promotions.title') }}</span></nav>
-        <div class="page-heading"><p class="eyebrow">HOMYA</p><h1>{{ __('promotions.title') }}</h1><p>{{ __('promotions.description') }}</p></div>
+        <div class="page-heading"><p class="eyebrow">HOME CONFORT</p><h1>{{ __('promotions.title') }}</h1><p>{{ __('promotions.description') }}</p></div>
         <div class="promotion-toolbar">
             @if(isset($filters['discount']))<a class="reset-link" href="{{ route('promotions', ['locale' => $locale] + array_diff_key($filters, ['discount' => true, 'page' => true])) }}#results-heading">{{ __('promotions.all') }}</a>@endif
             <form class="promotion-search" method="get" action="{{ route('promotions', ['locale' => $locale]) }}#results-heading">

@@ -157,7 +157,7 @@ const refresh = async () => {
             if (newOrderAlert) newOrderAlert.hidden = false;
             if ('Notification' in window && Notification.permission === 'granted') {
                 try {
-                    const notification = new Notification('Nouvelle commande HOMYA', {body: 'Une commande vient d’être enregistrée. Consultez le menu Commandes.'});
+                    const notification = new Notification('Nouvelle commande HOME CONFORT', {body: 'Une commande vient d’être enregistrée. Consultez le menu Commandes.'});
                     notification.onclick = () => { window.focus(); window.location.href = panel.dataset.adminOrdersUrl; };
                 } catch { /* Keep the in-page alert and sound if the browser blocks system notifications. */ }
             }

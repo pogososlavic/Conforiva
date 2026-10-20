@@ -72,7 +72,10 @@ final class InitialInventory
     {
         $displayOnly = ($manifest['version'] ?? null) === 2
             && ($manifest['source'] ?? null) === 'catalogue_display_only_zero_stock';
-        $expected = $displayOnly ? $this->prepareDisplayOnly($catalogue) : $this->prepare($catalogue);
+        $confirmed = ($manifest['version'] ?? null) === 3
+            && ($manifest['source'] ?? null) === 'user_confirmed_initial_quantity_500';
+        $expected = $displayOnly ? $this->prepareDisplayOnly($catalogue)
+            : ($confirmed ? $this->prepareConfirmedActivation($catalogue) : $this->prepare($catalogue));
         if (($manifest['version'] ?? null) !== $expected['version'] || ($manifest['source'] ?? null) !== $expected['source']
             || ($manifest['currency'] ?? null) !== 'EUR' || ($manifest['prices_include_tax'] ?? null) !== true
             || ($manifest['products'] ?? null) !== $expected['products']) {

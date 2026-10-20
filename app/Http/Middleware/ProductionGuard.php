@@ -39,7 +39,7 @@ final class ProductionGuard
             if (config('admin.remote_enabled') !== true
                 || $failures !== []
                 || ! app(AdminAccess::class)->configured()
-                || $request->getHost() !== ProductionSecurity::HOST
+                || $request->getHost() !== ProductionSecurity::host()
                 || ! $request->isSecure()
                 || $request->getPort() !== 443) {
                 return $this->unavailable($request, 404, $reference, 'admin_access_closed', $failures);
@@ -52,15 +52,15 @@ final class ProductionGuard
         }
         // Only canonicalize safe browsing requests from the exact public alias.
         // Keep administration, writes and unusual ports behind the existing guards.
-        if ($request->getHost() === 'www.'.ProductionSecurity::HOST
+        if ($request->getHost() === 'www.'.ProductionSecurity::host()
             && in_array($request->getMethod(), ['GET', 'HEAD'], true)
             && in_array($request->getPort(), [80, 443], true)) {
             $request->attributes->set('homya.canonical_redirect', true);
 
-            return redirect()->away('https://'.ProductionSecurity::HOST.$request->getRequestUri(), 301)
+            return redirect()->away('https://'.ProductionSecurity::host().$request->getRequestUri(), 301)
                 ->header('X-HOMYA-Reference', $reference);
         }
-        if ($request->getHost() !== ProductionSecurity::HOST || ($request->isSecure() && $request->getPort() !== 443)) {
+        if ($request->getHost() !== ProductionSecurity::host() || ($request->isSecure() && $request->getPort() !== 443)) {
             return $this->unavailable($request, 400, $reference, 'canonical_host_required');
         }
         if (! $request->isSecure()) {

@@ -26,7 +26,7 @@
                         <td class="quote-email-header" style="padding:26px 30px 20px;border-bottom:1px solid #eeeae1;">
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                    <td style="font-size:26px;line-height:1;font-weight:800;letter-spacing:-1px;color:#222222;">HOMYA<span style="color:#d5a900;">.</span></td>
+                                    <td style="font-size:26px;line-height:1;font-weight:800;letter-spacing:-1px;color:#222222;">HOME CONFORT<span style="color:#d5a900;">.</span></td>
                                     <td align="right" style="font-size:12px;line-height:1.4;color:#68665f;">{{ __('documents.order_quote_email_title', [], $language) }}</td>
                                 </tr>
                             </table>
@@ -67,7 +67,10 @@
                     </tr>
                     <tr>
                         <td class="quote-email-footer" style="padding:16px 30px;background:#faf9f6;border-top:1px solid #eeeae1;font-size:11px;line-height:1.55;color:#77746c;">
-                            HOMYA · <a href="https://homya.eu" style="color:#62531e;text-decoration:underline;">homya.eu</a>
+                            HOME CONFORT
+                            @if($publicOrigin = app(\App\Services\Seo::class)->origin())
+                                · <a href="{{ $publicOrigin }}" style="color:#62531e;text-decoration:underline;">{{ parse_url($publicOrigin, PHP_URL_HOST) }}</a>
+                            @endif
                         </td>
                     </tr>
                 </table>

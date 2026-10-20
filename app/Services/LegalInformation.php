@@ -4,12 +4,42 @@ namespace App\Services;
 
 final class LegalInformation
 {
+    public function dispatchAddress(): ?string
+    {
+        return $this->verifiedOperationalAddress('dispatch');
+    }
+
     public function returnAddress(): ?string
     {
-        $address = config('legal.company.address');
+        if (config('legal.returns_at_registered_office') === true) {
+            $address = config('legal.company.address');
 
-        return config('legal.returns_at_registered_office') === true && is_string($address) && trim($address) !== ''
-            ? trim($address) : null;
+            return is_string($address) && trim($address) !== '' ? trim($address) : null;
+        }
+
+        return $this->verifiedOperationalAddress('returns');
+    }
+
+    private function verifiedOperationalAddress(string $type): ?string
+    {
+        $details = config('shipping.'.$type);
+        $address = is_array($details) ? ($details['address'] ?? null) : null;
+        $structured = is_array($details) ? ($details['address_structured'] ?? null) : null;
+        if (! is_array($details) || ($details['verified'] ?? false) !== true
+            || ! is_string($address) || trim($address) === '' || preg_match('/[\p{Cc}]/u', $address)
+            || ! is_array($structured)) {
+            return null;
+        }
+        foreach (['street', 'postal_code', 'city', 'country'] as $field) {
+            if (! is_string($structured[$field] ?? null) || trim($structured[$field]) === '') {
+                return null;
+            }
+        }
+        if (! preg_match('/\A[A-Z]{2}\z/', $structured['country'])) {
+            return null;
+        }
+
+        return trim($address);
     }
 
     public function mediator(): ?array

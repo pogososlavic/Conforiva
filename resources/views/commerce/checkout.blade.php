@@ -1,4 +1,4 @@
-<x-layout :title="__('commerce.checkout').' — HOMYA'" :catalogue-ready="true">
+<x-layout :title="__('commerce.checkout').' — HOME CONFORT'" :catalogue-ready="true" :language-links="collect(config('homya.locales'))->mapWithKeys(fn ($language) => [$language => route('checkout.show', ['locale' => $language])])->all()">
     <main id="main" class="shell commerce-page checkout-page" tabindex="-1">
         <a class="commerce-back" href="{{ route('cart.show', ['locale' => $locale]) }}">← {{ __('commerce.back_cart') }}</a>
         <h1>{{ __('commerce.checkout') }}</h1>
@@ -15,7 +15,7 @@
                     <div class="checkout-fields">
                         <x-checkout-field name="name" autocomplete="name" :max="150" />
                         <x-checkout-field name="email" type="email" autocomplete="email" :max="254" />
-                        <x-checkout-field name="phone" type="tel" autocomplete="tel" :max="30" :required="false" />
+                        <x-checkout-phone />
                     </div>
                 </fieldset>
                 <fieldset class="checkout-panel"><legend><span class="checkout-section-number" aria-hidden="true">2</span> {{ __('commerce.shipping_address') }}</legend>
@@ -60,7 +60,7 @@
                 @endif
                 <fieldset class="checkout-panel payment-options"><legend><span class="checkout-section-number" aria-hidden="true">3</span> {{ __('commerce.payment_method') }}</legend>
                     @if($bankReady)<label class="payment-choice"><input type="radio" name="payment_method" value="bank_transfer" checked required><span><strong>{{ __('commerce.bank_method') }}</strong><small>{{ __('commerce.bank_next_step') }}</small></span></label><p class="checkout-help">{{ __('commerce.bank_deadline_notice') }}</p>@endif
-                    @if(!$bankReady)<input type="hidden" name="payment_method" value="deferred"><strong>{{ __('commerce.status.pending_payment_details') }}</strong><p class="checkout-help">{{ __('commerce.deferred_notice') }}</p><p class="checkout-help">{{ __('commerce.deferred_reservation_notice') }}</p>@endif
+                    @if(!$bankReady)<input type="hidden" name="payment_method" value="deferred"><strong>{{ __('commerce.deferred_method') }}</strong><p class="checkout-help">{{ __('commerce.deferred_notice') }}</p><p class="checkout-help">{{ __('commerce.deferred_reservation_notice') }}</p>@endif
                     @error('payment_method')<p class="checkout-field-error" role="alert">{{ $message }}</p>@enderror
                 </fieldset>
                 <div class="checkout-panel checkout-consent">

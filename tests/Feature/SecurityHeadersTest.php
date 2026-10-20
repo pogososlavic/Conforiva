@@ -95,7 +95,9 @@ class SecurityHeadersTest extends TestCase
 
     public function test_source_failure_is_logged_without_exception_context_or_secret_disclosure(): void
     {
-        Log::shouldReceive('warning')->once()->with('HOMYA_CATALOGUE_SOURCE_UNAVAILABLE');
+        // The page and its shared components may resolve separate catalogue
+        // instances. Each warning must still contain only this fixed signal.
+        Log::shouldReceive('warning')->atLeast()->once()->with('HOMYA_CATALOGUE_SOURCE_UNAVAILABLE');
         $this->app->instance(CatalogueSource::class, $this->failingSource());
         $response = $this->get('/fr/catalogue')->assertStatus(503)
             ->assertDontSee('SECRET_SENTINEL')->assertDontSee('mysql://private')->assertDontSee('SQL select');

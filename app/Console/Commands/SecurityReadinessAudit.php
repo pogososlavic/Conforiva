@@ -16,7 +16,7 @@ final class SecurityReadinessAudit extends Command
         $checks = $security->checks();
         $passed = ! in_array(false, $checks, true);
         if ($this->option('json')) {
-            $this->line(json_encode(['domain' => ProductionSecurity::HOST, 'configuration_passed' => $passed,
+            $this->line(json_encode(['domain' => ProductionSecurity::host(), 'configuration_passed' => $passed,
                 'checks' => $checks, 'hosting_tls_permissions_backups_verified' => false], JSON_THROW_ON_ERROR));
         } else {
             foreach ($checks as $name => $ok) {

@@ -1,4 +1,4 @@
-@props(['title' => null, 'description' => null, 'catalogueReady' => false, 'languageLinks' => [], 'searchQuery' => '', 'seoContext' => []])
+@props(['title' => null, 'description' => null, 'catalogueReady' => false, 'languageLinks' => [], 'searchQuery' => '', 'seoContext' => [], 'navigationProducts' => null])
 @php($seo = app(\App\Services\Seo::class)->page(request(), $title ?? __('home.title'), $description ?? __('home.description'), $seoContext + ['available' => $catalogueReady]))
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
@@ -12,7 +12,7 @@
     @foreach($seo['alternates'] as $language => $url)
         <link rel="alternate" hreflang="{{ $language }}" href="{{ $url }}">
     @endforeach
-    <meta property="og:site_name" content="HOMYA">
+    <meta property="og:site_name" content="HOME CONFORT">
     <meta property="og:title" content="{{ $seo['title'] }}">
     <meta property="og:description" content="{{ $seo['description'] }}">
     <meta property="og:type" content="{{ $seo['type'] }}">
@@ -20,7 +20,7 @@
     @if($seo['image'])<meta property="og:image" content="{{ $seo['image'] }}">@endif
     @if(app(\App\Services\Seo::class)->onPublicOrigin(request()) && config('seo.verification'))<meta name="google-site-verification" content="{{ config('seo.verification') }}">@endif
     @if($seo['json'])<script type="application/ld+json" nonce="{{ request()->attributes->get('security.csp_nonce') }}">{!! $seo['json'] !!}</script>@endif
-    <link rel="icon" href="{{ asset('favicon.ico') }}?v=homya1" sizes="16x16 32x32 48x48">
+    <link rel="icon" href="{{ asset('favicon.ico') }}?v=home-confort-1" sizes="16x16 32x32 48x48">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('branding/favicon-32-v1.png') }}">
     <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('branding/favicon-96-v1.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('branding/apple-touch-icon-v1.png') }}">
@@ -31,12 +31,8 @@
 <body class="homya-storefront {{ request()->routeIs('home') ? 'home-reference' : '' }}">
     <a class="skip-link" href="#main">{{ __('home.skip') }}</a>
     <div class="home-header-wrap">
-    <div class="utility-bar"><div class="shell">
-        @if($contactEmail = app(\App\Services\ContactChannels::class)->email())<a class="utility-contact" href="mailto:{{ $contactEmail }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="m3 6 9 7 9-7" stroke="currentColor" stroke-width="1.7"/></svg>{{ $contactEmail }}</a>@endif
-        <nav class="utility-navigation" aria-label="{{ __('chrome.utility_navigation') }}"><ul><li><a href="{{ route('order.tracking', ['locale' => app()->getLocale()]) }}">{{ __('chrome.utility.suivi') }}</a></li>@if(($phone = app(\App\Services\ContactChannels::class)->phone()) && ($phoneLinks = app(\App\Services\ContactChannels::class)->links()))<li><a class="utility-phone" href="{{ $phoneLinks['whatsapp'] }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" aria-label="{{ __('contact.chat_label') }}: {{ $phone }}">{{ $phone }}</a></li>@endif</ul></nav>
-    </div></div>
     <header class="site-header shell">
-        <a class="wordmark" href="{{ route('home', ['locale' => app()->getLocale()]) }}" aria-label="HOMYA">
+        <a class="wordmark" href="{{ route('home', ['locale' => app()->getLocale()]) }}" aria-label="HOME CONFORT">
             <x-brand-logo />
         </a>
         <form class="search-preview" action="{{ route('catalogue', ['locale' => app()->getLocale()]) }}" method="get" role="search">
@@ -66,12 +62,40 @@
         </div>
     </header>
     <nav id="primary-navigation" class="primary-navigation shell" aria-label="{{ __('home.navigation') }}">
+        @php($navigationProducts = $navigationProducts ?? app(\App\Services\Catalogue::class)->products())
+        @php($navigationCategories = app(\App\Services\CategoryNavigation::class)->groups($navigationProducts))
+        @php($applianceBrands = app(\App\Services\CategoryNavigation::class)->applianceBrands($navigationProducts))
         <ul>
             <li><a href="{{ route('home', ['locale' => app()->getLocale()]) }}" @if(request()->routeIs('home')) aria-current="page" @endif>{{ __('home.home') }}</a></li>
             <li><a href="{{ route('catalogue', ['locale' => app()->getLocale()]) }}" @if(request()->routeIs('catalogue') && !request('universe')) aria-current="page" @endif>{{ __('catalogue.title') }}</a></li>
             <li><a href="{{ route('promotions', ['locale' => app()->getLocale()]) }}" @if(request()->routeIs('promotions')) aria-current="page" @endif>{{ __('promotions.title') }}</a></li>
             @foreach (__('home.categories') as $slug => $category)
-                <li><a href="{{ route('catalogue', ['locale' => app()->getLocale(), 'universe' => $slug]) }}" @if(request()->routeIs('catalogue') && request('universe') === $slug) aria-current="page" @endif>{{ $category['name'] }}</a></li>
+                <li class="category-dropdown-item">
+                    @if(!empty($navigationCategories[$slug]))
+                        <details class="category-dropdown" name="storefront-categories">
+                            <summary @if(request()->routeIs('catalogue') && request('universe') === $slug) class="category-dropdown-current" @endif>{{ $category['name'] }}</summary>
+                            <ul class="category-dropdown-panel">
+                                <li><a class="category-dropdown-all" href="{{ route('catalogue', ['locale' => app()->getLocale(), 'universe' => $slug]) }}">{{ $category['name'] }} <span aria-hidden="true">→</span></a></li>
+                                @if($slug === 'appliances' && $applianceBrands)
+                                    <li class="category-dropdown-section"><span>{{ __('catalogue.brand') }}</span></li>
+                                    <li class="category-dropdown-brands"><ul class="category-brand-grid" aria-label="{{ __('catalogue.brand') }}">
+                                    @foreach($applianceBrands as $brand)
+                                        <li><a href="{{ route('catalogue', ['locale' => app()->getLocale(), 'universe' => $slug, 'brand' => $brand]) }}" @if(request()->routeIs('catalogue') && request('universe') === $slug && request('brand') === $brand) aria-current="page" @endif>{{ $brand }}</a></li>
+                                    @endforeach
+                                    </ul></li>
+                                @endif
+                                @if($slug === 'appliances' && $applianceBrands)
+                                    <li class="category-dropdown-section"><span>{{ __('catalogue.category') }}</span></li>
+                                @endif
+                                @foreach($navigationCategories[$slug] as $subcategory)
+                                    <li><a href="{{ route('catalogue', ['locale' => app()->getLocale(), 'universe' => $slug, 'category' => $subcategory['slug']]) }}" @if(request()->routeIs('catalogue') && request('universe') === $slug && request('category') === $subcategory['slug']) aria-current="page" @endif>{{ $subcategory['name'] }}</a></li>
+                                @endforeach
+                            </ul>
+                        </details>
+                    @else
+                        <a href="{{ route('catalogue', ['locale' => app()->getLocale(), 'universe' => $slug]) }}" @if(request()->routeIs('catalogue') && request('universe') === $slug) aria-current="page" @endif>{{ $category['name'] }}</a>
+                    @endif
+                </li>
             @endforeach
             <li><a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'provenance']) }}" @if(request()->routeIs('information') && request()->route('page') === 'provenance') aria-current="page" @endif>{{ __('pages.help') }}</a></li>
             <li><a href="{{ route('information', ['locale' => app()->getLocale(), 'page' => 'a-propos']) }}" @if(request()->routeIs('information') && request()->route('page') === 'a-propos') aria-current="page" @endif>{{ __('pages.about_navigation') }}</a></li>

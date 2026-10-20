@@ -24,6 +24,7 @@ final class CommercialDocumentsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['legal.company.capital' => 'Capital synthétique de test', 'legal.company.rcs' => 'Immatriculation synthétique de test']);
         $this->withoutVite();
         $this->originalStorage = storage_path();
         $this->temporary = sys_get_temp_dir().'/homya-documents-test-'.Str::uuid();
@@ -241,7 +242,7 @@ final class CommercialDocumentsTest extends TestCase
         config(['legal.company.name' => 'Changed seller', 'legal.company.address' => 'Changed address']);
         $again = app(DocumentStore::class)->issue($record['id'], 2, [], fn () => throw new \RuntimeException('Must not rerender'));
         $this->assertSame($issued, $again);
-        $this->assertSame('HOMYA', $again['issuer']['name']);
+        $this->assertSame('HOME CONFORT', $again['issuer']['name']);
         $this->assertSame('%PDF-fixture', app(DocumentStore::class)->pdf($again));
         foreach (glob(storage_path('app/private/commercial-documents/*.encrypted')) as $file) {
             $this->assertStringNotContainsString('Élodie', file_get_contents($file));
@@ -366,19 +367,19 @@ final class CommercialDocumentsTest extends TestCase
         }
     }
 
-    public function test_all_three_documents_include_the_complete_confirmed_homya_identity(): void
+    public function test_all_three_documents_include_the_supplied_home_confort_identity(): void
     {
         config(['contact.email' => null, 'contact.phone' => null]);
-        $expected = [
-            'HOMYA', 'EURL — entreprise unipersonnelle à responsabilité limitée',
-            '20 000,00 €', '18 Route de la Grange des Noyers, 91150 Morigny-Champigny, France',
-            '751 035 122', '751 035 122 00017', 'FR48751035122', '751 035 122 R.C.S. Évry',
-            'Inscription au RCS : 20/04/2012', 'Inscription au RNE : 20/04/2012', 'Gérant : David Marechal',
-        ];
+        config(['legal.company.capital' => null, 'legal.company.rcs' => null]);
+        $expected = ['HOME CONFORT', 'Société par actions simplifiée (SAS)',
+            '1010 A ROUTE DU MAHURY, 97354 RÉMIRE-MONTJOLY', '934757311',
+            '93475731100014', 'FR05934757311', 'Dirigeant : RAPHAEL RUIZ'];
         foreach (array_keys(DocumentData::TYPES) as $type) {
             $record = $this->draft($type);
-            $issuer = app(DocumentData::class)->issuer();
+            $issuer = app(DocumentData::class)->issuer(requireComplete: false);
             $html = view('documents.pdf', ['record' => $record, 'data' => $record['data'], 'issuer' => $issuer, 'logo' => null])->render();
+            $this->assertStringNotContainsString('751 035 122', $html);
+            $this->assertStringNotContainsString('David Marechal', $html);
             foreach ($expected as $value) {
                 $this->assertStringContainsString(e($value), $html, $type.' issuer identity');
             }
@@ -388,12 +389,22 @@ final class CommercialDocumentsTest extends TestCase
             $this->assertStringNotContainsString(config('legal.mediator.phone'), $html);
 
             config(['contact.email' => 'fixture-homya@example.invalid', 'contact.phone' => '+33123456789']);
-            $issuer = app(DocumentData::class)->issuer();
+            $issuer = app(DocumentData::class)->issuer(requireComplete: false);
             $html = view('documents.pdf', ['record' => $record, 'data' => $record['data'], 'issuer' => $issuer, 'logo' => null])->render();
             $this->assertStringContainsString('Email : fixture-homya@example.invalid', $html);
             $this->assertStringContainsString('Téléphone : +33123456789', $html);
             config(['contact.email' => null, 'contact.phone' => null]);
         }
+    }
+
+    public function test_draft_identity_is_available_but_official_issue_requires_missing_registration_facts(): void
+    {
+        config(['legal.company.capital' => null, 'legal.company.rcs' => null]);
+        $record = $this->draft('quote');
+        $this->assertSame('HOME CONFORT', app(DocumentData::class)->issuer(requireComplete: false)['name']);
+        $this->assertStringStartsWith('%PDF-', app(DocumentStore::class)->pdf($record));
+        $this->expectException(ValidationException::class);
+        $this->issue($record);
     }
 
     private function orderFixture(): string

@@ -61,7 +61,7 @@ def main():
         raise SystemExit('An installation already exists; inspect its receipt before changing it.')
     accepted = reviewed_pairs()
     candidates = []
-    for name in ('laundry', 'cooling', 'bronpi'):
+    for name in ('laundry', 'cooling', 'bronpi', 'gsk', 'gbb'):
         path = RUN / name / 'results.json'
         if path.exists():
             candidates.extend(json.loads(path.read_text()))
@@ -130,10 +130,14 @@ def main():
             proof = json.loads((RUN / 'bronpi/video-frame-proof.json').read_text())
             entry['transform'] = {'resampled': False, 'source_dimensions': proof['native_dimensions'], 'crop': proof['crop']}
             entry['frame_timestamp_seconds'] = proof['timestamp_seconds']
-        if candidate.get('source_pdf_sha256'):
-            entry['source_document_sha256'] = candidate['source_pdf_sha256']
+        document_hash = candidate.get('source_pdf_sha256', candidate.get('source_document_sha256'))
+        if document_hash:
+            entry['source_document_sha256'] = document_hash
         if candidate.get('rights_note'):
             entry['rights_note'] = candidate['rights_note']
+        for field in ('quality_note', 'catalogue_ean', 'document_ean', 'regional_ean_difference_disclosed'):
+            if field in candidate:
+                entry[field] = candidate[field]
         overlay['products'][slug] = entry
         variants = []
         for variant in encode_variants(prepared):
@@ -148,6 +152,7 @@ def main():
                         'transform': entry['transform'], 'variant_count': len(variants)})
     if not planned:
         raise SystemExit('No independently accepted candidate')
+    assert seen_slugs == allowed_slugs, 'All 21 exact models must be reviewed before publication'
     unchanged = [slug for slug in before['products'] if slug not in seen_slugs]
     assert all(overlay['products'][slug] == before['products'][slug] for slug in unchanged)
     plan = {'planned_at_utc': datetime.now(timezone.utc).isoformat(), 'products': planned,

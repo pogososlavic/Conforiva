@@ -1,4 +1,4 @@
-<x-layout :title="__('catalogue.unavailable').' — HOMYA'" :catalogue-ready="false" :language-links="$languageLinks">
+<x-layout :title="__('catalogue.unavailable').' — HOME CONFORT'" :catalogue-ready="false" :navigation-products="collect()" :language-links="$languageLinks">
     <main id="main" class="shell catalogue-page" tabindex="-1">
         <div class="empty-state"><h1>{{ __('catalogue.unavailable') }}</h1><p>{{ __($translationFailure ? ($slug ? 'catalogue.translation_unavailable' : 'catalogue.translation_catalogue_unavailable') : 'catalogue.source_unavailable') }}</p>
             @if ($translationFailure)
