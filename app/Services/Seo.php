@@ -59,6 +59,11 @@ final class Seo
         if (! is_array($content) || $page === 'suivi') {
             return false;
         }
+        // Publication in Search is separate from the document's review status.
+        $indexable = config('seo.information_indexing.'.$page);
+        if (is_bool($indexable)) {
+            return $indexable;
+        }
         $pending ??= ($content['pending'] ?? true) !== false;
         if ($page === 'contact') {
             $channels = app(ContactChannels::class);
@@ -129,6 +134,9 @@ final class Seo
                 'publisher' => ['@id' => $organization['@id']], 'inLanguage' => config('homya.locales')];
             if ($route !== 'home') {
                 $breadcrumbs = [['@type' => 'ListItem', 'position' => 1, 'name' => __('home.home'), 'item' => $this->url('home', ['locale' => $locale])]];
+                if ($route === 'catalogue' && (isset($query['category']) || isset($query['universe']))) {
+                    $breadcrumbs[] = ['@type' => 'ListItem', 'position' => 2, 'name' => __('catalogue.title'), 'item' => $this->url('catalogue', ['locale' => $locale])];
+                }
                 if ($route === 'product') {
                     $breadcrumbs[] = ['@type' => 'ListItem', 'position' => 2, 'name' => __('catalogue.title'), 'item' => $this->url('catalogue', ['locale' => $locale])];
                     $category = $context['product']['category'] ?? null;
@@ -177,13 +185,11 @@ final class Seo
                 }
                 // Deferred orders and unselected variants are not an actionable offer.
                 $readiness = app(CheckoutReadiness::class);
-                if ($indexable && ($readiness->bankReady() || $readiness->cardReady())
-                    && ! ($product['has_variants'] ?? true) && is_int($product['price_cents'] ?? null)
-                    && $product['price_cents'] > 0 && $product['price_cents'] <= config('commerce.max_total_cents')
-                    && ($product['currency'] ?? null) === 'EUR' && $images) {
+                if (app(ProductOfferEligibility::class)->eligible($product, $indexable, $images)) {
                     $node['offers'] = ['@type' => 'Offer', 'url' => $canonical,
                         'price' => number_format($product['price_cents'] / 100, 2, '.', ''), 'priceCurrency' => 'EUR',
-                        'seller' => ['@id' => $organization['@id']]];
+                        'seller' => ['@id' => $organization['@id']]]
+                        + app(MerchantPolicies::class)->forOffer($this->url('information', ['locale' => $locale, 'page' => 'retractation']));
                     if (is_int($context['available_stock'] ?? null) && $context['available_stock'] >= 0) {
                         $node['offers']['availability'] = 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock');
                     }
@@ -215,7 +221,8 @@ final class Seo
                             if ($indexable && ($readiness->bankReady() || $readiness->cardReady())) {
                                 $child['offers'] = ['@type' => 'Offer', 'url' => $variantUrl, 'priceCurrency' => 'EUR',
                                     'price' => number_format($variant['price_cents'] / 100, 2, '.', ''),
-                                    'seller' => ['@id' => $organization['@id']]];
+                                    'seller' => ['@id' => $organization['@id']]]
+                                    + app(MerchantPolicies::class)->forOffer($this->url('information', ['locale' => $locale, 'page' => 'retractation']));
                                 if (is_int($context['available_stock'] ?? null) && $context['available_stock'] >= 0) {
                                     $child['offers']['availability'] = 'https://schema.org/'.($context['available_stock'] > 0 ? 'InStock' : 'OutOfStock');
                                 }
@@ -278,6 +285,9 @@ final class Seo
         }
         if ($email = $contacts->email()) {
             $node['email'] = $email;
+        }
+        if ($policy = app(MerchantPolicies::class)->returnPolicy($this->url('information', ['locale' => app()->getLocale(), 'page' => 'retractation']))) {
+            $node['hasMerchantReturnPolicy'] = $policy;
         }
 
         return $node;
