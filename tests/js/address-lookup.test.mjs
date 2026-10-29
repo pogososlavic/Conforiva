@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const app = fs.readFileSync(new URL('../../resources/js/app.js', import.meta.url), 'utf8');
-const source = app.slice(app.indexOf("document.querySelectorAll('[data-address-lookup]')"));
+const lookupStart = app.indexOf("document.querySelectorAll('[data-address-lookup]')");
+const lookupEnd = app.indexOf('\n});', lookupStart);
+assert.ok(lookupStart >= 0 && lookupEnd > lookupStart, 'Address lookup initializer must be present');
+// Run only this initializer; later navigation handlers use unrelated DOM APIs.
+const source = app.slice(lookupStart, lookupEnd + '\n});'.length);
 function element(value = '') {
     return {value, checked: false, attrs: {}, events: {}, children: [], dataset: {},
         setAttribute(k, v) {this.attrs[k] = v;}, getAttribute(k) {return this.attrs[k];}, removeAttribute(k) {delete this.attrs[k];},
