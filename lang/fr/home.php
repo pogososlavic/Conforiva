@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'HOME CONFORT — La maison, tout simplement',
+    'title' => 'HOME CONFORT — Chauffage, électroménager et mobilier',
     'description' => 'Découvrez bientôt HOME CONFORT : bois et combustibles, chauffage, électroménager, mobilier et téléviseurs.',
     'description_ready' => 'Explorez HOME CONFORT : bois et combustibles, chauffage, électroménager, mobilier et téléviseurs. Catalogue consultable.',
     'skip' => 'Aller au contenu',

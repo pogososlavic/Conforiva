@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'HOME CONFORT — Zuhause, ganz einfach',
+    'title' => 'HOME CONFORT — Heizgeräte, Haushaltsgeräte und Möbel',
     'description' => 'Bald bei HOME CONFORT: Brennholz und Brennstoffe, Heizgeräte, Haushaltsgeräte, Möbel und Fernseher.',
     'description_ready' => 'Entdecken Sie HOME CONFORT: Brennholz und Brennstoffe, Heizgeräte, Haushaltsgeräte, Möbel und Fernseher. Durchsuchen Sie den Katalog.',
     'skip' => 'Zum Inhalt springen',

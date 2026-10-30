@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\Admin\Activity;
+use App\Services\Admin\AdminFormRecovery;
+use App\Services\Admin\FormInputRecovery;
 use App\Services\AdminAccess;
 use App\Services\Commerce\BankTransfer;
 use App\Services\Documents\DocumentData;
@@ -22,7 +24,7 @@ final class AdminDocumentController extends Controller
 
             return $this->{$method}(...array_values($parameters));
         } catch (ValidationException $error) {
-            return back()->withErrors($error->errors());
+            return app(AdminFormRecovery::class)->validation(request(), $error);
         } catch (\Throwable $error) {
             $status = $error instanceof HttpExceptionInterface ? $error->getStatusCode() : 503;
 
@@ -60,8 +62,32 @@ final class AdminDocumentController extends Controller
 
     public function save(Request $request, DocumentStore $store, string $id)
     {
-        $request->validate(['revision' => 'required|integer|min:1']);
-        $store->save($id, $request->integer('revision'), $request->all());
+        try {
+            $request->validate(['revision' => 'required|integer|min:1']);
+            $store->save($id, $request->integer('revision'), $request->all());
+        } catch (ValidationException $error) {
+            if ($request->expectsJson()) {
+                throw $error;
+            }
+            $record = $store->find($id);
+            if ($record['status'] !== 'draft') {
+                return app(AdminFormRecovery::class)->validation($request, $error);
+            }
+            $input = app(FormInputRecovery::class);
+            $data = $input->document($request, $record['data']);
+            if (in_array($data['type'], ['quote', 'purchase_order'], true)) {
+                $data['bank_details'] = app(BankTransfer::class)->documentDetails();
+            }
+            $revision = $input->revision($request, 1);
+            $request->session()->forget('_old_input');
+
+            return response()->view('admin.documents.edit', [
+                'record' => $record, 'data' => $data, 'missing' => [], 'series' => null,
+                'errors' => app(AdminFormRecovery::class)->errors($error), 'form_recovery' => true,
+                'form_revision' => $revision ?? '',
+                'recovery_revision_valid' => $revision !== null && $revision === $record['revision'],
+            ], 422);
+        }
 
         return to_route('admin.documents.edit', compact('id'))->with('admin_message', 'Brouillon enregistré. Le total est recalculé côté serveur.');
     }

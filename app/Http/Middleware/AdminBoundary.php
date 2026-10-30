@@ -25,9 +25,11 @@ final class AdminBoundary
 
         if (! $localAllowed && ! $remoteAllowed) {
             $reference = $request->attributes->get('homya.error_reference');
-            $response = response()->view('errors.page', ['status' => 404, 'reference' => $reference], 404);
+            $response = response()->view('admin.unavailable', ['status' => 404, 'reference' => $reference], 404);
         } elseif (! $request->routeIs('admin.login', 'admin.authenticate') && ! app(AdminAccess::class)->valid($request)) {
-            $response = redirect()->route('admin.login');
+            $response = $request->expectsJson()
+                ? response()->json(['message' => 'Votre session a expiré. Reconnectez-vous.', 'code' => 'admin_session_expired'], 401)
+                : redirect()->route('admin.login');
         } elseif (in_array($request->session()->get('admin.auth.role'), ['manager'], true) && $this->ownerOnly($request)) {
             abort(403);
         } else {

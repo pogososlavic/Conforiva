@@ -220,8 +220,11 @@ final class CheckoutController extends CommerceController
         $snapshot = $bank->snapshot($order);
         $active = $order->status === 'pending_bank_transfer' && now()->lt($bank->deadline($order));
         $deadline = $bank->deadline($order)->setTimezone('Europe/Paris');
+        $quote = $this->officialQuote($orders, $id);
+        $bankDocumentAvailable = $quote['record'] !== null && ! empty($quote['record']['data']['bank_details']);
+        $quoteEmailSubmitted = $bankDocumentAvailable && $quote['email_status'] === 'submitted';
 
-        return view('commerce.bank-transfer', compact('order', 'snapshot', 'active', 'deadline', 'locale')
+        return view('commerce.bank-transfer', compact('order', 'snapshot', 'active', 'deadline', 'locale', 'bankDocumentAvailable', 'quoteEmailSubmitted')
             + ['bankReady' => app(CheckoutReadiness::class)->bankReady(), 'items' => $orders->items($id)]);
     }
 
@@ -256,9 +259,60 @@ final class CheckoutController extends CommerceController
                 && app(BankTransfer::class)->snapshot($order), 404);
         }
 
+        // Serve the immutable official quote used by the order email, including
+        // its original language, bank details and filename. Never regenerate it.
+        $quote = $this->officialQuote($orders, $id);
+        if ($record = $quote['record']) {
+            abort_if($kind === 'bank' && empty($record['data']['bank_details']), 404);
+            $filename = preg_replace('/[^A-Za-z0-9._-]/', '-', $record['number']).'.pdf';
+
+            return response($quote['pdf'], 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            ]);
+        }
+        // Legacy summaries remain available; no alternate RIB is generated.
+        abort_if($kind === 'bank', 404);
+
         return response($pdf->render($order, $orders->items($id), $kind, $locale))->withHeaders([
             'Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="HOME-CONFORT-'.$kind.'-'.$id.'.pdf"',
         ]);
+    }
+
+    /** A missing, damaged or foreign quote must not make an owned order page unavailable. */
+    private function officialQuote(OrderStore $orders, string $id): array
+    {
+        $result = ['record' => null, 'pdf' => null, 'email_status' => null];
+        try {
+            $db = $orders->connection();
+            $row = $db->getSchemaBuilder()->hasTable('commerce_order_quotes')
+                ? $db->table('commerce_order_quotes')->where('order_id', $id)->first()
+                : null;
+            if (! $row) {
+                return $result;
+            }
+            $result['email_status'] = $row->status;
+            if (! is_string($row->document_id) || ! Str::isUuid($row->document_id)) {
+                return $result;
+            }
+            $store = app(DocumentStore::class);
+            $record = $store->find($row->document_id);
+            if (($record['status'] ?? null) !== 'issued' || ($record['data']['order_id'] ?? null) !== $id
+                || ($record['data']['type'] ?? null) !== 'quote' || ! is_string($record['number'] ?? null)) {
+                return $result;
+            }
+            // Validate the committed PDF before offering a download; never regenerate an issued quote.
+            $pdf = $store->pdf($record);
+            if (! str_starts_with($pdf, '%PDF-')) {
+                return $result;
+            }
+            $result['record'] = $record;
+            $result['pdf'] = $pdf;
+        } catch (Throwable) {
+            // No private storage, SQL or transport exception details reach the page or logs.
+        }
+
+        return $result;
     }
 
     public function proof(Request $request, OrderStore $orders, TransferProof $proof, string $locale, string $id)

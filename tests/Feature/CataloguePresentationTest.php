@@ -72,7 +72,10 @@ class CataloguePresentationTest extends TestCase
             $response = $this->get('/'.$locale.'/catalogue?universe=appliances')->assertOk()->assertSee($category)
                 ->assertDontSee('damdam', false)->assertDontSee('[0,Inf]', false);
             $xpath = $this->xpath($response->getContent());
-            $this->assertSame(__('home.categories.appliances.name', [], $locale), $xpath->query('//h1')->item(0)->textContent);
+            $profile = __('category-content.profiles.appliances', [], $locale);
+            $this->assertSame($profile[0], $xpath->query('//h1')->item(0)->textContent);
+            $this->assertSame(array_slice($profile, 2), array_map(fn ($node) => $node->textContent,
+                iterator_to_array($xpath->query('//section[@aria-labelledby="category-guide-heading"]//li'))));
             $this->assertSame(7, $response->viewData('catalogueIntro')['count']);
             $this->assertSame(['test-cooling'], $response->viewData('browseCategories')->pluck('slug')->all());
             $link = $xpath->query('//a[@class="category-entry"]')->item(0);
@@ -155,6 +158,7 @@ class CataloguePresentationTest extends TestCase
             foreach (['appliances' => 7, 'heating' => 1] as $universe => $count) {
                 $response = $this->get('/'.$locale.'/catalogue?'.http_build_query(['universe' => $universe, 'category' => 'test-cooling']))->assertOk();
                 $this->assertSame($count, $response->viewData('products')->total());
+                $this->assertSame($count, $response->viewData('catalogueIntro')['count']);
                 $this->assertContains('test-cooling', $response->viewData('categories')->pluck('slug')->all());
                 $this->assertSame(['appliances', 'heating'], $response->viewData('categoryOptions')->firstWhere('slug', 'test-cooling')['universes']);
                 $this->assertFalse($response->viewData('categoryReset'));
@@ -246,8 +250,7 @@ class CataloguePresentationTest extends TestCase
             $this->assertSame(4, $links->length);
             foreach ($links as $link) {
                 $this->assertStringStartsWith('/'.$locale.'/produit/', parse_url($link->getAttribute('href'), PHP_URL_PATH));
-                parse_str(parse_url($link->getAttribute('href'), PHP_URL_QUERY), $query);
-                $this->assertSame($context, $query);
+                $this->assertNull(parse_url($link->getAttribute('href'), PHP_URL_QUERY));
             }
             $response->assertDontSee('damdam', false);
             if ($locale !== 'fr') {
@@ -255,6 +258,18 @@ class CataloguePresentationTest extends TestCase
             }
         }
         $this->assertSame($archiveHash, hash_file('sha256', $this->fixture.'/index.json'));
+    }
+
+    public function test_related_links_rotate_through_the_same_category_without_self_links_or_search_parameters(): void
+    {
+        $response = $this->get('/fr/produit/presentation-5')->assertOk();
+        $this->assertSame(['presentation-6', 'presentation-7', 'presentation-1', 'presentation-2'],
+            $response->viewData('relatedProducts')->pluck('slug')->all());
+        $this->assertSame(['test-cooling'], $response->viewData('relatedProducts')->pluck('category.slug')->unique()->all());
+        foreach ($this->xpath($response->getContent())->query('//section[@id="related-products"]//article/a') as $link) {
+            $this->assertNull(parse_url($link->getAttribute('href'), PHP_URL_QUERY));
+            $this->assertNotSame('/fr/produit/presentation-5', parse_url($link->getAttribute('href'), PHP_URL_PATH));
+        }
     }
 
     public function test_missing_source_description_uses_known_facts_without_inventing_other_sections_or_recommendations(): void

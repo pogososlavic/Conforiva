@@ -2,6 +2,7 @@
 
 namespace App\Services\Documents;
 
+use App\Services\PrivateLocalFiles;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Facades\File;
@@ -14,10 +15,8 @@ final class DocumentPdf
         if (! isset(DocumentData::LANGUAGES[$language])) {
             $language = 'fr';
         }
-        $directory = storage_path('app/private/commercial-pdf');
-        if (is_link($directory)) {
-            throw new \RuntimeException('Unsafe PDF directory.');
-        }
+        File::ensureDirectoryExists(storage_path(), 0700, true);
+        $directory = PrivateLocalFiles::path(storage_path(), 'app/private/commercial-pdf', false);
         File::ensureDirectoryExists($directory, 0700, true);
         $options = new Options;
         $options->set('isRemoteEnabled', false);
@@ -33,8 +32,9 @@ final class DocumentPdf
         $pdf->loadHtml(view('documents.pdf', ['record' => $record, 'data' => $record['data'], 'issuer' => $record['issuer'], 'logo' => $logoData, 'language' => $language])->render(), 'UTF-8');
         $pdf->setPaper('A4', 'portrait');
         $pdf->render();
-        $pdf->getCanvas()->page_text(35, 812, 'HOME CONFORT · '.__('documents.types.'.$record['data']['type'], [], $language).' · '.($record['number'] ?? __('documents.draft', [], $language)), $pdf->getFontMetrics()->getFont('DejaVu Sans'), 8, [0.25, 0.25, 0.25]);
-        $pdf->getCanvas()->page_text(490, 812, '{PAGE_NUM} / {PAGE_COUNT}', $pdf->getFontMetrics()->getFont('DejaVu Sans'), 8, [0.25, 0.25, 0.25]);
+        $font = $pdf->getFontMetrics()->getFont('DejaVu Sans');
+        $pdf->getCanvas()->page_text(29, 815, 'HOME CONFORT · '.__('documents.types.'.$record['data']['type'], [], $language).' · '.($record['number'] ?? __('documents.draft', [], $language)), $font, 7, [0.39, 0.43, 0.36]);
+        $pdf->getCanvas()->page_text(527, 815, '{PAGE_NUM} / {PAGE_COUNT}', $font, 7, [0.39, 0.43, 0.36]);
 
         return $pdf->output();
     }

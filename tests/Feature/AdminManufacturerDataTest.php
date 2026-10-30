@@ -117,7 +117,9 @@ final class AdminManufacturerDataTest extends TestCase
         ];
         foreach ($invalid as [$field, $value]) {
             $data = array_replace($this->productData() + $this->manufacturerData(), [$field => $value]);
-            $this->post('/admin/produits/nouveau', $data)->assertSessionHasErrors($field);
+            $this->post('/admin/produits/nouveau', $data)->assertUnprocessable()
+                ->assertViewHas('errors', fn ($errors) => $errors->has($field))
+                ->assertSessionMissing('_old_input');
         }
         $this->assertSame(0, DB::connection('commerce')->table('commerce_admin_products')->count());
         $this->assertSame(0, DB::connection('commerce')->table('commerce_inventory')->count());
@@ -127,10 +129,14 @@ final class AdminManufacturerDataTest extends TestCase
     {
         $withoutSource = array_replace($this->manufacturerData(), ['manufacturer_source_url' => '']);
         $this->post('/admin/produits/nouveau', $this->productData() + $withoutSource)
-            ->assertSessionHasErrors('manufacturer_source_url');
+            ->assertUnprocessable()
+            ->assertViewHas('errors', fn ($errors) => $errors->has('manufacturer_source_url'))
+            ->assertSessionMissing('_old_input');
         $withoutIdentifiers = array_replace($this->manufacturerData(), ['gtin' => '', 'mpn' => '']);
         $this->post('/admin/produits/nouveau', $this->productData() + $withoutIdentifiers)
-            ->assertSessionHasErrors('manufacturer_verified');
+            ->assertUnprocessable()
+            ->assertViewHas('errors', fn ($errors) => $errors->has('manufacturer_verified'))
+            ->assertSessionMissing('_old_input');
         $this->assertSame(0, DB::connection('commerce')->table('commerce_admin_products')->count());
     }
 

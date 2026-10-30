@@ -153,6 +153,7 @@ final class AutomaticOrderQuote
                 'number' => $record['number'],
                 'deadline' => $this->localizedDeadline($deadline, $language),
                 'mailText' => $mailText,
+                'hasBankDetails' => ! empty($record['data']['bank_details']),
                 'language' => $language,
             ];
             $stage = 'email_render';
@@ -173,6 +174,7 @@ final class AutomaticOrderQuote
                     ->from(config('contact.email'), 'HOME CONFORT')
                     ->subject(__('documents.order_quote_email_subject', ['number' => $record['number']], $language))
                     ->attachData($pdf, $safeNumber.'.pdf', ['mime' => 'application/pdf']);
+
             });
             $db->table('commerce_order_quotes')->where('order_id', $order->id)->update([
                 'status' => 'submitted', 'submitted_at' => now(), 'updated_at' => now(),

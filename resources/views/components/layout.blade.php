@@ -25,6 +25,11 @@
     <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('branding/favicon-96-v1.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('branding/apple-touch-icon-v1.png') }}">
     <meta name="theme-color" content="#f5c842">
+    <x-navigation-bootstrap />
+    @if(request()->routeIs('catalogue', 'promotions', 'product'))<x-catalogue-context />@endif
+    @if(request()->routeIs('home'))
+        <link rel="preload" as="image" href="/media/home/open-salon-1600.webp" imagesrcset="/media/home/open-salon-960.webp 960w, /media/home/open-salon-1600.webp 1600w" imagesizes="100vw" fetchpriority="high">
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 @php($cartCount = request()->hasSession() ? app(\App\Services\Commerce\Cart::class)->count(request()->session()) : 0)
@@ -55,7 +60,7 @@
                     <a href="{{ $languageLinks[$language] ?? route('home', ['locale' => $language]) }}" lang="{{ $language }}" hreflang="{{ $language }}" aria-label="{{ __('home.language_names.'.$language) }}" data-language-link @if ($language === app()->getLocale()) aria-current="page" @endif><x-language-flag :locale="$language" /><span>{{ strtoupper($language) }}</span></a>
                 @endforeach
             </nav>
-            <button class="menu-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false" data-menu-toggle data-open-label="{{ __('home.menu') }}" data-close-label="{{ __('home.close_menu') }}" hidden>
+            <button class="menu-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false" data-menu-toggle data-open-label="{{ __('home.menu') }}" data-close-label="{{ __('home.close_menu') }}">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                 <span data-menu-label>{{ __('home.menu') }}</span>
             </button>
@@ -103,7 +108,7 @@
         </ul>
     </nav>
     </div>
-    @if($errors->any() && request()->routeIs('home', 'catalogue', 'promotions'))<div class="shell"><x-commerce-errors /></div>@endif
+    @if(isset($errors) && $errors->any() && request()->routeIs('home', 'catalogue', 'promotions'))<div class="shell"><x-commerce-errors /></div>@endif
     {{ $slot }}
     <x-storefront-footer />
     <x-whatsapp-chat />

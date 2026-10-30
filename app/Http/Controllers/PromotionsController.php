@@ -47,6 +47,7 @@ class PromotionsController extends Controller
         ]);
 
         return response()->view('promotions', compact('products', 'filters', 'languageLinks', 'invalid', 'queryInvalid', 'locale') + [
+            'navigationProducts' => $all,
             'catalogueReady' => $all->isNotEmpty(),
         ], $invalid ? 422 : ($all->isEmpty() ? 503 : 200));
     }

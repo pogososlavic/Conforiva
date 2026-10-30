@@ -5,10 +5,71 @@ namespace Tests\Feature;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class HomeNavigationTest extends TestCase
 {
+    private string $fixture;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+        DB::shouldReceive('connection')->never();
+        DB::shouldReceive('connectUsing')->never();
+        Http::preventStrayRequests();
+        $this->fixture = sys_get_temp_dir().'/home-navigation-'.bin2hex(random_bytes(8));
+        File::makeDirectory($this->fixture.'/products', 0700, true);
+        File::makeDirectory($this->fixture.'/localizations', 0700, true);
+
+        // The navigation suite must not depend on a workstation's real catalogue.
+        $selections = [
+            'heating' => ['heating', 'fixture-heating', 'Chauffage synthétique', 'Synthetic heating', 'Synthetische Heizung'],
+            'furniture' => ['furniture', 'fixture-furniture', 'Meuble synthétique', 'Synthetic furniture', 'Synthetisches Möbel'],
+            'cooling' => ['appliances', 'fixture-cooling', 'Réfrigérateur synthétique', 'Synthetic refrigerator', 'Synthetischer Kühlschrank'],
+            'washing' => ['appliances', 'lavage-lave-linge', 'Lave-linge synthétique', 'Synthetic washing machine', 'Synthetische Waschmaschine'],
+            'coffee' => ['appliances', 'cafe-baristina', 'Cafetière synthétique', 'Synthetic coffee machine', 'Synthetische Kaffeemaschine'],
+            'firewood' => ['firewood', 'fixture-firewood', 'Bois synthétique', 'Synthetic firewood', 'Synthetisches Brennholz'],
+            'freezer' => ['appliances', 'fixture-freezer', 'Congélateur synthétique', 'Synthetic freezer', 'Synthetischer Gefrierschrank'],
+        ];
+        $products = [];
+        $translations = ['en' => ['Description synthétique' => 'Synthetic description'],
+            'de' => ['Description synthétique' => 'Synthetische Beschreibung']];
+        foreach ($selections as $key => [$universe, $category, $french, $english, $german]) {
+            $product = ['slug' => 'home-fixture-'.$key, 'name' => $french, 'brand' => 'Fixture',
+                'reference' => 'FIXTURE-'.strtoupper($key), 'universe' => $universe,
+                'category' => ['slug' => $category, 'name' => $french], 'condition' => 'new',
+                'price_cents' => 12345, 'currency' => 'EUR', 'has_variants' => false,
+                'issues' => [], 'image' => null, 'images' => [], 'variants' => [],
+                'description' => 'Description synthétique', 'specifications' => []];
+            $products[] = $product;
+            $translations['en'][$french] = $english;
+            $translations['de'][$french] = $german;
+            File::put($this->fixture.'/products/'.$product['slug'].'.json', json_encode($product));
+        }
+        File::put($this->fixture.'/index.json', json_encode(['meta' => ['complete' => true], 'products' => $products]));
+        foreach ($translations as $locale => $strings) {
+            File::put($this->fixture.'/localizations/'.$locale.'.json', json_encode(['version' => 1, 'strings' => $strings]));
+        }
+        config(['catalogue.source' => 'files', 'catalogue.archive_path' => $this->fixture.'/index.json',
+            'catalogue.products_path' => $this->fixture.'/products', 'catalogue.localizations_path' => $this->fixture.'/localizations',
+            'catalogue.media_overrides_path' => $this->fixture.'/absent-overrides.json',
+            'home.freezer_product_slug' => 'home-fixture-freezer',
+            'home.featured' => ['home-fixture-cooling', 'home-fixture-freezer'], 'home.discovery' => ['home-fixture-heating'],
+            'home.departments' => array_map(fn ($department) => array_replace($department,
+                ['product_slug' => 'home-fixture-'.$department['key']]), config('home.departments')),
+            'dashboard.enabled' => false, 'commerce.enabled' => false, 'commerce.inventory_enabled' => false,
+            'storefront_protection.mode' => 'off']);
+    }
+
+    protected function tearDown(): void
+    {
+        File::deleteDirectory($this->fixture);
+        parent::tearDown();
+    }
+
     public function test_home_navigation_has_real_destinations_in_every_language_without_database(): void
     {
         // Contact destinations are synthetic and inspected without following them.
@@ -16,7 +77,8 @@ class HomeNavigationTest extends TestCase
         DB::shouldReceive('connection')->never();
 
         foreach (['fr', 'en', 'de'] as $locale) {
-            $response = $this->get('/'.$locale)->assertOk();
+            $response = $this->get('/'.$locale)->assertOk()->assertViewHas('catalogueReady', true);
+            $this->assertSame('home-fixture-freezer', $response->viewData('freezerProduct')['slug']);
             $document = new DOMDocument;
             @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
             $xpath = new DOMXPath($document);
@@ -120,6 +182,7 @@ class HomeNavigationTest extends TestCase
             $this->assertSame('/'.$locale.'/catalogue', $url['path']);
             $this->assertSame(['universe' => 'appliances', 'q' => $query], $filters);
             $catalogue = $this->get($url['path'].'?'.$url['query'])->assertOk();
+            $this->assertSame(['home-fixture-cooling'], $catalogue->viewData('products')->getCollection()->pluck('slug')->all());
             $document = new DOMDocument;
             @$document->loadHTML('<?xml encoding="UTF-8">'.$catalogue->getContent());
             $xpath = new DOMXPath($document);

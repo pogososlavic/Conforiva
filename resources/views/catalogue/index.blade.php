@@ -1,11 +1,11 @@
-<x-layout :title="$catalogueIntro['title'].' — HOME CONFORT'" :description="$catalogueIntro['description']" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :search-query="$formValues['q'] ?? ''" :seo-context="['filters' => $filters, 'name' => $catalogueIntro['title'], 'available' => !$invalid && $products->isNotEmpty()]">
+<x-layout :navigation-products="$navigationProducts" :title="$catalogueIntro['title'].' — HOME CONFORT'" :description="$catalogueIntro['description']" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :search-query="$formValues['q'] ?? ''" :seo-context="['filters' => $filters, 'name' => $catalogueIntro['title'], 'available' => !$invalid && $products->isNotEmpty()]">
     <main id="main" class="shell catalogue-page" tabindex="-1">
-        <nav class="breadcrumbs" aria-label="{{ __('catalogue.breadcrumbs') }}"><a href="{{ route('home', ['locale' => $locale]) }}">{{ __('home.home') }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ __('catalogue.title') }}</span></nav>
+        <nav class="breadcrumbs" aria-label="{{ __('catalogue.breadcrumbs') }}"><a href="{{ route('home', ['locale' => $locale]) }}">{{ __('home.home') }}</a><span aria-hidden="true">/</span>@if(!empty($filters['category']) || !empty($filters['universe']))<a href="{{ route('catalogue', ['locale' => $locale]) }}">{{ __('catalogue.title') }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ $catalogueIntro['title'] }}</span>@else<span aria-current="page">{{ __('catalogue.title') }}</span>@endif</nav>
         <div class="catalogue-intro @if($catalogueIntro['image']) catalogue-intro--illustrated @endif">
             <div class="catalogue-intro-copy page-heading"><p class="eyebrow">HOME CONFORT</p><h1>{{ $catalogueIntro['title'] }}</h1><p class="catalogue-intro-description">{{ $catalogueIntro['description'] }}</p></div>
             <div class="catalogue-intro-side">
                 @if($catalogueIntro['image'])<img class="catalogue-intro-image" src="{{ $catalogueIntro['image']['local_url'] }}" width="{{ $catalogueIntro['image']['width'] }}" height="{{ $catalogueIntro['image']['height'] }}" alt="" decoding="async">@endif
-                <p class="catalogue-total"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>{{ trans_choice($catalogueIntro['universe'] ? 'catalogue.department_count' : 'catalogue.total_count', $catalogueIntro['count'], ['count' => $catalogueIntro['count']]) }}</span></p>
+                <p class="catalogue-total"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>{{ trans_choice(!empty($filters['category']) ? 'catalogue.category_count' : ($catalogueIntro['universe'] ? 'catalogue.department_count' : 'catalogue.total_count'), $catalogueIntro['count'], ['count' => $catalogueIntro['count']]) }}</span></p>
             </div>
         </div>
         @if($browseCategories->isNotEmpty())
@@ -52,5 +52,23 @@
                 @endif
             </section>
         </div>
+        @if(!$invalid && !empty($catalogueIntro['guide_points']))
+            <section class="page-heading" aria-labelledby="category-guide-heading">
+                <h2 id="category-guide-heading">{{ $catalogueIntro['guide_heading'] }}</h2>
+                <ul>@foreach($catalogueIntro['guide_points'] as $point)<li>{{ $point }}</li>@endforeach</ul>
+            </section>
+            @if(!empty($catalogueIntro['related_categories']))
+                <nav class="category-navigation" aria-labelledby="related-category-heading">
+                    <h2 id="related-category-heading">{{ $catalogueIntro['related_heading'] }}</h2>
+                    <ul>@foreach($catalogueIntro['related_categories'] as $entry)<li><a class="category-entry" href="{{ $entry['url'] }}">{{ $entry['name'] }}<span aria-hidden="true">→</span></a></li>@endforeach</ul>
+                </nav>
+            @endif
+            @if(empty($filters['category']) && isset($categoryDirectory) && $categoryDirectory->isNotEmpty())
+                <nav class="category-navigation" aria-labelledby="category-directory-heading">
+                    <h2 id="category-directory-heading">{{ __('category-content.directory') }}</h2>
+                    <ul>@foreach($categoryDirectory as $entry)<li><a class="category-entry" href="{{ $entry['url'] }}"><span>{{ $entry['name'] }}</span><small>{{ trans_choice('catalogue.category_count', $entry['count'], ['count' => $entry['count']]) }}</small></a></li>@endforeach</ul>
+                </nav>
+            @endif
+        @endif
     </main>
 </x-layout>

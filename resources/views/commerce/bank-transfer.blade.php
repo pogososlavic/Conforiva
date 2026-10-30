@@ -14,21 +14,17 @@
                     <p role="status">{{ __('commerce.bank_recorded') }}</p>
                     <p class="bank-deadline"><strong>{{ __('commerce.bank_due') }} <time datetime="{{ $deadline->toIso8601String() }}">{{ $deadline->format('d/m/Y H:i:s') }} (Europe/Paris)</time></strong></p>
                     <p>{{ __('commerce.bank_deadline_notice') }}</p>
-                    <details class="bank-accordion" open><summary><span class="checkout-section-number" aria-hidden="true">1</span> {{ __('commerce.bank_show_details') }}</summary>
-                    <dl class="bank-details">
-                        @foreach(['beneficiary', 'bank_name', 'iban', 'bic'] as $field)
-                            <div><dt>{{ __('commerce.bank_'.$field) }}</dt><dd><span id="bank-{{ $field }}" @if(in_array($field, ['iban', 'bic'])) dir="ltr" @endif>{{ $snapshot['details'][$field] }}</span><button class="button-secondary bank-copy" type="button" data-copy-target="bank-{{ $field }}" data-copy-success="{{ __('commerce.copied') }}" data-copy-failure="{{ __('commerce.copy_failed') }}" hidden>{{ __('commerce.copy') }}<span class="sr-only"> {{ __('commerce.bank_'.$field) }}</span></button></dd></div>
-                        @endforeach
-                        <div><dt>{{ __('commerce.bank_amount') }}</dt><dd>{{ \App\Services\Catalogue::money($order->total_cents, $locale) }} · EUR</dd></div>
-                        <div><dt>{{ __('commerce.bank_reference') }}</dt><dd><span id="bank-reference">{{ $order->id }}</span><button class="button-secondary bank-copy" type="button" data-copy-target="bank-reference" data-copy-success="{{ __('commerce.copied') }}" data-copy-failure="{{ __('commerce.copy_failed') }}" hidden>{{ __('commerce.copy') }}<span class="sr-only"> {{ __('commerce.bank_reference') }}</span></button></dd></div>
-                    </dl>
-                    <p id="bank-copy-feedback" role="status"></p>
-                    <a class="bank-download" href="{{ route('order.document', ['locale' => $locale, 'id' => $order->id, 'kind' => 'bank']) }}">↓ {{ __('commerce.pdf_bank') }} (PDF)</a></details>
+                    @if($bankDocumentAvailable)
+                    <p role="status">{{ __($quoteEmailSubmitted ? 'commerce.bank_email_notice' : 'commerce.bank_email_unconfirmed') }}</p>
+                    <a class="bank-download" href="{{ route('order.document', ['locale' => $locale, 'id' => $order->id, 'kind' => 'bank']) }}">↓ {{ __('commerce.pdf_bank') }} (PDF)</a>
                     <details class="bank-accordion"><summary><span class="checkout-section-number" aria-hidden="true">2</span> {{ __('commerce.bank_make_transfer') }}</summary>
                     <p>{{ __('commerce.bank_beneficiary_help') }}</p>
                     <p>{{ __('commerce.bank_step_transfer') }}</p>
                     <p>{{ __('commerce.bank_reference_help') }}</p>
                     <p>{{ __('commerce.bank_receipt_notice') }}</p></details>
+                    @else
+                    <p class="bank-document-pending" role="status">{{ __('commerce.bank_document_pending') }}</p>
+                    @endif
                     <section class="bank-transfer-notice"><h3>{{ __('commerce.bank_processing_title') }}</h3><p>{{ __('commerce.bank_processing_help') }}</p></section>
                     <details class="bank-accordion bank-proof" @if($errors->has('proof')) open @endif><summary>{{ __('commerce.proof_action') }}</summary>
                         <p>{{ __('commerce.proof_help') }}</p>

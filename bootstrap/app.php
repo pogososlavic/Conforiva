@@ -70,16 +70,19 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
             $status = $error instanceof HttpExceptionInterface ? $error->getStatusCode() : 503;
+            // Keep protocol metadata (rate-limit retry, allowed methods, etc.)
+            // when replacing the exception body with a private-safe page.
+            $headers = $error instanceof HttpExceptionInterface ? $error->getHeaders() : [];
             $reference = $referenceFor($request);
             if ($request->is('admin', 'admin/*') && ! ($error instanceof ValidationException)) {
-                return response()->view('admin.unavailable', ['status' => $status, 'reference' => $reference], $status)
+                return response()->view('admin.unavailable', ['status' => $status, 'reference' => $reference], $status, $headers)
                     ->header('Cache-Control', 'no-store, private')
                     ->header('Referrer-Policy', 'no-referrer')
                     ->header('X-Robots-Tag', 'noindex, nofollow')
                     ->header('X-HOMYA-Reference', $reference);
             }
             if ($request->routeIs('returns.*')) {
-                return response()->view('returns.unavailable', ['reference' => $reference], $status)
+                return response()->view('returns.unavailable', ['reference' => $reference], $status, $headers)
                     ->header('Cache-Control', 'no-store, private')
                     ->header('Referrer-Policy', 'no-referrer')
                     ->header('X-Robots-Tag', 'noindex, nofollow')
@@ -89,7 +92,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return response()->view('errors.page', ['status' => $status, 'reference' => $reference], $status)
+            return response()->view('errors.page', ['status' => $status, 'reference' => $reference], $status, $headers)
                 ->header('Cache-Control', 'no-store, private')
                 ->header('Referrer-Policy', 'no-referrer')
                 ->header('X-Robots-Tag', 'noindex, nofollow')

@@ -8,5 +8,6 @@
                             <button type="button" class="button-secondary" data-address-search>{{ __('commerce.address_search') }}</button>
                         </div>
                         <p class="checkout-help">{{ __('commerce.address_privacy') }}</p>
+                        <p class="checkout-help">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">OpenStreetMap contributors</a> · IGN / Photon</p>
                         <p data-address-status role="status" aria-live="polite" aria-atomic="true"></p>
                     </div>

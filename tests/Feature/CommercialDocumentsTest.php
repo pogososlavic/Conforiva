@@ -373,7 +373,7 @@ final class CommercialDocumentsTest extends TestCase
         config(['legal.company.capital' => null, 'legal.company.rcs' => null]);
         $expected = ['HOME CONFORT', 'Société par actions simplifiée (SAS)',
             '1010 A ROUTE DU MAHURY, 97354 RÉMIRE-MONTJOLY', '934757311',
-            '93475731100014', 'FR05934757311', 'Dirigeant : RAPHAEL RUIZ'];
+            '93475731100014', 'FR05934757311'];
         foreach (array_keys(DocumentData::TYPES) as $type) {
             $record = $this->draft($type);
             $issuer = app(DocumentData::class)->issuer(requireComplete: false);
@@ -382,6 +382,11 @@ final class CommercialDocumentsTest extends TestCase
             $this->assertStringNotContainsString('David Marechal', $html);
             foreach ($expected as $value) {
                 $this->assertStringContainsString(e($value), $html, $type.' issuer identity');
+            }
+            if ($type === 'quote') {
+                $this->assertStringNotContainsString(e('Dirigeant : RAPHAEL RUIZ'), $html);
+            } else {
+                $this->assertStringContainsString(e('Dirigeant : RAPHAEL RUIZ'), $html);
             }
             $this->assertStringNotContainsString('Email :', $html);
             $this->assertStringNotContainsString('Téléphone :', $html);
@@ -394,6 +399,36 @@ final class CommercialDocumentsTest extends TestCase
             $this->assertStringContainsString('Email : fixture-homya@example.invalid', $html);
             $this->assertStringContainsString('Téléphone : +33123456789', $html);
             config(['contact.email' => null, 'contact.phone' => null]);
+        }
+    }
+
+    public function test_company_registration_is_present_for_every_type_while_quote_manager_is_private(): void
+    {
+        config(['legal.company.rcs' => 'SYNTHETIC-RCS', 'legal.company.rcs_registered_on' => 'SYNTHETIC-RCS-DATE',
+            'legal.company.rne_registered_on' => 'SYNTHETIC-RNE-DATE', 'legal.company.manager' => 'SYNTHETIC-PRIVATE-MANAGER']);
+        foreach (array_keys(DocumentData::TYPES) as $type) {
+            $record = $this->draft($type);
+            $issuer = app(DocumentData::class)->issuer(requireComplete: false);
+            $html = view('documents.pdf', ['record' => $record, 'data' => $record['data'], 'issuer' => $issuer, 'logo' => null])->render();
+            foreach (['SYNTHETIC-RCS', 'SYNTHETIC-RCS-DATE', 'SYNTHETIC-RNE-DATE'] as $companyFact) {
+                $this->assertStringContainsString($companyFact, $html);
+            }
+            $this->assertSame($type !== 'quote', str_contains($html, 'SYNTHETIC-PRIVATE-MANAGER'));
+        }
+    }
+
+    public function test_pdf_unit_net_precision_note_and_totals_remain_consistent_in_each_language(): void
+    {
+        $record = $this->draft('quote');
+        $issuer = app(DocumentData::class)->issuer(requireComplete: false);
+        $before = $record['data'];
+        foreach (['fr' => [',', ' '], 'en' => ['.', ','], 'de' => [',', '.']] as $language => [$decimal, $thousands]) {
+            $html = view('documents.pdf', ['record' => $record, 'data' => $record['data'], 'issuer' => $issuer, 'logo' => null, 'language' => $language])->render();
+            $line = $record['data']['lines'][0];
+            $this->assertStringContainsString(number_format($line['net_cents'] / ($line['quantity'] * 100), 4, $decimal, $thousands).' €', $html);
+            $this->assertStringContainsString(e(__('documents.ex_tax_note', [], $language)), $html);
+            $this->assertStringContainsString(e(DocumentData::money($record['data']['total_cents'], $language)), $html);
+            $this->assertSame($before, $record['data']);
         }
     }
 

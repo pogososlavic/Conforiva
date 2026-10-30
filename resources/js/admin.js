@@ -41,6 +41,7 @@ if (menuToggle && navigationPanel) {
 }
 
 let busy = false;
+let sessionExpired = false;
 const soundPreferenceKey = 'homya-admin-order-sound';
 let soundEnabled = (() => { try { return window.localStorage.getItem(soundPreferenceKey) === 'enabled'; } catch { return false; } })();
 let audioContext = null;
@@ -128,10 +129,21 @@ soundTest?.addEventListener('click', async () => {
 });
 
 const refresh = async () => {
-    if (!panel || busy) return;
+    if (!panel || busy || sessionExpired) return;
     busy = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
     try {
-        const response = await fetch(panel.dataset.adminNotifications, {headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}, cache: 'no-store', credentials: 'same-origin', redirect: 'error'});
+        const response = await fetch(panel.dataset.adminNotifications, {headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}, cache: 'no-store', credentials: 'same-origin', redirect: 'error', signal: controller.signal});
+        if (response.status === 401 || response.status === 419) {
+            sessionExpired = true;
+            panel.textContent = 'Votre session a expiré. ';
+            const login = document.createElement('a');
+            login.href = panel.dataset.adminLoginUrl;
+            login.textContent = 'Se reconnecter au dashboard';
+            panel.append(login);
+            return;
+        }
         if (!response.ok) throw new Error('unavailable');
         const counts = await response.json();
         for (const key of ['messages', 'notifications', 'orders']) {
@@ -162,16 +174,33 @@ const refresh = async () => {
                 } catch { /* Keep the in-page alert and sound if the browser blocks system notifications. */ }
             }
         }
-    } catch { panel.textContent = 'Actualisation indisponible. Rechargez la page.'; }
-    finally { busy = false; }
+    } catch (error) {
+        panel.textContent = error.name === 'AbortError'
+            ? 'Actualisation trop longue. Nouvelle tentative automatique.'
+            : error.name === 'TypeError'
+                ? 'Connexion interrompue. Nouvelle tentative automatique.'
+                : 'Actualisation indisponible. Nouvelle tentative automatique.';
+    } finally {
+        clearTimeout(timeout);
+        busy = false;
+    }
 };
-if (panel) { refresh(); setInterval(refresh, 10000); document.addEventListener('visibilitychange', refresh); }
+if (panel) { refresh(); setInterval(refresh, 10000); document.addEventListener('visibilitychange', refresh); window.addEventListener('online', refresh); }
 newOrderAlert?.querySelector('a')?.addEventListener('click', () => { newOrderAlert.hidden = true; });
+const submittedButtons = new Map();
 document.querySelectorAll('.admin-form').forEach(form => form.addEventListener('submit', () => {
     if (!form.checkValidity()) return;
     const button = form.querySelector('button[type="submit"], button:not([type])');
-    if (button) { button.disabled = true; button.textContent = 'Enregistrement…'; }
+    if (button && !button.disabled) {
+        submittedButtons.set(button, button.innerHTML);
+        button.disabled = true;
+        button.textContent = 'Enregistrement…';
+    }
 }));
+window.addEventListener('pageshow', () => {
+    submittedButtons.forEach((label, button) => { button.innerHTML = label; button.disabled = false; });
+    submittedButtons.clear();
+});
 
 // Explicit row actions only. Fiscal amounts are always recalculated by the server.
 const documentEditor = document.querySelector('[data-document-editor]');
