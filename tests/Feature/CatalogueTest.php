@@ -320,8 +320,14 @@ class CatalogueTest extends TestCase
     {
         $this->withoutVite();
         $url = '/fr/produit/test-produit-001';
-        $this->from($url)->post('/fr/panier', ['slug' => 'test-produit-001', 'quantity' => 100])->assertRedirect($url);
-        $this->get($url)->assertOk()->assertSee('value="100"', false)->assertSee(__('commerce.correct_errors'));
+        $invalid = $this->from($url)->post('/fr/panier', ['slug' => 'test-produit-001', 'quantity' => 100])->assertRedirect('/fr/panier')
+            ->assertSessionHasErrors('quantity')->assertSessionHas('_old_input', ['quantity' => 100]);
+        // Carry the encrypted response session cookie into the next simulated request.
+        $cookie = $invalid->getCookie(config('session.cookie'), false);
+        $this->assertNotNull($cookie);
+        $this->withUnencryptedCookie($cookie->getName(), $cookie->getValue());
+        $this->get($url)->assertOk()->assertSee('value="100"', false)->assertSee(__('commerce.correct_errors'))
+            ->assertSee(__('validation.max.numeric', ['max' => config('commerce.max_quantity')]));
         $this->post('/fr/panier', ['slug' => 'test-produit-001', 'quantity' => 2])->assertRedirect('/fr/panier');
         $response = $this->get('/fr/catalogue?q=REF-1&min=123.45&max=123.45')->assertOk()->assertHeader('Cache-Control', 'no-store, private');
         $xpath = $this->xpath($response->getContent());
@@ -329,8 +335,12 @@ class CatalogueTest extends TestCase
         $this->assertSame(1, $xpath->query('//article//form[@method="post"]')->length);
         $this->assertSame('1', $xpath->query('//article//input[@name="quantity"]')->item(0)->getAttribute('value'));
         $response->assertDontSee('30 jours')->assertDontSee('4,5/5');
-        $this->from('/fr/catalogue')->post('/fr/panier', ['slug' => 'test-produit-001', 'quantity' => 100])->assertRedirect('/fr/catalogue');
-        $this->get('/fr/catalogue')->assertSee(__('commerce.correct_errors'))
+        $invalid = $this->from('https://outside.example/untrusted')->post('/fr/panier', ['slug' => 'test-produit-001', 'quantity' => 100])->assertRedirect('/fr/panier')
+            ->assertSessionHasErrors('quantity')->assertSessionHas('_old_input', ['quantity' => 100]);
+        $cookie = $invalid->getCookie(config('session.cookie'), false);
+        $this->assertNotNull($cookie);
+        $this->withUnencryptedCookie($cookie->getName(), $cookie->getValue());
+        $this->get('/fr/panier')->assertSee(__('commerce.correct_errors'))
             ->assertSee(__('validation.max.numeric', ['max' => config('commerce.max_quantity')]))->assertDontSee('validation.max.numeric');
     }
 
