@@ -90,7 +90,20 @@ final class SeoController extends Controller
         $items = $products->forPage((int) $chunk, config('seo.sitemap_chunk_size'));
         abort_if($items->isEmpty(), 404);
 
-        return $this->urls($items->map(fn ($product) => $seo->url('product', ['locale' => $locale, 'slug' => $product['slug']]))->all());
+        $images = [];
+        $urls = [];
+        foreach ($items as $product) {
+            $url = $seo->url('product', ['locale' => $locale, 'slug' => $product['slug']]);
+            $urls[] = $url;
+            // The catalogue projection already validates the displayed primary
+            // image. Do not advertise unreviewed source galleries or remote URLs.
+            $path = $product['image']['local_url'] ?? null;
+            if (is_string($path) && str_starts_with($path, '/media/') && ! str_contains($path, '..')) {
+                $images[$url] = $seo->origin().$path;
+            }
+        }
+
+        return $this->urls($urls, $images);
     }
 
     private function xml(string $root): XMLWriter
@@ -103,12 +116,17 @@ final class SeoController extends Controller
         return $xml;
     }
 
-    private function urls(array $urls)
+    private function urls(array $urls, array $images = [])
     {
         $xml = $this->xml('urlset');
         foreach (array_unique($urls) as $url) {
             $xml->startElement('url');
             $xml->writeElement('loc', $url);
+            if (isset($images[$url])) {
+                $xml->startElementNS('image', 'image', 'http://www.google.com/schemas/sitemap-image/1.1');
+                $xml->writeElement('image:loc', $images[$url]);
+                $xml->endElement();
+            }
             $xml->endElement();
         }
 

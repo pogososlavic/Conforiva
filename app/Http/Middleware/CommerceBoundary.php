@@ -4,7 +4,9 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
@@ -21,7 +23,7 @@ final class CommerceBoundary
             $response = $next($request);
         } catch (ValidationException $error) {
             $response = $request->expectsJson() ? response()->json(['errors' => $error->errors()], 422)
-                : redirect()->back()->withErrors($error->errors())->withInput($this->safeOldInput($request));
+                : redirect($this->recoveryUrl($request))->withErrors($error->errors())->withInput($this->safeOldInput($request));
         } catch (HttpExceptionInterface $error) {
             $response = response()->view('commerce.unavailable', [], $error->getStatusCode());
             // Keep framework rate-limit metadata while replacing the error body safely.
@@ -31,11 +33,15 @@ final class CommerceBoundary
             $response = response()->view('commerce.unavailable', [], 503);
         }
         // Laravel's routing pipeline can render validation exceptions before this
-        // middleware catches them. Sanitize newly flashed input on that path too.
+        // middleware catches them. Sanitize input and restore the form's own GET
+        // destination on that path too; browser history can belong to another tab.
         if (! $request->isMethodSafe() && $request->hasSession()) {
             $newFlash = $request->session()->get('_flash.new', []);
             if (in_array('_old_input', $newFlash, true) && in_array('errors', $newFlash, true)) {
                 $request->session()->flashInput($this->safeOldInput($request));
+                if (! $request->expectsJson() && $response instanceof RedirectResponse) {
+                    $response->setTargetUrl($this->recoveryUrl($request));
+                }
             }
         }
         $response->headers->set('Cache-Control', 'no-store, private');
@@ -45,6 +51,31 @@ final class CommerceBoundary
         }
 
         return $response;
+    }
+
+    private function recoveryUrl(Request $request): string
+    {
+        $locale = $request->route('locale');
+        $locale = in_array($locale, config('homya.locales'), true) ? $locale : config('app.fallback_locale', 'fr');
+        if ($request->routeIs('returns.*')) {
+            return route('returns.create', compact('locale'));
+        }
+        if ($request->routeIs('checkout.*')) {
+            return route('checkout.show', compact('locale'));
+        }
+        if ($request->routeIs('order.tracking*')) {
+            return route('order.tracking', compact('locale'));
+        }
+        if ($request->routeIs('order.*')) {
+            $id = $request->route('id');
+            if (is_string($id) && Str::isUuid($id)) {
+                return route('order.show', compact('locale', 'id'));
+            }
+
+            return route('order.tracking', compact('locale'));
+        }
+
+        return route('cart.show', compact('locale'));
     }
 
     /** Keep useful form values without retaining opaque tokens or malformed payloads. */

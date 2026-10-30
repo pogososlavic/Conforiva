@@ -3,6 +3,7 @@
 namespace App\Services\Documents;
 
 use App\Services\Commerce\BankTransfer;
+use App\Services\PrivateLocalFiles;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -14,10 +15,8 @@ final class DocumentStore
 {
     private function root(): string
     {
-        $root = storage_path('app/private/commercial-documents');
-        if (is_link($root)) {
-            throw new RuntimeException('Unsafe document directory.');
-        }
+        File::ensureDirectoryExists(storage_path(), 0700, true);
+        $root = PrivateLocalFiles::path(storage_path(), 'app/private/commercial-documents', false);
         File::ensureDirectoryExists($root, 0700, true);
 
         return $root;

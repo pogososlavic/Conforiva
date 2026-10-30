@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Services\AdminAccess;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -22,6 +24,8 @@ final class AdminAccountsTest extends TestCase
         $this->temporary = sys_get_temp_dir().'/homya-accounts-test-'.Str::uuid();
         $this->app->useStoragePath($this->temporary);
         config(['dashboard.enabled' => true, 'admin.username' => 'fixture-owner', 'admin.password_hash' => Hash::make('fixture-owner-password-12345'), 'admin.accounts_path' => $this->temporary.'/app/private/admin/accounts.encrypted']);
+        Http::preventStrayRequests();
+        Mail::fake();
     }
 
     protected function tearDown(): void
@@ -35,13 +39,33 @@ final class AdminAccountsTest extends TestCase
     {
         $this->post('/admin/connexion', ['username' => 'fixture-owner', 'password' => 'fixture-owner-password-12345'])->assertRedirect('/admin');
         $this->get('/admin/gestionnaires')->assertOk();
-        $this->post('/admin/gestionnaires', ['username' => 'fixture-manager', 'password' => 'fixture-manager-password-12345', 'password_confirmation' => 'fixture-manager-password-12345'])->assertRedirect('/admin/gestionnaires');
+        $this->post('/admin/gestionnaires', ['username' => 'fixture-manager', 'password' => 'fixture-manager-password-12345', 'password_confirmation' => 'fixture-manager-password-12345', 'current_password' => 'fixture-owner-password-12345'])->assertRedirect('/admin/gestionnaires');
         $file = config('admin.accounts_path');
         $this->assertSame(0600, fileperms($file) & 0777);
         $this->assertStringNotContainsString('fixture-manager-password-12345', File::get($file));
         $this->post('/admin/deconnexion')->assertRedirect('/admin/connexion');
         $this->post('/admin/connexion', ['username' => 'fixture-manager', 'password' => 'fixture-manager-password-12345'])->assertRedirect('/admin')->assertSessionHas('admin.auth.role', 'manager');
         $this->get('/admin/mon-compte')->assertOk()->assertSee('fixture-manager');
+    }
+
+    public function test_manager_creation_requires_owner_reauthentication_and_never_flashes_passwords(): void
+    {
+        $this->post('/admin/connexion', ['username' => 'fixture-owner', 'password' => 'fixture-owner-password-12345'])->assertRedirect('/admin');
+        $input = ['username' => 'fixture-manager', 'password' => 'fixture-manager-password-12345', 'password_confirmation' => 'fixture-manager-password-12345'];
+        foreach ([[], ['current_password' => 'wrong-fixture-owner-password']] as $reauthentication) {
+            $this->from('https://example.invalid/untrusted-return')->post('/admin/gestionnaires', $input + $reauthentication)
+                ->assertRedirect('/admin/gestionnaires')
+                ->assertSessionHasErrors('current_password')
+                ->assertSessionMissing('_old_input.password')
+                ->assertSessionMissing('_old_input.password_confirmation')
+                ->assertSessionMissing('_old_input.current_password');
+            $this->assertSame(['username' => 'fixture-manager'], session('_old_input'));
+            $this->assertFileDoesNotExist(config('admin.accounts_path'));
+            $this->assertSame([], app(AdminAccess::class)->accounts());
+        }
+        $this->postJson('/admin/gestionnaires', $input)->assertUnprocessable()->assertJsonValidationErrors('current_password');
+        $this->assertFileDoesNotExist(config('admin.accounts_path'));
+        Mail::assertNothingSent();
     }
 
     public function test_manager_cannot_open_owner_routes_or_write_protected_data(): void

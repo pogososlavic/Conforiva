@@ -39,6 +39,10 @@ if (root) {
                 if (values.length === 1 && /^[A-Za-z0-9_-]{1,512}$/.test(values[0])) pageLocation.searchParams.set(key, values[0]);
             }
         }
+        const pageParameters = {page_location: pageLocation.href, page_referrer: '', page_title: 'HOME CONFORT'};
+        const tagParameters = {...pageParameters, send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false, cookie_expires: 15552000, cookie_update: false};
+        // GTM must receive the minimized defaults before it initializes its Google tag.
+        window.gtag('set', tagParameters);
         loading = new Promise((resolve, reject) => {
             const appendScript = (url, done) => {
                 const script = document.createElement('script');
@@ -60,9 +64,12 @@ if (root) {
         });
         try {
             await loading;
-            window.gtag('js', new Date());
-            window.gtag('config', id, {send_page_view: false, page_location: pageLocation.href, page_referrer: '', page_title: 'HOME CONFORT', allow_google_signals: false, allow_ad_personalization_signals: false, cookie_expires: 15552000, cookie_update: false});
-            if (publicPath) window.gtag('event', 'page_view', {page_location: pageLocation.href, page_referrer: '', page_title: 'HOME CONFORT'});
+            if (!granted) return;
+            if (!gtmManagesGa4) {
+                window.gtag('js', new Date());
+                window.gtag('config', id, tagParameters);
+            }
+            if (publicPath) window.gtag('event', 'page_view', {...pageParameters, send_to: id});
             window.gtag('get', id, 'client_id', (clientId) => {
                 if (granted && /^\d{1,20}\.\d{1,20}$/.test(clientId || '')) post('/mesure/identifiant', {client_id: clientId}).catch(() => {});
             });

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Services\Admin\Activity;
+use App\Services\Admin\AdminFormRecovery;
 use App\Services\Admin\BankDetailsSettings;
 use App\Services\Admin\Deliveries;
+use App\Services\Admin\FormInputRecovery;
 use App\Services\Admin\Integrations;
 use App\Services\Admin\Messages;
 use App\Services\Admin\PrivateSettings;
@@ -30,7 +32,7 @@ final class AdminManagementController extends Controller
 
             return $this->{$method}(...array_values($parameters));
         } catch (ValidationException $error) {
-            return back()->withErrors($error->errors()); // Never flash customer text or configuration secrets.
+            return app(AdminFormRecovery::class)->validation(request(), $error);
         } catch (\Throwable $error) {
             return response()->view('admin.unavailable', ['status' => $error instanceof HttpExceptionInterface ? $error->getStatusCode() : 503], $error instanceof HttpExceptionInterface ? $error->getStatusCode() : 503);
         }
@@ -43,25 +45,36 @@ final class AdminManagementController extends Controller
 
     public function saveProduct(Request $request, ProductManager $products, ?string $slug = null)
     {
-        $rules = ['reference' => 'required|string|max:255', 'revision' => 'required|integer|min:0', 'price' => ['required', 'regex:/\A[0-9]{1,6}(?:[.,][0-9]{1,2})?\z/'], 'quantity' => 'required|integer|min:0|max:10000000', 'condition' => ['nullable', Rule::requiredIf($request->boolean('published')), Rule::in(['new', 'neuf', 'used', 'occasion', 'refurbished', 'reconditionne'])], 'published' => 'nullable|boolean', 'brand' => 'required|string|max:200', 'category' => 'required|string|max:200', 'universe' => ['required', Rule::in(['firewood', 'heating', 'appliances', 'furniture', 'televisions', 'other'])], 'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120', 'images' => 'nullable|array|max:5', 'images.*' => 'file|mimes:jpg,jpeg,png,webp|max:5120', 'remove_images' => 'nullable|array|max:20', 'remove_images.*' => 'integer|min:0|max:19'];
-        $rules += ProductManager::manufacturerRules();
-        foreach (['fr', 'en', 'de'] as $locale) {
-            $rules['languages.'.$locale.'.name'] = ($locale === 'fr' ? 'required' : 'nullable').'|string|max:255';
-            $rules['languages.'.$locale.'.description'] = 'nullable|string|max:20000';
-            $rules['languages.'.$locale.'.category'] = ($locale === 'fr' ? 'required' : 'nullable').'|string|max:200';
-        }
-        $data = $request->validate($rules);
-        if (Catalogue::cents($data['price']) < 1) {
-            throw ValidationException::withMessages(['price' => 'Le prix TTC doit être strictement positif.']);
-        }
-        foreach (['en', 'de'] as $locale) {
-            if (! empty($data['languages'][$locale]['name']) && empty($data['languages'][$locale]['category'])) {
-                throw ValidationException::withMessages(['languages' => 'Renseignez aussi la catégorie traduite pour chaque langue publiée.']);
+        try {
+            $rules = ['reference' => 'required|string|max:255', 'revision' => 'required|integer|min:0', 'price' => ['required', 'regex:/\A[0-9]{1,6}(?:[.,][0-9]{1,2})?\z/'], 'quantity' => 'required|integer|min:0|max:10000000', 'condition' => ['nullable', Rule::requiredIf($request->boolean('published')), Rule::in(['new', 'neuf', 'used', 'occasion', 'refurbished', 'reconditionne'])], 'published' => 'nullable|boolean', 'brand' => 'required|string|max:200', 'category' => 'required|string|max:200', 'universe' => ['required', Rule::in(['firewood', 'heating', 'appliances', 'furniture', 'televisions', 'other'])], 'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120', 'images' => 'nullable|array|max:5', 'images.*' => 'file|mimes:jpg,jpeg,png,webp|max:5120', 'remove_images' => 'nullable|array|max:20', 'remove_images.*' => 'integer|min:0|max:19'];
+            $rules += ProductManager::manufacturerRules();
+            foreach (['fr', 'en', 'de'] as $locale) {
+                $rules['languages.'.$locale.'.name'] = ($locale === 'fr' ? 'required' : 'nullable').'|string|max:255';
+                $rules['languages.'.$locale.'.description'] = 'nullable|string|max:20000';
+                $rules['languages.'.$locale.'.category'] = ($locale === 'fr' ? 'required' : 'nullable').'|string|max:200';
             }
-        }
-        $id = $products->save($slug, $data, $request->file('image'), $request->file('images', []));
+            $data = $request->validate($rules);
+            if (Catalogue::cents($data['price']) < 1) {
+                throw ValidationException::withMessages(['price' => 'Le prix TTC doit être strictement positif.']);
+            }
+            foreach (['en', 'de'] as $locale) {
+                if (! empty($data['languages'][$locale]['name']) && empty($data['languages'][$locale]['category'])) {
+                    throw ValidationException::withMessages(['languages' => 'Renseignez aussi la catégorie traduite pour chaque langue publiée.']);
+                }
+            }
+            $id = $products->save($slug, $data, $request->file('image'), $request->file('images', []));
 
-        return to_route('admin.product.edit', ['slug' => $id])->with('admin_message', 'Produit enregistré. Prix et stock synchronisés.');
+            return to_route('admin.product.edit', ['slug' => $id])->with('admin_message', 'Produit enregistré. Prix et stock synchronisés.');
+        } catch (ValidationException $error) {
+            if ($request->expectsJson()) {
+                throw $error;
+            }
+            $product = app(FormInputRecovery::class)->product($request, $products->form($slug));
+            $request->session()->forget('_old_input');
+
+            return response()->view('admin.product', ['product' => $product,
+                'errors' => app(AdminFormRecovery::class)->errors($error), 'form_recovery' => true], 422);
+        }
     }
 
     public function toggleProductPublication(ProductManager $products, string $slug)
@@ -146,7 +159,7 @@ final class AdminManagementController extends Controller
         }
         $deliveries->save($id, $data);
 
-        return back()->with('admin_message', 'Livraison mise à jour.');
+        return app(AdminFormRecovery::class)->redirect(request())->with('admin_message', 'Livraison mise à jour.');
     }
 
     public function cancel(Request $request, Deliveries $deliveries, string $id)
@@ -154,7 +167,7 @@ final class AdminManagementController extends Controller
         $request->validate(['confirmed' => 'required|accepted']);
         $deliveries->cancel($id);
 
-        return back()->with('admin_message', 'Commande annulée et réservation libérée.');
+        return app(AdminFormRecovery::class)->redirect(request())->with('admin_message', 'Commande annulée et réservation libérée.');
     }
 
     public function bankReceipt(Request $request, OrderStore $orders, string $id)
@@ -163,7 +176,7 @@ final class AdminManagementController extends Controller
         $data = $request->validate(['amount' => ['required', 'regex:/\A[0-9]{1,6}(?:[.,][0-9]{1,2})?\z/'], 'reference' => 'required|string|max:200', 'confirmed' => 'required|accepted']);
         $orders->confirmBankReceipt($id, Catalogue::cents($data['amount']), $data['reference']);
 
-        return back()->with('admin_message', 'Réception bancaire confirmée. Paiement enregistré.');
+        return app(AdminFormRecovery::class)->redirect(request())->with('admin_message', 'Réception bancaire confirmée. Paiement enregistré.');
     }
 
     public function settings(PrivateSettings $settings, CheckoutReadiness $readiness)
@@ -179,7 +192,7 @@ final class AdminManagementController extends Controller
         $settings->save($values, $data['version']);
         app(Activity::class)->record('settings_saved', 'Paiements et contact', null, (string) Str::uuid());
 
-        return back()->with('admin_message', 'Paramètres enregistrés. Vérifiez les états de disponibilité ci-dessous.');
+        return app(AdminFormRecovery::class)->redirect(request())->with('admin_message', 'Paramètres enregistrés. Vérifiez les états de disponibilité ci-dessous.');
     }
 
     public function bankSettings(BankDetailsSettings $settings, BankTransfer $transfers)
@@ -265,7 +278,7 @@ final class AdminManagementController extends Controller
         $settings->save($values, $data['version']);
         app(Activity::class)->record('settings_saved', 'Intégrations', null, (string) Str::uuid());
 
-        return back()->with('admin_message', 'Configuration enregistrée. Synchronisez chaque service pour vérifier son accès.');
+        return app(AdminFormRecovery::class)->redirect(request())->with('admin_message', 'Configuration enregistrée. Synchronisez chaque service pour vérifier son accès.');
     }
 
     public function synchronize(Integrations $integrations, string $service)
@@ -273,10 +286,10 @@ final class AdminManagementController extends Controller
         try {
             $integrations->synchronize($service);
         } catch (\Throwable) {
-            return back()->withErrors(['integration' => 'Lecture impossible. Vérifiez les identifiants, autorisations, version d’API et prérequis du compte. Les résultats précédents restent datés.']);
+            return app(AdminFormRecovery::class)->redirect(request())->withErrors(['integration' => 'Lecture impossible. Vérifiez les identifiants, autorisations, version d’API et prérequis du compte. Les résultats précédents restent datés.']);
         }
 
-        return back()->with('admin_message', 'Données du service actualisées.');
+        return app(AdminFormRecovery::class)->redirect(request())->with('admin_message', 'Données du service actualisées.');
     }
 
     public function googleConnect(Request $request, PrivateSettings $settings)

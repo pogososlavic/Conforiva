@@ -29,7 +29,7 @@
                 <div class="home-story-grid">
                     @foreach (['heating' => 'chauffage', 'appliances' => 'cuisine'] as $universe => $photo)
                         <article class="home-story-card">
-                            <img src="/media/home/open-{{ $photo }}-960.webp" width="960" height="640" loading="lazy" decoding="async" alt="{{ __('home.story.'.$universe.'.alt') }}">
+                            <img src="/media/home/open-{{ $photo }}-960.webp" srcset="/media/home/open-{{ $photo }}-480.webp 480w, /media/home/open-{{ $photo }}-720.webp 720w, /media/home/open-{{ $photo }}-960.webp 960w" sizes="(max-width: 599px) calc(100vw - 32px), (max-width: 1328px) calc((100vw - 66px) / 2), 631px" width="960" height="640" loading="lazy" decoding="async" alt="{{ __('home.story.'.$universe.'.alt') }}">
                             <div><h3>{{ __('home.story.'.$universe.'.title') }}</h3><p>{{ __('home.story.'.$universe.'.detail') }}</p><a href="{{ route('catalogue', ['locale' => $locale, 'universe' => $universe]) }}">{{ __('catalogue.discover') }} <span aria-hidden="true">→</span></a></div>
                         </article>
                     @endforeach
@@ -53,7 +53,7 @@
             </ul>
             <ul class="home-complementary-grid">
                 @foreach (['firewood'] as $slug)
-                    <li id="universe-{{ $slug }}" tabindex="-1"><a href="{{ route('catalogue', ['locale' => $locale, 'universe' => $slug]) }}">@if($universeImages[$slug])<img src="{{ $universeImages[$slug]['local_url'] }}" width="{{ $universeImages[$slug]['width'] }}" height="{{ $universeImages[$slug]['height'] }}" alt="" loading="lazy" decoding="async">@endif<div><h3>{{ __('home.categories.'.$slug.'.name') }}</h3><p>{{ __('home.categories.'.$slug.'.description') }}</p></div><span aria-hidden="true">→</span></a></li>
+                    <li id="universe-{{ $slug }}" tabindex="-1"><a href="{{ route('catalogue', ['locale' => $locale, 'universe' => $slug]) }}">@if($universeImages[$slug])@php($complementarySrcset = app(\App\Services\ResponsiveMedia::class)->srcset($universeImages[$slug]['local_url']))<img src="{{ $universeImages[$slug]['local_url'] }}" @if($complementarySrcset) srcset="{{ $complementarySrcset }}" sizes="64px" @endif width="{{ $universeImages[$slug]['width'] }}" height="{{ $universeImages[$slug]['height'] }}" alt="" loading="lazy" decoding="async">@endif<div><h3>{{ __('home.categories.'.$slug.'.name') }}</h3><p>{{ __('home.categories.'.$slug.'.description') }}</p></div><span aria-hidden="true">→</span></a></li>
                 @endforeach
                 @if($freezerProduct)
                     <li id="universe-freezers" tabindex="-1" data-home-freezer="{{ $freezerProduct['slug'] }}">

@@ -1,11 +1,11 @@
-@props(['title', 'guest' => false])
+@props(['title', 'guest' => false, 'formErrors' => null])
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow"><title>{{ $title }} · HOME CONFORT Administration</title>
     <link rel="icon" href="{{ asset('favicon.ico') }}">
-    @vite(['resources/css/app.css', 'resources/js/admin.js'])
+    @vite(['resources/css/app.css', 'resources/css/admin-icons.css', 'resources/js/admin.js'])
 </head>
 <body class="admin-page">
 <a class="skip-link" href="#main">Aller au contenu</a>
@@ -31,7 +31,7 @@
 @endif
 @endif
 </nav>
-<p class="admin-notification-status" data-admin-notifications="{{ route('admin.notifications') }}" data-admin-orders-url="{{ route('admin.orders') }}" role="status" aria-live="polite"></p>
+<p class="admin-notification-status" data-admin-notifications="{{ route('admin.notifications') }}" data-admin-orders-url="{{ route('admin.orders') }}" data-admin-login-url="{{ route('admin.login') }}" role="status" aria-live="polite"></p>
 <button class="admin-secondary admin-sound-toggle" type="button" data-admin-sound-toggle aria-pressed="false">Activer le son des commandes</button>
 <button class="admin-secondary admin-sound-test" type="button" data-admin-sound-test hidden>Tester le son</button>
 <p class="admin-sound-help">Activez le son et testez-le avec le bouton dédié. Le réglage est mémorisé dans ce navigateur ; laissez le tableau de bord ouvert. Une notification système peut aussi être autorisée.</p>
@@ -40,7 +40,8 @@
 @endunless
 <main id="main" class="admin-main" tabindex="-1"><p class="admin-eyebrow">HOME CONFORT / Espace administrateur</p><h1>{{ $title }}</h1>
 <div class="admin-new-order-alert" data-admin-new-order-alert hidden role="alert"><span><i class="fa-solid fa-bell" aria-hidden="true"></i> Nouvelle commande reçue. Le badge du menu Commandes indique le nombre à consulter.</span><a href="{{ route('admin.orders') }}">Voir les commandes →</a></div>
-@if($errors->any())<div class="admin-notice" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
+@php($displayErrors = $formErrors ?? ($errors ?? null))
+@if($displayErrors && $displayErrors->any())<div class="admin-notice" role="alert">@foreach($displayErrors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 @if(session('admin_message'))<div class="admin-notice admin-notice--success" role="status">{{ session('admin_message') }}</div>@endif
 {{ $slot }}
 </main></div>

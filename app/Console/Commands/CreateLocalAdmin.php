@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\PrivateLocalFiles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
@@ -37,10 +38,8 @@ final class CreateLocalAdmin extends Command
 
                 return self::FAILURE;
             }
-            $directory = storage_path('app/private/admin');
-            if (is_link($directory)) {
-                throw new \RuntimeException;
-            }
+            File::ensureDirectoryExists(storage_path(), 0700, true);
+            $directory = PrivateLocalFiles::path(storage_path(), 'app/private/admin', false);
             File::ensureDirectoryExists($directory, 0700);
             $stamp = now()->utc()->format('YmdHis').'-'.Str::random(8);
             $this->privateWrite($directory.'/env-before-'.$stamp, $before);

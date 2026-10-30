@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Admin\ProductManager;
 use App\Services\CatalogueImageFraming;
+use App\Services\CatalogueImageMetadata;
 use App\Services\CatalogueSource;
 use App\Services\Commerce\Cart;
 use App\Services\Commerce\InventoryAvailability;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->scoped(CatalogueSource::class, SelectedCatalogueSource::class);
         $this->app->scoped(ResponsiveMedia::class);
+        $this->app->scoped(CatalogueImageMetadata::class);
         $this->app->scoped(CatalogueImageFraming::class);
         $this->app->scoped(Cart::class);
         $this->app->scoped(ProductManager::class);

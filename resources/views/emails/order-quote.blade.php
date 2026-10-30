@@ -61,6 +61,7 @@
                             </table>
 
                             <p style="margin:0 0 20px;padding:14px 16px;border-left:3px solid #e4bd3a;background:#faf9f5;font-size:12px;line-height:1.6;color:#5d5a52;">{{ __('documents.order_quote_email_payment_note', [], $language) }}</p>
+                            @if($hasBankDetails ?? false)<p>{{ __('commerce.bank_email_attachment', [], $language) }}</p>@endif
                             <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#55534d;">{{ __('documents.order_quote_email_help', [], $language) }} <a href="mailto:{{ config('contact.email') }}" style="color:#5b4a12;text-decoration:underline;">{{ config('contact.email') }}</a>.</p>
                             <p style="margin:18px 0 0;font-size:14px;line-height:1.5;font-weight:700;color:#292821;">{{ __('documents.order_quote_email_signature', [], $language) }}</p>
                         </td>

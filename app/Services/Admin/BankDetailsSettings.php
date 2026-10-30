@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Services\Commerce\BankTransfer;
+use App\Services\PrivateLocalFiles;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -13,10 +14,8 @@ final class BankDetailsSettings
 {
     private function directory(): string
     {
-        $directory = storage_path('app/private/admin');
-        if (is_link(storage_path('app/private')) || is_link($directory)) {
-            throw new \RuntimeException('Unsafe bank settings directory.');
-        }
+        File::ensureDirectoryExists(storage_path(), 0700, true);
+        $directory = PrivateLocalFiles::path(storage_path(), 'app/private/admin', false);
         File::ensureDirectoryExists($directory, 0700, true);
         if (! chmod($directory, 0700)) {
             throw new \RuntimeException('Cannot protect bank settings directory.');

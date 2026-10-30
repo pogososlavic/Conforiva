@@ -83,6 +83,7 @@ Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'index'])->name('seo.sitemap');
 Route::get('/sitemaps/{locale}/pages.xml', [SeoController::class, 'pages'])->whereIn('locale', config('homya.locales'))->name('seo.pages');
 Route::get('/sitemaps/{locale}/products-{chunk}.xml', [SeoController::class, 'products'])->whereIn('locale', config('homya.locales'))->where('chunk', '[1-9][0-9]{0,4}')->name('seo.products');
+Route::get('/google/merchant/shopping150-fr.xml', \App\Http\Controllers\MerchantSelectionFeedController::class)->name('merchant.selection.feed');
 Route::get('/google/merchant/{locale}.xml', MerchantFeedController::class)->whereIn('locale', config('homya.locales'))->name('merchant.feed');
 
 Route::middleware(CommerceBoundary::class)->group(function () {

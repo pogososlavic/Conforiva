@@ -87,17 +87,18 @@ class CatalogueUxRegressionTest extends TestCase
         $this->assertSame(120, strlen($this->xpath($response->getContent())->query('//input[@id="filter-query"]')->item(0)->getAttribute('value')));
     }
 
-    public function test_card_detail_back_and_language_links_keep_filters_sort_and_page(): void
+    public function test_card_links_are_clean_while_explicit_detail_back_and_language_links_keep_context(): void
     {
         $context = ['q' => 'UX', 'brand' => 'Marque UX', 'min' => '100', 'max' => '150', 'sort' => 'price_desc', 'page' => '2'];
         $response = $this->get('/fr/catalogue?'.http_build_query($context))->assertOk();
         $link = $this->xpath($response->getContent())->query('//a[@class="product-card-link"]')->item(0)->getAttribute('href');
-        parse_str(parse_url($link, PHP_URL_QUERY), $actual);
-        $this->assertSame($context, $actual);
+        $this->assertNull(parse_url($link, PHP_URL_QUERY));
+        $this->assertCount(1, $this->xpath($response->getContent())->query('//script[@data-catalogue-context]'));
         $productPath = parse_url($link, PHP_URL_PATH);
         foreach (['fr', 'en', 'de'] as $locale) {
             $response = $this->get(preg_replace('#^/fr/#', '/'.$locale.'/', $productPath).'?'.http_build_query($context))->assertOk();
             $xpath = $this->xpath($response->getContent());
+            $this->assertCount(1, $xpath->query('//main[@data-catalogue-context-explicit]'));
             foreach ($xpath->query('//a[@data-language-link]|//section[@class="product-summary"]/a[@class="button-primary"]') as $anchor) {
                 $url = $anchor->getAttribute('href');
                 parse_str(parse_url($url, PHP_URL_QUERY), $actual);

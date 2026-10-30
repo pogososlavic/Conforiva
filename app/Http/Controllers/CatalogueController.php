@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\Catalogue;
+use App\Services\CatalogueNavigation;
+use App\Services\CategoryContent;
 use App\Services\Commerce\Cart;
 use App\Services\MerchantProducts;
 use Illuminate\Http\Request;
@@ -103,19 +105,40 @@ class CatalogueController extends Controller
         if (! $invalid && isset($filters['category'])) {
             $catalogueIntro['title'] = $categoryOptions->firstWhere('slug', $filters['category'])['name'];
             $catalogueIntro['description'] = __('seo.category_description', ['category' => $catalogueIntro['title']]);
+            $catalogueIntro['count'] = $universeProducts->where('category.slug', $filters['category'])->count();
         }
         if ($selectedUniverse) {
             $department = collect(config('home.departments', []))->first(fn (array $entry) => ($entry['filters']['universe'] ?? null) === $selectedUniverse);
             $catalogueIntro['image'] = $universeProducts->firstWhere('slug', $department['product_slug'] ?? null)['image']
                 ?? $universeProducts->first(fn (array $entry) => $entry['image'] !== null)['image'] ?? null;
         }
-        $browseCategories = $invalid ? collect() : $universeProducts->groupBy('category.slug')->map(function ($entries) use ($locale, $selectedUniverse) {
+        $browseProducts = $universeProducts;
+        if (! $invalid && isset($filters['category']) && ! $selectedUniverse) {
+            $categoryUniverses = $categoryOptions->firstWhere('slug', $filters['category'])['universes'];
+            $browseProducts = $all->whereIn('universe', $categoryUniverses);
+        }
+        $browseCategories = $invalid ? collect() : $browseProducts->groupBy('category.slug')->map(function ($entries) use ($locale, $selectedUniverse) {
             $category = $entries->first()['category'];
 
             return $category + ['count' => $entries->count(), 'url' => route('catalogue', ['locale' => $locale, 'category' => $category['slug']] + ($selectedUniverse ? ['universe' => $selectedUniverse] : []))];
-        })->sortBy('name')->take(8)->values();
+        })->sortBy(function (array $category) use ($filters) {
+            $active = $filters['category'] ?? null;
+            $sameFamily = $active && explode('-', $category['slug'])[0] === explode('-', $active)[0];
 
-        return response()->view('catalogue.index', compact('products', 'categories', 'categoryOptions', 'categoryReset', 'brands', 'conditions', 'filters', 'formValues', 'errorFields', 'activeFilters', 'languageLinks', 'invalid', 'locale', 'catalogueIntro', 'browseCategories') + ['meta' => $catalogue->archive()['meta'], 'catalogueReady' => $all->isNotEmpty()], $invalid ? 422 : ($all->isEmpty() ? 503 : 200));
+            return ($sameFamily ? '0' : '1').$category['name'];
+        })->take(8)->values();
+
+        $categoryDirectory = $invalid ? collect() : $universeProducts->filter(fn (array $entry) => ! empty($entry['category']['slug']))
+            ->groupBy('category.slug')->map(function ($entries) use ($locale) {
+                $category = $entries->first()['category'];
+
+                return $category + ['count' => $entries->count(), 'url' => route('catalogue', ['locale' => $locale, 'category' => $category['slug']])];
+            })->sortBy('name')->values();
+        if (! $invalid) {
+            $catalogueIntro = app(CategoryContent::class)->enrich($catalogueIntro, $filters, $all, $locale);
+        }
+
+        return response()->view('catalogue.index', compact('products', 'categories', 'categoryOptions', 'categoryReset', 'brands', 'conditions', 'filters', 'formValues', 'errorFields', 'activeFilters', 'languageLinks', 'invalid', 'locale', 'catalogueIntro', 'browseCategories', 'categoryDirectory') + ['navigationProducts' => $all, 'meta' => $catalogue->archive()['meta'], 'catalogueReady' => $all->isNotEmpty()], $invalid ? 422 : ($all->isEmpty() ? 503 : 200));
     }
 
     public function show(Request $request, Catalogue $catalogue, string $locale, string $slug)
@@ -136,12 +159,13 @@ class CatalogueController extends Controller
                 return response()->view('catalogue.unavailable', compact('locale', 'slug', 'languageLinks') + ['catalogueReady' => false, 'translationFailure' => true], 503);
             }
 
-            $ready = $catalogue->products()->isNotEmpty();
+            $navigationProducts = $catalogue->products();
+            $ready = $navigationProducts->isNotEmpty();
             if ($catalogue->sourceUnavailable()) {
                 return $this->unavailable($locale, $slug);
             }
 
-            return response()->view('catalogue.not-found', ['languageLinks' => $languageLinks, 'catalogueReady' => $ready], 404);
+            return response()->view('catalogue.not-found', ['navigationProducts' => $catalogue->translationUnavailable() ? collect() : $navigationProducts, 'languageLinks' => $languageLinks, 'catalogueReady' => $ready], 404);
         }
 
         $selectedVariant = $request->query('variant');
@@ -161,8 +185,7 @@ class CatalogueController extends Controller
             return $this->unavailable($locale, $slug);
         }
         $relatedUnavailable = $catalogue->translationUnavailable();
-        $relatedProducts = $relatedUnavailable ? collect() : $all->filter(fn (array $entry) => $entry['slug'] !== $slug && $entry['category']['slug'] === $product['category']['slug'])
-            ->sortBy('name')->take(4)->values();
+        $relatedProducts = $relatedUnavailable ? collect() : app(CatalogueNavigation::class)->related($all, $product);
 
         $seoProduct = $product;
         $variantImageVerified = false;
@@ -179,7 +202,7 @@ class CatalogueController extends Controller
             }
         }
 
-        return view('catalogue.product', compact('product', 'seoProduct', 'languageLinks', 'locale', 'context', 'catalogueLink', 'relatedProducts', 'relatedUnavailable', 'selectedVariant', 'variantOptions', 'variantImageVerified') + ['catalogueReady' => true]);
+        return view('catalogue.product', compact('product', 'seoProduct', 'languageLinks', 'locale', 'context', 'catalogueLink', 'relatedProducts', 'relatedUnavailable', 'selectedVariant', 'variantOptions', 'variantImageVerified') + ['navigationProducts' => $relatedUnavailable ? collect() : $all, 'catalogueReady' => true]);
     }
 
     private function boundedValues(Request $request): array

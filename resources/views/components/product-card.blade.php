@@ -1,6 +1,6 @@
 @props(['product', 'locale', 'filters' => [], 'headingLevel' => 'h2'])
-<article class="product-card">
-    <a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']] + $filters) }}" class="product-card-link">
+<article class="product-card" @if(request()->routeIs('catalogue', 'promotions')) data-catalogue-source @endif>
+    <a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']]) }}" class="product-card-link">
         <div class="product-card-visual">
             <x-product-image framed :src="$product['image']['local_url'] ?? null" :width="$product['image']['width'] ?? null" :height="$product['image']['height'] ?? null" alt="" />
             @if($product['promotion'] ?? null)<span class="promotion-badge">−{{ $product['promotion']['percent'] }} %</span>@endif
@@ -17,11 +17,11 @@
     <div class="product-card-energy"><x-product-energy :product="$product" :locale="$locale" /></div>
     <div class="product-card-purchase">
         <p>{{ __('commerce.shipping_free') }}</p>
-        <p><a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']] + $filters) }}#product-purchase-information">{{ __('commerce.free_returns') }}<span class="sr-only"> — {{ $product['name'] }}</span></a></p>
+        <p><a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']]) }}#product-purchase-information">{{ __('commerce.free_returns') }}<span class="sr-only"> — {{ $product['name'] }}</span></a></p>
         <x-purchase-information :locale="$locale" />
         @if(app(\App\Services\Commerce\Cart::class)->eligible($product))
             @if($product['has_variants'])
-                <a class="button-secondary" href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']] + $filters) }}#product-purchase">{{ __('commerce.choose_options') }}<span class="sr-only"> — {{ $product['name'] }}</span></a>
+                <a class="button-secondary" href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug']]) }}#product-purchase">{{ __('commerce.choose_options') }}<span class="sr-only"> — {{ $product['name'] }}</span></a>
             @else
                 <form method="post" action="{{ route('cart.add', ['locale' => $locale]) }}">@csrf
                     <input type="hidden" name="slug" value="{{ $product['slug'] }}"><input type="hidden" name="quantity" value="1">

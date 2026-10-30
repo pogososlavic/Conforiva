@@ -19,14 +19,14 @@
                     </div>
                 </fieldset>
                 <fieldset class="checkout-panel"><legend><span class="checkout-section-number" aria-hidden="true">2</span> {{ __('commerce.shipping_address') }}</legend>
+                    <div class="checkout-field"><label for="checkout-country">{{ __('commerce.country') }}</label><select id="checkout-country" name="country" autocomplete="country" required @if($errors->has('country')) aria-invalid="true" aria-describedby="checkout-country-error" @endif>@foreach(config('commerce.countries') as $country)<option value="{{ $country }}" @selected(old('country', 'FR') === $country)>{{ __('commerce.countries.'.$country) }}</option>@endforeach</select>
+                        @error('country')<p id="checkout-country-error" class="checkout-field-error">{{ $message }}</p>@enderror
+                    </div>
                     <x-checkout-field name="address" autocomplete="street-address" :max="200" />
                     <x-address-lookup :locale="$locale" />
                     <div class="checkout-fields">
                         <x-checkout-field name="postal_code" autocomplete="postal-code" :max="12" />
                         <x-checkout-field name="city" autocomplete="address-level2" :max="100" />
-                    </div>
-                    <div class="checkout-field"><label for="checkout-country">{{ __('commerce.country') }}</label><select id="checkout-country" name="country" autocomplete="country" required @if($errors->has('country')) aria-invalid="true" aria-describedby="checkout-country-error" @endif>@foreach(config('commerce.countries') as $country)<option value="{{ $country }}" @selected(old('country', 'FR') === $country)>{{ __('commerce.countries.'.$country) }}</option>@endforeach</select>
-                        @error('country')<p id="checkout-country-error" class="checkout-field-error">{{ $message }}</p>@enderror
                     </div>
                     <p class="checkout-help">{{ __('commerce.shipping_free') }} {{ __('commerce.delivery_estimate') }}</p>
                 </fieldset>
@@ -35,11 +35,11 @@
                     <details @if(old('billing_different') || $errors->hasAny(['billing_name', 'billing_address', 'billing_postal_code', 'billing_city', 'billing_country'])) open @endif>
                         <summary>{{ __('compliance.billing_different') }}</summary>
                         <label class="terms-checkbox"><input type="checkbox" name="billing_different" value="1" @checked(old('billing_different'))><span>{{ __('compliance.billing_different') }}</span></label>
-                        @foreach(['name' => ['name', 150], 'address' => ['street-address', 200], 'postal_code' => ['postal-code', 20], 'city' => ['address-level2', 100], 'country' => ['country', 2]] as $field => $options)
+                        @foreach(['name' => ['name', 150], 'country' => ['country', 2], 'address' => ['street-address', 200], 'postal_code' => ['postal-code', 20], 'city' => ['address-level2', 100]] as $field => $options)
                             <x-checkout-field :name="'billing_'.$field" :label="__('compliance.billing_'.$field)" :autocomplete="'billing '.$options[0]" :max="$options[1]" :required="false" :default="$field === 'country' ? 'FR' : ''" />
+                            @if($field === 'country')<p class="checkout-help">{{ __('compliance.billing_country_help') }}</p>@endif
                             @if($field === 'address')<x-address-lookup :locale="$locale" prefix="billing_" />@endif
                         @endforeach
-                        <p class="checkout-help">{{ __('compliance.billing_country_help') }}</p>
                     </details>
                 </fieldset>
                 @if(collect($quote['lines'])->contains(fn($line) => app(\App\Services\ApplianceTakeBack::class)->eligible($line['product'])))

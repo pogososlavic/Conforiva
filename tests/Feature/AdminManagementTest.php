@@ -33,6 +33,7 @@ final class AdminManagementTest extends TestCase
     {
         parent::setUp();
         $this->withoutVite();
+        $this->app->setLocale('fr');
         $this->storage = storage_path();
         $this->temporary = sys_get_temp_dir().'/homya-management-test-'.Str::uuid();
         File::ensureDirectoryExists($this->temporary, 0700);
@@ -263,11 +264,42 @@ final class AdminManagementTest extends TestCase
     {
         $data = $this->productData();
         $data['price'] = '0';
-        $this->withSession($this->auth())->post('/admin/produits/nouveau', $data)->assertSessionHasErrors('price');
+        $this->withSession($this->auth())->post('/admin/produits/nouveau', $data)->assertUnprocessable()
+            ->assertViewHas('errors', fn ($errors) => $errors->has('price'))->assertSessionMissing('_old_input');
         $data['price'] = '12.00';
         $data['image'] = UploadedFile::fake()->createWithContent('fixture.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>fixture</script></svg>');
-        $this->post('/admin/produits/nouveau', $data)->assertSessionHasErrors('image');
+        $this->post('/admin/produits/nouveau', $data)->assertUnprocessable()
+            ->assertViewHas('errors', fn ($errors) => $errors->has('image'))->assertSessionMissing('_old_input');
         $this->assertSame(0, DB::connection('commerce')->table('commerce_inventory')->count());
+    }
+
+    public function test_product_recovery_escapes_unsaved_text_and_keeps_the_submitted_revision(): void
+    {
+        $slug = app(ProductManager::class)->save(null, $this->productData());
+        $stored = DB::connection('commerce')->table('commerce_admin_products')->where('slug', $slug)->first();
+        $marker = '<script>synthetic-product-recovery</script>';
+        foreach ([null, 'invalid', 0, 1] as $revision) {
+            $data = $this->productData();
+            if ($revision === null) {
+                unset($data['revision']);
+            } else {
+                $data['revision'] = $revision;
+            }
+            $data['price'] = '0';
+            $data['languages']['fr']['description'] = $marker;
+            $data['current_password'] = 'SYNTHETIC_PASSWORD_NOT_FOR_DISPLAY';
+            $shownRevision = is_int($revision) ? $revision : '';
+            $this->withSession($this->auth() + ['_old_input' => ['secret' => 'SYNTHETIC_OLD_SECRET']])
+                ->post('/admin/produits/'.$slug, $data)->assertUnprocessable()
+                ->assertViewHas('product', fn ($product) => $product['revision'] === $shownRevision
+                    && $product['recovery_revision_valid'] === ($revision === 1))
+                ->assertSee(e($marker), false)->assertDontSee($marker, false)
+                ->assertSee('name="revision" value="'.$shownRevision.'"', false)
+                ->assertDontSee('SYNTHETIC_PASSWORD_NOT_FOR_DISPLAY')
+                ->assertDontSee('SYNTHETIC_OLD_SECRET')->assertSessionMissing('_old_input');
+            $this->assertEquals($stored, DB::connection('commerce')->table('commerce_admin_products')->where('slug', $slug)->first());
+        }
+        $this->assertSame(1, DB::connection('commerce')->table('commerce_inventory')->count());
     }
 
     public function test_delivery_requires_payment_real_event_and_sequential_revision_and_safe_url(): void
@@ -315,14 +347,15 @@ final class AdminManagementTest extends TestCase
     {
         $path = $this->app->environmentPath();
         $this->app->useEnvironmentPath($this->temporary);
-        File::put($this->temporary.'/.env', "APP_KEY=PROTECTED_FIXTURE\nDB_PASSWORD=PRIVATE_FIXTURE\n");
+        $environment = $this->app->environmentFilePath();
+        File::put($environment, "APP_KEY=PROTECTED_FIXTURE\nDB_PASSWORD=PRIVATE_FIXTURE\n");
         try {
             $settings = app(PrivateSettings::class);
             $version = $settings->version();
             $settings->save(['HOMYA_CONTACT_PHONE' => '+33123456789', 'HOMYA_CONTACT_EMAIL' => 'fixture@example.invalid'], $version);
-            $actual = File::get($this->temporary.'/.env');
+            $actual = File::get($environment);
             $this->assertStringContainsString('DB_PASSWORD=PRIVATE_FIXTURE', $actual);
-            $this->assertSame(0600, fileperms($this->temporary.'/.env') & 0777);
+            $this->assertSame(0600, fileperms($environment) & 0777);
             try {
                 $settings->save(['HOMYA_CONTACT_PHONE' => '+33999999999'], $version);
                 $this->fail('Stale configuration accepted');
@@ -382,8 +415,11 @@ final class AdminManagementTest extends TestCase
         $public = public_path();
         $this->app->usePublicPath($this->temporary.'/public');
         File::ensureDirectoryExists(public_path(), 0755);
+        $archive = $this->temporary.'/synthetic-catalogue-archive.json';
+        File::put($archive, json_encode(['meta' => ['complete' => true, 'collected_total' => 0], 'products' => []], JSON_THROW_ON_ERROR));
+        config(['catalogue.archive_path' => $archive]);
         try {
-            $archiveHash = hash_file('sha256', $this->storage.'/app/catalogue/index.json');
+            $archiveHash = hash_file('sha256', $archive);
             $data = $this->productData();
             $data['published'] = true;
             $upload = UploadedFile::fake()->image('fixture.jpg', 600, 600);
@@ -399,7 +435,7 @@ final class AdminManagementTest extends TestCase
             app()->setLocale('en');
             $this->assertSame([], app(ProductManager::class)->custom());
             app()->setLocale('fr');
-            $this->assertSame($archiveHash, hash_file('sha256', $this->storage.'/app/catalogue/index.json'));
+            $this->assertSame($archiveHash, hash_file('sha256', $archive));
             $rejected = $this->productData(0);
             $rejected['published'] = true;
             try {
@@ -423,7 +459,8 @@ final class AdminManagementTest extends TestCase
     {
         $original = $this->app->environmentPath();
         $this->app->useEnvironmentPath($this->temporary);
-        File::put($this->temporary.'/.env', "APP_KEY=PROTECTED_FIXTURE\n");
+        $environment = $this->app->environmentFilePath();
+        File::put($environment, "APP_KEY=PROTECTED_FIXTURE\n");
         config(['dashboard.google.client_id' => 'fixture-client', 'dashboard.google.client_secret' => 'fixture-secret']);
         try {
             $response = $this->withSession($this->auth())->get('/admin/integrations/google/autoriser')->assertRedirect();
@@ -435,7 +472,7 @@ final class AdminManagementTest extends TestCase
             $pending = session('admin.google_oauth');
             Http::fake(['oauth2.googleapis.com/*' => Http::response(['refresh_token' => 'FIXTURE_PRIVATE_REFRESH'])]);
             $this->get('/admin/integrations/google/retour?'.http_build_query(['state' => $pending['state'], 'code' => 'fixture-code']))->assertRedirect('/admin/integrations')->assertSessionMissing('admin.google_oauth');
-            $this->assertStringContainsString('FIXTURE_PRIVATE_REFRESH', File::get($this->temporary.'/.env'));
+            $this->assertStringContainsString('FIXTURE_PRIVATE_REFRESH', File::get($environment));
             $this->get('/admin/integrations')->assertOk()->assertDontSee('FIXTURE_PRIVATE_REFRESH');
             $this->get('/admin/integrations/google/retour?'.http_build_query(['state' => $pending['state'], 'code' => 'fixture-code']))->assertSessionHasErrors('integration');
             Http::assertSentCount(1);
@@ -453,7 +490,8 @@ final class AdminManagementTest extends TestCase
     {
         $original = $this->app->environmentPath();
         $this->app->useEnvironmentPath($this->temporary);
-        File::put($this->temporary.'/.env', "PROTECTED_FIXTURE=before\n");
+        $environment = $this->app->environmentFilePath();
+        File::put($environment, "PROTECTED_FIXTURE=before\n");
         try {
             $data = ['version' => app(PrivateSettings::class)->version(), 'mode' => 'test', 'email' => 'homya@example.invalid', 'current_password' => 'wrong'];
             $this->withSession($this->auth())->post('/admin/parametres', $data)->assertSessionHasErrors('current_password');
@@ -465,7 +503,7 @@ final class AdminManagementTest extends TestCase
             $data['bank_name'] = 'Fixture Bank';
             $data['bic'] = 'FIXTFRPP';
             $this->post('/admin/parametres/rib', $data)->assertSessionHasErrors('iban');
-            $this->assertSame("PROTECTED_FIXTURE=before\n", File::get($this->temporary.'/.env'));
+            $this->assertSame("PROTECTED_FIXTURE=before\n", File::get($environment));
             $this->get('/admin/parametres')->assertOk()->assertSee('Vendeur HOME CONFORT')->assertDontSee('fixture-private-password');
         } finally {
             $this->app->useEnvironmentPath($original);

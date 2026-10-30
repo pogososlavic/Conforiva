@@ -398,8 +398,13 @@ class GoogleSeoMerchantTest extends TestCase
         $this->assertTrue($seo->informationIndexable('contact', true));
         $this->assertFalse($seo->informationIndexable('suivi', false));
         $this->assertFalse($seo->informationIndexable('unknown-page', false));
+        config(['seo.information_indexing.confidentialite' => null]);
         $this->assertFalse($seo->informationIndexable('confidentialite', true));
         $this->assertTrue($seo->informationIndexable('confidentialite', false));
+        config(['seo.information_indexing.confidentialite' => true]);
+        $this->assertTrue($seo->informationIndexable('confidentialite', true));
+        config(['seo.information_indexing.confidentialite' => false]);
+        $this->assertFalse($seo->informationIndexable('confidentialite', false));
     }
 
     public function test_simple_product_identifiers_are_published_only_after_a_current_valid_review(): void
@@ -438,6 +443,12 @@ class GoogleSeoMerchantTest extends TestCase
         config(['commerce.enabled' => true, 'commerce.legal_ready' => true,
             'commerce.bank' => ['enabled' => true, 'beneficiary' => 'Fixture beneficiary',
                 'iban' => 'DE89370400440532013000', 'bic' => 'COBADEFFXXX', 'bank_name' => 'Fixture bank']]);
+        config(['commerce.countries' => ['FR', 'BE', 'DE'], 'commerce.currency' => 'EUR', 'commerce.shipping_cents' => 0,
+            'shipping.dispatch.verified' => true, 'shipping.dispatch.address_structured.country' => 'FR',
+            'shipping.returns.verified' => true, 'shipping.returns.address_structured.country' => 'FR',
+            'merchant-policies.shipping' => ['verified' => true, 'handling_days' => ['min' => 1, 'max' => 2],
+                'transit_days' => ['min' => 2, 'max' => 5]],
+            'merchant-policies.returns' => ['verified' => true, 'days' => 14, 'free' => true]]);
         $product = array_replace($this->product(), ['issues' => ['missing_specifications']]);
 
         $metadata = app(Seo::class)->page($this->request('product', ['locale' => 'fr', 'slug' => $product['slug']]),
@@ -445,9 +456,22 @@ class GoogleSeoMerchantTest extends TestCase
         $graph = json_decode($metadata['json'], true)['@graph'];
         $node = array_values(array_filter($graph, fn ($entry) => $entry['@type'] === 'Product'))[0];
 
+        $returnUrl = 'https://homya-store.com/fr/retractation';
+        $shipping = array_map(fn ($country) => [
+            '@type' => 'OfferShippingDetails',
+            'shippingDestination' => ['@type' => 'DefinedRegion', 'addressCountry' => $country],
+            'shippingRate' => ['@type' => 'MonetaryAmount', 'value' => '0.00', 'currency' => 'EUR'],
+            'deliveryTime' => ['@type' => 'ShippingDeliveryTime',
+                'handlingTime' => ['@type' => 'QuantitativeValue', 'minValue' => 1, 'maxValue' => 2, 'unitCode' => 'DAY'],
+                'transitTime' => ['@type' => 'QuantitativeValue', 'minValue' => 2, 'maxValue' => 5, 'unitCode' => 'DAY']],
+        ], ['FR', 'BE', 'DE']);
         $this->assertSame(['@type' => 'Offer', 'url' => 'https://homya-store.com/fr/produit/fixture-product',
             'price' => '123.45', 'priceCurrency' => 'EUR', 'seller' => ['@id' => 'https://homya-store.com/#organization'],
+            'shippingDetails' => $shipping, 'hasMerchantReturnPolicy' => ['@id' => $returnUrl.'#return-policy'],
             'itemCondition' => 'https://schema.org/NewCondition'], $node['offers']);
+        $store = array_values(array_filter($graph, fn ($entry) => $entry['@type'] === 'OnlineStore'))[0];
+        $this->assertSame(['@type' => 'MerchantReturnPolicy', '@id' => $returnUrl.'#return-policy',
+            'merchantReturnLink' => $returnUrl], $store['hasMerchantReturnPolicy']);
     }
 
     public function test_feed_uses_the_localized_store_hierarchy_and_only_reviewed_taxonomy_ids(): void

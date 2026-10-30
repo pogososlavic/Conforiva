@@ -16,6 +16,12 @@ class Catalogue
 
     private array $translations = [];
 
+    private array $texts = [];
+
+    private array $sourceProducts = [];
+
+    private array $sortNames = [];
+
     private array $images = [];
 
     private ?array $mediaOverrides = null;
@@ -97,6 +103,7 @@ class Catalogue
                     $products[] = $localized;
                 }
             }
+            app(CatalogueImageMetadata::class)->flush();
             $custom = $this->read(fn () => app(ProductManager::class)->custom(), []);
             $this->localizedProducts[$locale] = $this->sourceFailure ? [] : array_merge($products, $custom);
         }
@@ -110,6 +117,13 @@ class Catalogue
     }
 
     private function text(string $source): ?string
+    {
+        $locale = app()->getLocale();
+
+        return $this->texts[$locale][$source] ??= $this->translateText($source);
+    }
+
+    private function translateText(string $source): ?string
     {
         $source = preg_replace('/https?:\/\/\S*damdam\S*/i', '', $source);
         // Historical dictionary and editorial keys remain stable; branding is a display projection.
@@ -148,13 +162,14 @@ class Catalogue
             return $this->images[$cacheKey];
         }
         $path = public_path(ltrim($url, '/'));
-        $dimensions = @getimagesize($path);
+        $metadata = app(CatalogueImageMetadata::class)->inspect($path);
+        $dimensions = $metadata ? [$metadata['width'], $metadata['height'], $metadata['type']] : null;
         // Prepare for the announced Merchant Center threshold without upscaling.
         // This technical gate does not certify visual quality or Google approval.
         $extension = pathinfo($path, PATHINFO_EXTENSION);
         $expectedType = ['jpg' => IMAGETYPE_JPEG, 'png' => IMAGETYPE_PNG, 'webp' => IMAGETYPE_WEBP, 'gif' => IMAGETYPE_GIF];
         if (! $dimensions || $dimensions[0] < $minimumDimension || $dimensions[1] < $minimumDimension
-            || $dimensions[0] * $dimensions[1] > 64_000_000 || filesize($path) > 16_000_000
+            || $dimensions[0] * $dimensions[1] > 64_000_000 || $metadata['size'] > 16_000_000
             || ($expectedType[$extension] ?? null) !== $dimensions[2]) {
             return $this->images[$cacheKey] = null;
         }
@@ -197,7 +212,11 @@ class Catalogue
             return null;
         }
 
-        return $this->read(fn () => $this->source->product($slug), null);
+        if (! array_key_exists($slug, $this->sourceProducts)) {
+            $this->sourceProducts[$slug] = $this->read(fn () => $this->source->product($slug), null);
+        }
+
+        return $this->sourceProducts[$slug];
     }
 
     private function present(array $source): ?array
@@ -298,6 +317,8 @@ class Catalogue
 
         $presented = $product !== null ? $this->read(fn () => $this->present($product), null) : null;
 
+        app(CatalogueImageMetadata::class)->flush();
+
         return $this->sourceFailure || ($presented['admin_published'] ?? true) === false ? null : $presented;
     }
 
@@ -359,7 +380,7 @@ class Catalogue
         $sort = $filters['sort'] ?? 'name';
         // Transliteration is linear in the number of retained products, rather
         // than repeated for both names at every sort comparison.
-        $names = $items->mapWithKeys(fn (array $product) => [$product['slug'] => Str::ascii($product['name'])]);
+        $names = $items->mapWithKeys(fn (array $product) => [$product['slug'] => $this->sortNames[$product['name']] ??= Str::ascii($product['name'])]);
         $priceSort = in_array($sort, ['price_asc', 'price_desc'], true);
 
         return $items->sort(function ($a, $b) use ($sort, $names, $priceSort) {

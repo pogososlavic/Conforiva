@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'HOME CONFORT — Home, made simple',
+    'title' => 'HOME CONFORT — Heating, home appliances and furniture',
     'description' => 'Coming soon to HOME CONFORT: firewood and fuels, heating, home appliances, furniture and televisions.',
     'description_ready' => 'Explore HOME CONFORT: firewood and fuels, heating, home appliances, furniture and televisions. Browse the catalogue.',
     'skip' => 'Skip to content',

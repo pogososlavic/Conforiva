@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Admin\AdminFormRecovery;
 use App\Services\AdminAccess;
 use App\Services\AdminAuthenticationAudit;
 use App\Services\AdminDashboard;
@@ -21,7 +22,7 @@ final class AdminController extends Controller
         try {
             return $this->{$method}(...array_values($parameters));
         } catch (ValidationException $error) {
-            throw $error;
+            return app(AdminFormRecovery::class)->validation(request(), $error);
         } catch (\Throwable $error) {
             $status = $error instanceof HttpExceptionInterface ? $error->getStatusCode() : 503;
 
@@ -36,11 +37,22 @@ final class AdminController extends Controller
 
     public function authenticate(Request $request, AdminAccess $access)
     {
-        $data = $request->validate(['username' => ['required', 'string', 'max:80'], 'password' => ['required', 'string', 'max:256']]);
+        try {
+            $data = $request->validate(['username' => ['required', 'string', 'max:80'], 'password' => ['required', 'string', 'max:256']]);
+        } catch (ValidationException $error) {
+            if ($request->expectsJson()) {
+                throw $error;
+            }
+            $errors = $error->errors();
+            $username = $request->input('username');
+            $oldInput = is_string($username) && ! isset($errors['username']) ? ['username' => $username] : [];
+
+            return redirect()->route('admin.login')->withErrors($errors)->withInput($oldInput);
+        }
         if (! $access->login($request, $data['username'], $data['password'])) {
             app(AdminAuthenticationAudit::class)->record($request, 'failure', $data['username']);
 
-            return back()->withErrors(['username' => 'Identifiant ou mot de passe incorrect.'])->withInput(['username' => $data['username']]);
+            return redirect()->route('admin.login')->withErrors(['username' => 'Identifiant ou mot de passe incorrect.'])->withInput(['username' => $data['username']]);
         }
 
         app(AdminAuthenticationAudit::class)->record($request, 'success', $data['username']);
@@ -58,11 +70,11 @@ final class AdminController extends Controller
         try {
             $data = $request->validate(['current_password' => ['required', 'string', 'max:256'], 'password' => ['required', 'string', 'min:16', 'max:72', 'confirmed']]);
         } catch (ValidationException $error) {
-            return back()->withErrors($error->errors());
+            return app(AdminFormRecovery::class)->validation($request, $error);
         }
         $account = $access->authenticate((string) $request->session()->get('admin.auth.username'), $data['current_password']);
         if (! $account || $account['id'] !== $request->session()->get('admin.auth.id')) {
-            return back()->withErrors(['current_password' => 'Mot de passe actuel incorrect.']);
+            throw ValidationException::withMessages(['current_password' => 'Mot de passe actuel incorrect.']);
         }
         $access->changePassword($request, $data['password']);
 
@@ -81,8 +93,21 @@ final class AdminController extends Controller
     {
         abort_unless($access->isOwner($request), 403);
         abort_unless(config('dashboard.enabled'), 503);
-        $data = $request->validate(['username' => ['required', 'string', 'regex:/\A[a-zA-Z0-9._-]{3,80}\z/'], 'password' => ['required', 'string', 'min:16', 'max:72', 'confirmed']]);
-        $access->createManager($data['username'], $data['password']);
+        try {
+            $data = $request->validate(['username' => ['required', 'string', 'regex:/\A[a-zA-Z0-9._-]{3,80}\z/'], 'current_password' => ['required', 'string', 'max:256'], 'password' => ['required', 'string', 'min:16', 'max:72', 'confirmed']]);
+            $account = $access->authenticate((string) $request->session()->get('admin.auth.username'), $data['current_password']);
+            if (! $account || $account['id'] !== $request->session()->get('admin.auth.id')
+                || $account['role'] !== 'owner' || $account['role'] !== $request->session()->get('admin.auth.role')) {
+                throw ValidationException::withMessages(['current_password' => 'Mot de passe actuel incorrect.']);
+            }
+            $access->createManager($data['username'], $data['password']);
+        } catch (ValidationException $error) {
+            $username = $request->input('username');
+            $oldInput = is_string($username) && ! isset($error->errors()['username'])
+                && preg_match('/\A[a-zA-Z0-9._-]{3,80}\z/', $username) ? ['username' => $username] : [];
+
+            return app(AdminFormRecovery::class)->validation($request, $error, $oldInput);
+        }
 
         return to_route('admin.managers')->with('admin_message', 'Compte gestionnaire créé. Transmettez son mot de passe par un canal privé.');
     }

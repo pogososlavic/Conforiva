@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Services\PrivateLocalFiles;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -45,7 +46,8 @@ final class PrivateSettings
                 $line = $key."='".$value."'";
                 $after = preg_match('/^'.$key.'=.*$/m', $after) ? preg_replace_callback('/^'.$key.'=.*$/m', fn () => $line, $after) : rtrim($after)."\n".$line."\n";
             }
-            $directory = storage_path('app/private/admin');
+            File::ensureDirectoryExists(storage_path(), 0700, true);
+            $directory = PrivateLocalFiles::path(storage_path(), 'app/private/admin', false);
             File::ensureDirectoryExists($directory, 0700);
             $backup = $directory.'/settings-before-'.Str::uuid().'.encrypted';
             $this->write($backup, Crypt::encryptString($before));

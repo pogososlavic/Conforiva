@@ -2,11 +2,13 @@
 @php($energyProfile = $energyCharacteristics->forProduct($product, $locale))
 @php($displayDescription = $energyCharacteristics->descriptionForProduct($product, $locale))
 @php($displaySpecifications = $energyCharacteristics->remainingSpecifications($product['specifications'], $energyProfile))
+@php($productContent = app(\App\Services\ProductContent::class))
+@php($selectionGuide = $productContent->guide($product))
 @php($available = app(\App\Services\Commerce\InventoryAvailability::class)->available($product))
 @php($inventoryOrderable = config('commerce.inventory_enabled') !== true || ($available !== null && $available > 0))
-<x-layout :title="$product['name'].' — '.config('app.name')" :description="$displayDescription ?: $product['name']" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :search-query="$context['q'] ?? ''" :seo-context="['product' => array_replace($seoProduct ?? $product, ['description' => $displayDescription]), 'name' => $product['name'], 'available_stock' => $available, 'variant' => $selectedVariant ?? null]">
-    <main id="main" class="shell catalogue-page product-page" tabindex="-1">
-        <nav class="breadcrumbs" aria-label="{{ __('catalogue.breadcrumbs') }}"><a href="{{ route('home', ['locale' => $locale]) }}">{{ __('home.home') }}</a><span aria-hidden="true">/</span><a href="{{ $catalogueLink }}">{{ __('catalogue.title') }}</a><span aria-hidden="true">/</span><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ $product['category']['name'] }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ $product['name'] }}</span></nav>
+<x-layout :navigation-products="$navigationProducts" :title="$product['name'].' — '.config('app.name')" :description="$productContent->metaDescription($product, $displayDescription, $displaySpecifications)" :catalogue-ready="$catalogueReady" :language-links="$languageLinks" :search-query="$context['q'] ?? ''" :seo-context="['product' => array_replace($seoProduct ?? $product, ['description' => $displayDescription]), 'name' => $product['name'], 'available_stock' => $available, 'variant' => $selectedVariant ?? null]">
+    <main id="main" class="shell catalogue-page product-page" tabindex="-1" data-catalogue-product="{{ $product['slug'] }}" @if($context) data-catalogue-context-explicit @endif>
+        <nav class="breadcrumbs" aria-label="{{ __('catalogue.breadcrumbs') }}"><a href="{{ route('home', ['locale' => $locale]) }}">{{ __('home.home') }}</a><span aria-hidden="true">/</span><a href="{{ route('catalogue', ['locale' => $locale]) }}">{{ __('catalogue.title') }}</a><span aria-hidden="true">/</span><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ $product['category']['name'] }}</a><span aria-hidden="true">/</span><span aria-current="page">{{ $product['name'] }}</span></nav>
         @if($energyProfile || $displayDescription || $displaySpecifications || ($product['has_variants'] && collect($product['variants'])->contains(fn(array $variant) => trim($variant['title'] ?? '') !== '')) || $relatedProducts->isNotEmpty())
         <div class="product-section-scroll">
         <nav id="product-section-links" class="product-section-navigation" aria-label="{{ __('catalogue.product_navigation') }}">
@@ -61,10 +63,10 @@
                 <dl class="product-overview"><div><dt>{{ __('catalogue.category') }}</dt><dd><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ $product['category']['name'] }}</a></dd></div>@if($product['condition'])<div><dt>{{ __('catalogue.condition') }}</dt><dd>{{ __('catalogue.conditions')[$product['condition']] ?? $product['condition'] }}</dd></div>@endif</dl>
                 @if(app(\App\Services\ApplianceTakeBack::class)->eligible($product))<x-take-back-notice :locale="$locale" />@endif
                 <x-purchase-information :locale="$locale" id="product-purchase-information" open />
-                <a class="button-primary" href="{{ $catalogueLink }}">{{ __('catalogue.back_catalogue') }}</a>
+                <a class="button-primary" href="{{ $catalogueLink }}" data-catalogue-back>{{ __('catalogue.back_catalogue') }}</a>
             </section>
         </div>
-        @if($displayDescription)<section id="product-description" class="product-description-section" aria-labelledby="description-heading" tabindex="-1"><h2 id="description-heading">{{ __('catalogue.product_description') }}</h2><p class="product-description">{{ $displayDescription }}</p></section>@endif
+        @if($displayDescription)<section id="product-description" class="product-description-section" aria-labelledby="description-heading" tabindex="-1"><h2 id="description-heading">{{ __('product-content.description_heading', ['name' => $product['name']]) }}</h2><p class="product-description">{{ $displayDescription }}</p></section>@endif
         <x-product-energy-characteristics :profile="$energyProfile" :documents="app(\App\Services\ProductEnergyLabels::class)->forProductLabels($product, $locale) === [] ? app(\App\Services\ProductEnergyLabels::class)->documentsForProduct($product, $locale) : []" />
         <x-product-safety :product="$product" />
         @if($displaySpecifications || ! $energyProfile)
@@ -73,9 +75,18 @@
         </section>
         @endif
         @if($product['has_variants'])<section id="product-variants" class="variant-information" aria-labelledby="variants-heading" tabindex="-1"><h2 id="variants-heading">{{ __('catalogue.variants') }}</h2><p>{{ __('catalogue.variants_notice') }}</p><ul>@foreach($product['variants'] as $variant)@if(!empty($variant['title']))<li><a href="{{ route('product', ['locale' => $locale, 'slug' => $product['slug'], 'variant' => 'v'.($loop->index + 1)] + $context) }}#product-purchase" @if(($selectedVariant ?? null) === 'v'.($loop->index + 1)) aria-current="true" @endif>{{ $variant['title'] }}</a>@if(!empty($variant['sku'])) — {{ __('catalogue.reference') }} {{ $variant['sku'] }}@endif</li>@endif @endforeach</ul></section>@endif
+        <section class="variant-information" aria-labelledby="selection-heading">
+            <h2 id="selection-heading">{{ __('product-content.selection_heading') }}</h2>
+            <p>{{ $selectionGuide['advice'] }}</p>
+            <ul>
+                <li><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ __('product-content.compare_category', ['category' => $product['category']['name']]) }}</a></li>
+                @if($selectionGuide['universe'])<li><a href="{{ route('catalogue', ['locale' => $locale, 'universe' => $selectionGuide['universe']]) }}">{{ __('product-content.browse_universe', ['universe' => __('home.categories.'.$selectionGuide['universe'].'.name')]) }}</a></li>@endif
+                <li><a href="{{ route('information', ['locale' => $locale, 'page' => 'contact']) }}">{{ __('product-content.contact') }}</a></li>
+            </ul>
+        </section>
         <section id="related-products" class="related-products" aria-labelledby="related-heading" tabindex="-1">
-            <div class="section-heading"><div><h2 id="related-heading">{{ __('catalogue.related_products') }}</h2><p>{{ __('catalogue.related_help') }}</p></div><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ __('catalogue.explore_category') }} <span aria-hidden="true">→</span></a></div>
-            @if($relatedProducts->isNotEmpty())<div class="related-product-grid">@foreach($relatedProducts as $related)<x-product-card :product="$related" :locale="$locale" :filters="$context" heading-level="h3" />@endforeach</div>
+            <div class="section-heading"><div><h2 id="related-heading">{{ __('product-content.related_heading', ['category' => $product['category']['name']]) }}</h2><p>{{ __('catalogue.related_help') }}</p></div><a href="{{ route('catalogue', ['locale' => $locale, 'category' => $product['category']['slug']]) }}">{{ __('catalogue.explore_category') }} <span aria-hidden="true">→</span></a></div>
+            @if($relatedProducts->isNotEmpty())<div class="related-product-grid">@foreach($relatedProducts as $related)<x-product-card :product="$related" :locale="$locale" heading-level="h3" />@endforeach</div>
             @else<p class="related-empty">{{ __($relatedUnavailable ? 'catalogue.related_unavailable' : 'catalogue.related_empty') }}</p>@endif
         </section>
     </main>

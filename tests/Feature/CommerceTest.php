@@ -16,6 +16,7 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -32,7 +33,8 @@ class CommerceTest extends TestCase
     {
         parent::setUp();
         $this->withoutVite();
-        config(['commerce.enabled' => false, 'commerce.legal_ready' => false,
+        config(['commerce.enabled' => false, 'commerce.legal_ready' => false, 'commerce.quote_email.enabled' => false, 'mail.default' => 'array',
+            'database.connections.commerce' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '', 'foreign_key_constraints' => true],
             'app.url' => 'http://127.0.0.1:8000']);
         $this->products = [
             'test-unit' => ['slug' => 'test-unit', 'reference' => 'TEST-UNIT', 'name' => 'Article de test', 'price_cents' => 12345,
@@ -50,6 +52,7 @@ class CommerceTest extends TestCase
         $bankSettings->shouldReceive('current')->andReturnUsing(fn () => config('commerce.bank'));
         $this->app->instance(BankDetailsSettings::class, $bankSettings);
         Http::preventStrayRequests();
+        Mail::fake();
     }
 
     private function database(): OrderStore
@@ -133,7 +136,8 @@ class CommerceTest extends TestCase
         $this->assertSame($order->created_at, $updated->created_at);
         $this->assertSame(1, $orders->connection()->table('commerce_orders')->count());
         $this->assertSame(2, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
-        $this->get($url)->assertOk()->assertSee('DE36000000000000000000');
+        $this->get($url)->assertOk()->assertDontSee('DE36000000000000000000')
+            ->assertSee(__('commerce.bank_document_pending'))->assertDontSee('/document/bank', false);
         $this->withSession(['commerce.owner' => 'outsider'])->post($url)->assertNotFound();
     }
 
@@ -844,8 +848,10 @@ class CommerceTest extends TestCase
         $this->post('/fr/commande', $this->checkout(['payment_method' => 'bank_transfer']))->assertRedirect();
         $order = $orders->connection()->table('commerce_orders')->first();
         config(['commerce.bank.beneficiary' => 'Changed fixture beneficiary']);
+        // Legacy orders keep their summary; bank instructions use only an issued official quote.
+        $this->get('/fr/commande/'.$order->id.'/document/bank')->assertNotFound();
         foreach (['fr', 'en', 'de'] as $locale) {
-            foreach (['bank', 'summary'] as $kind) {
+            foreach (['summary'] as $kind) {
                 $response = $this->get('/'.$locale.'/commande/'.$order->id.'/document/'.$kind)->assertOk()
                     ->assertHeader('Content-Type', 'application/pdf')->assertHeader('Cache-Control', 'no-store, private')
                     ->assertHeader('Referrer-Policy', 'no-referrer');
@@ -931,7 +937,9 @@ class CommerceTest extends TestCase
             ['properties' => ['name' => '12 rue fictive', 'postcode' => '75001', 'city' => 'Paris', 'coordinates' => 'not returned']],
             ['properties' => ['name' => 'Invalid', 'postcode' => 'unknown', 'city' => 'Test']],
         ]];
-        Http::fake(['https://data.geopf.fr/*' => Http::sequence()->push($fixture)->push($fixture)->push($fixture)->push([], 500)]);
+        $photon = ['features' => [['properties' => ['countrycode' => 'BE', 'street' => 'rue synthétique', 'housenumber' => '12', 'postcode' => '1000', 'city' => 'Bruxelles', 'coordinates' => 'not returned']]]];
+        Http::fake(['https://data.geopf.fr/*' => Http::sequence()->push($fixture)->push($fixture)->push($fixture)->push([], 500),
+            'https://photon.komoot.io/*' => Http::response($photon)]);
         $this->postJson('/fr/commande/adresses', ['address' => '12 rue fictive', 'country' => 'FR'])->assertStatus(503);
         Http::assertNothingSent();
         $this->enable();
@@ -940,10 +948,41 @@ class CommerceTest extends TestCase
                 ->assertOk()->assertExactJson(['suggestions' => [['address' => '12 rue fictive', 'postal_code' => '75001', 'city' => 'Paris']]])
                 ->assertHeader('Cache-Control', 'no-store, private');
         }
-        $this->postJson('/fr/commande/adresses', ['address' => '12 rue fictive', 'country' => 'BE'])->assertUnprocessable();
+        $this->postJson('/fr/commande/adresses', ['address' => '12 rue synthétique', 'country' => 'BE'])
+            ->assertOk()->assertExactJson(['suggestions' => [['address' => '12 rue synthétique', 'postal_code' => '1000', 'city' => 'Bruxelles']]]);
+        $this->postJson('/fr/commande/adresses', ['address' => '12 rue fictive', 'country' => 'IT'])->assertUnprocessable();
         $this->postJson('/fr/commande/adresses', ['address' => str_repeat('a', 201), 'country' => 'FR'])->assertUnprocessable();
         $this->postJson('/fr/commande/adresses', ['address' => '12 rue fictive', 'country' => 'FR'])
             ->assertStatus(503)->assertExactJson(['suggestions' => [], 'unavailable' => true]);
+        Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://data.geopf.fr/') && $request['q'] === '12 rue fictive');
+        Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://photon.komoot.io/') && $request['countrycode'] === 'BE');
+    }
+
+    public function test_address_lookup_rejects_foreign_or_malformed_provider_results_and_handles_timeouts(): void
+    {
+        $this->enable();
+        Http::fake(['https://photon.komoot.io/*' => Http::sequence()
+            ->push(['features' => [['properties' => ['countrycode' => 'DE', 'street' => 'Wrong country', 'housenumber' => '12', 'postcode' => '1000', 'city' => 'Synthetic']]]])
+            ->push(['features' => [['properties' => ['countrycode' => 'BE', 'street' => ['malformed'], 'postcode' => '1000', 'city' => 'Synthetic']]]])
+            ->push(['features' => 'malformed'])
+            ->pushFailedConnection('synthetic timeout')
+            ->push(['features' => [['properties' => [
+                'countrycode' => 'de', 'street' => 'Teststrasse', 'housenumber' => '12', 'postcode' => '10115', 'city' => 'Berlin',
+            ]]]])]);
+        foreach ([200, 200, 503] as $status) {
+            $response = $this->postJson('/fr/commande/adresses', ['address' => '12 rue synthétique', 'country' => 'BE'])->assertStatus($status);
+            $response->assertExactJson($status === 200 ? ['suggestions' => []] : ['suggestions' => [], 'unavailable' => true]);
+        }
+        $this->postJson('/de/commande/adresses', ['address' => 'Teststrasse 12', 'country' => 'DE'])
+            ->assertStatus(503)->assertExactJson(['suggestions' => [], 'unavailable' => true]);
+        $this->postJson('/de/commande/adresses', ['address' => 'Teststrasse 12', 'country' => 'DE'])->assertOk()
+            ->assertExactJson(['suggestions' => [['address' => 'Teststrasse 12', 'postal_code' => '10115', 'city' => 'Berlin']]]);
+        $this->postJson('/fr/commande/adresses', ['address' => ['malformed'], 'country' => 'FR'])->assertUnprocessable();
+        $this->postJson('/fr/commande/adresses', ['address' => '12 rue synthétique', 'country' => ['BE']])->assertUnprocessable();
+        foreach (['fr', 'en', 'de'] as $locale) {
+            $this->withSession(['commerce.cart' => ['test-unit' => 1]])->get('/'.$locale.'/commande')
+                ->assertOk()->assertSee(__('commerce.address_privacy', [], $locale));
+        }
     }
 
     public function test_transfer_proof_rate_limit_is_independent_of_checkout_and_keeps_the_order_unpaid(): void
@@ -978,18 +1017,23 @@ class CommerceTest extends TestCase
         $this->post('/fr/commande', $data)->assertRedirect();
         $order = $orders->connection()->table('commerce_orders')->first();
         $url = '/fr/commande/'.$order->id.'/virement';
-        $this->get($url)->assertOk()->assertSee('Bénéficiaire fictif de test')->assertSee('DE36000000000000000000')
+        $this->get($url)->assertOk()->assertDontSee('Bénéficiaire fictif de test')->assertDontSee('DE36000000000000000000')
             ->assertSee('246,90 €')->assertSee($order->id)->assertSee('72 heures')->assertHeader('Referrer-Policy', 'no-referrer')
-            ->assertHeader('Cache-Control', 'no-store, private');
+            ->assertHeader('Cache-Control', 'no-store, private')->assertSee(__('commerce.bank_document_pending'))
+            ->assertDontSee('/document/bank', false);
         $this->assertSame('pending_bank_transfer', $order->status);
         $this->assertNull($order->paid_at);
         $this->assertSame(2, $orders->connection()->table('commerce_inventory')->where('slug', 'test-unit')->value('reserved'));
         config(['commerce.bank.beneficiary' => 'Nouveau bénéficiaire de test']);
-        $this->get($url)->assertSee('Bénéficiaire fictif de test')->assertDontSee('Nouveau bénéficiaire de test');
-        $this->post('/fr/commande', $data)->assertRedirect($url);
+        $this->get($url)->assertDontSee('Bénéficiaire fictif de test')->assertDontSee('Nouveau bénéficiaire de test');
+        $this->assertSame('Bénéficiaire fictif de test', app(BankTransfer::class)->snapshot($order)['details']['beneficiary']);
+        // The completed checkout key was cleared; a browser retry cannot create another reservation.
+        $this->post('/fr/commande', $data)->assertRedirect('/fr/commande')->assertSessionHasErrors('cart');
         $this->assertSame(1, $orders->connection()->table('commerce_orders')->count());
+        $this->assertSame(2, (int) $orders->connection()->table('commerce_inventory')->sum('reserved'));
         foreach (['en', 'de'] as $locale) {
-            $this->get('/'.$locale.'/commande/'.$order->id.'/virement')->assertOk()->assertSee('DE36000000000000000000');
+            $this->get('/'.$locale.'/commande/'.$order->id.'/virement')->assertOk()->assertDontSee('DE36000000000000000000')
+                ->assertSee(__('commerce.bank_document_pending', [], $locale));
         }
         $this->app['session']->forget('commerce.owner');
         $this->get($url)->assertNotFound();
@@ -1006,7 +1050,9 @@ class CommerceTest extends TestCase
         $this->assertSame('pending_bank_transfer', $order->status);
         config(['commerce.bank.iban' => 'DE00000000000000000000']);
         $this->get('/fr/commande')->assertServiceUnavailable();
-        $this->get('/fr/commande/'.$order->id.'/virement')->assertSee('DE36000000000000000000');
+        $this->get('/fr/commande/'.$order->id.'/virement')->assertOk()->assertDontSee('DE36000000000000000000')
+            ->assertSee(__('commerce.bank_document_pending'));
+        $this->assertSame('DE36000000000000000000', app(BankTransfer::class)->snapshot($order)['details']['iban']);
         config(['commerce.bank.iban' => '']);
         $this->post('/fr/commande', $data)->assertServiceUnavailable();
         $this->assertSame(1, $orders->connection()->table('commerce_orders')->count());

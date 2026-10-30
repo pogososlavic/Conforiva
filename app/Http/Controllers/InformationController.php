@@ -64,8 +64,12 @@ class InformationController extends Controller
         if ($page === 'contact' && config('dashboard.enabled')) {
             $content['paragraphs'][1] = __('support.contact_notice');
         }
-        $catalogueReady = $catalogue->products()->isNotEmpty() && ! $catalogue->sourceUnavailable();
+        $navigationProducts = $catalogue->products();
+        $catalogueReady = $navigationProducts->isNotEmpty() && ! $catalogue->sourceUnavailable();
+        if ($catalogue->sourceUnavailable() || $catalogue->translationUnavailable()) {
+            $navigationProducts = collect();
+        }
 
-        return view('information', compact('locale', 'page', 'content', 'languageLinks', 'catalogueReady', 'deferredOnly'));
+        return view('information', compact('locale', 'page', 'content', 'languageLinks', 'catalogueReady', 'deferredOnly', 'navigationProducts'));
     }
 }

@@ -3,26 +3,35 @@
     "file": "assets/fa-solid-900-IAB4Droh.woff2",
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2"
   },
-  "resources/css/app.css": {
-    "file": "assets/app-DCszvPnA.css",
-    "name": "app",
+  "resources/css/admin-icons.css": {
+    "file": "assets/admin-icons-CN73NElY.css",
+    "name": "admin-icons",
     "names": [
-      "app.css"
+      "admin-icons.css"
     ],
-    "src": "resources/css/app.css",
+    "src": "resources/css/admin-icons.css",
     "isEntry": true,
     "assets": [
       "assets/fa-solid-900-IAB4Droh.woff2"
     ]
   },
+  "resources/css/app.css": {
+    "file": "assets/app-BSL5D1A6.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
   "resources/js/admin.js": {
-    "file": "assets/admin-DC5CClPc.js",
+    "file": "assets/admin-xsHv8pwc.js",
     "name": "admin",
     "src": "resources/js/admin.js",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-4Cz8hAnG.js",
+    "file": "assets/app-jvGmSxA5.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

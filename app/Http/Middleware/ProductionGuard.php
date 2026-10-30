@@ -92,7 +92,9 @@ final class ProductionGuard
             // Never expose logging failures or implementation details to visitors.
         }
 
-        return response()->view('errors.page', ['status' => $status, 'reference' => $reference], $status)
+        $view = $request->is('admin', 'admin/*') ? 'admin.unavailable' : 'errors.page';
+
+        return response()->view($view, ['status' => $status, 'reference' => $reference], $status)
             ->header('Cache-Control', 'no-store, private')
             ->header('X-Robots-Tag', 'noindex, nofollow')
             ->header('X-HOMYA-Reference', $reference);
